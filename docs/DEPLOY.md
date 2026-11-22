@@ -5,7 +5,8 @@
 | Host | OCI always-free `n8n-runner` (VM.Standard.E2.1.Micro, ap-mumbai-1, `80.225.217.150`), dedicated to the portfolio |
 | Web server | Caddy, static files only, automatic HTTPS (Let's Encrypt), capped at 150 MB RAM |
 | Files | `/srv/portfolio/site`, `/srv/portfolio/learn`, owned by the `deploy` user |
-| DNS | DuckDNS: `<name>.duckdns.org` and `learn.<name>.duckdns.org` (DuckDNS resolves every sub-name to the same IP) |
+| DNS | DuckDNS: `shivamsharma.duckdns.org` and `learn.shivamsharma.duckdns.org` (DuckDNS resolves every sub-name to the same IP) |
+| Live | https://shivamsharma.duckdns.org · https://learn.shivamsharma.duckdns.org · admin at `/admin/` |
 | Network | Terraform in the `infra` repo: a separate `n8n-web-nsg` opens 80/443 on this instance only |
 | Pipeline | `.github/workflows/deploy.yml` |
 

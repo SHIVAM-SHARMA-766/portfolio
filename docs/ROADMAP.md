@@ -9,13 +9,13 @@
 - Learn site: Docker course (4 chapters, 6 lessons), quizzes, progress, sidebar ticks, search
 - Generated admin panel config: pages, blocks, blog, courses, per-chapter lessons, profile, settings, achievements
 - Unit tests (game engine) and browser end-to-end tests
-- CI/CD to the OCI runner with Caddy
+- CI/CD to the OCI runner with Caddy; live since 2026-11-22 at https://shivamsharma.duckdns.org and https://learn.shivamsharma.duckdns.org
+- XP shared between both sites through a cookie on `.shivamsharma.duckdns.org`
 
 ## Next
 
 | Item | Notes |
 |---|---|
-| Go live | Terraform apply, DuckDNS name, server setup, secrets (see DEPLOY.md) |
 | PDF resume | Generate from `profile.json` at build time, so one edit updates site and PDF |
 | GitHub sync | Daily scheduled build that pulls repo stars and releases into project cards |
 | "How this site is built" page | Pipeline diagram, CI badges, Lighthouse scores |
@@ -31,7 +31,6 @@
 | Contact form | Cloudflare Worker → Telegram/email, no exposed address |
 | Global leaderboard / guestbook | Small API; would need persistence and moderation |
 | Privacy-friendly analytics | Which projects and lessons get attention |
-| Shared XP across subdomains | Needs `cookieDomain`; works on DuckDNS or a custom domain |
 | Lighthouse CI and visual snapshots per theme × palette | Quality gates in the workflow |
 | Admin previews | Custom preview templates in Sveltia per theme |
 
