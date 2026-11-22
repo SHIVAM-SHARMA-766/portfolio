@@ -57,6 +57,32 @@ Run these once, in order. Values are filled in for the current host.
    ```
 6. **Deploy:** `gh workflow run deploy.yml`, or push to `main`.
 
+## Admin username and password
+
+```sh
+cd ~/shivam/portfolio
+./deploy/admin-auth.sh
+```
+
+It asks for a username, a password (12+ characters) and a GitHub fine-grained token
+(repository: `portfolio` only; permission: Contents → Read and write). It checks the token
+can push. On the server it then:
+
+- protects `/admin-auth` with Caddy basic auth (bcrypt hash; the password itself is never stored)
+- stores the token in `/etc/caddy/admin-auth/index.html` (root:caddy, 0640). After a correct
+  password, the page hands the token to the admin with the Decap/Sveltia popup handshake, to
+  this site's origin only
+- adds the fail2ban jail `caddy-admin-auth`: 5 wrong passwords in 10 minutes → 1 hour ban.
+  Only requests that sent credentials count
+
+Re-run it to change the password or rotate the token. When the token expires, sign-in still
+works but saving fails until you re-run it with a new token.
+
+```sh
+sudo fail2ban-client status caddy-admin-auth      # bans
+sudo fail2ban-client set caddy-admin-auth unbanip <ip>
+```
+
 ## Changing the domain
 
 Edit `siteUrl`, `learnUrl` and, if both share a parent domain you control,

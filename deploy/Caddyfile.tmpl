@@ -34,10 +34,12 @@
 __SITE_HOST__ {
 	root * /srv/portfolio/site
 	import static
+	# Admin username/password login, written by deploy/admin-auth.sh. Absent until that runs.
+	import /etc/caddy/admin-auth.d/*.caddy
 	# The admin panel loads Sveltia CMS from unpkg and talks to the GitHub API.
 	@admin path /admin/*
 	header @admin Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://*.githubusercontent.com https://unpkg.com; frame-ancestors 'none'"
-	@public not path /admin/*
+	@public not path /admin/* /admin-auth*
 	header @public Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'"
 }
 

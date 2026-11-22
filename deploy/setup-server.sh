@@ -19,13 +19,11 @@ PUBKEY_FILE=${2:?usage: setup-server.sh <ssh-target> <deploy-public-key-file>}
 SSH_KEY=${SSH_KEY:-$HOME/.ssh/oci-n8n}
 cd "$(dirname "$0")/.."
 
-host_of() { node -e "console.log(new URL(require('./content/site.json')['$1']).host)"; }
-SITE_HOST=$(host_of siteUrl)
-LEARN_HOST=$(host_of learnUrl)
-ACME_EMAIL=$(node -e "console.log(require('./content/site.json').email || '')")
+. deploy/lib.sh
+SITE_HOST=$(node -e "console.log(new URL(require('./content/site.json').siteUrl).host)")
+LEARN_HOST=$(node -e "console.log(new URL(require('./content/site.json').learnUrl).host)")
 PUBKEY=$(cat "$PUBKEY_FILE")
-
-CADDYFILE=$(sed -e "s/__SITE_HOST__/$SITE_HOST/" -e "s/__LEARN_HOST__/$LEARN_HOST/" -e "s/__ACME_EMAIL__/$ACME_EMAIL/" deploy/Caddyfile.tmpl)
+CADDYFILE=$(render_caddyfile)
 
 echo "Setting up $TARGET for $SITE_HOST and $LEARN_HOST"
 

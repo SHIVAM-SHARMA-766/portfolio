@@ -84,7 +84,10 @@ export function GET() {
   );
 
   const config = {
-    backend: { name: 'github', repo: REPO, branch: BRANCH, commit_messages: { create: 'Create {{collection}} “{{slug}}”', update: 'Update {{collection}} “{{slug}}”', delete: 'Delete {{collection}} “{{slug}}”' } },
+    backend: {
+      name: 'github', repo: REPO, branch: BRANCH,
+      // Username/password sign-in served by Caddy on our own host (deploy/admin-auth.sh)
+      base_url: SITE_URL.replace(/\/$/, ''), auth_endpoint: 'admin-auth/', commit_messages: { create: 'Create {{collection}} “{{slug}}”', update: 'Update {{collection}} “{{slug}}”', delete: 'Delete {{collection}} “{{slug}}”' } },
     site_url: SITE_URL,
     display_url: SITE_URL,
     media_folder: 'apps/site/public/uploads',

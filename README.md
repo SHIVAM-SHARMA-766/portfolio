@@ -32,9 +32,10 @@ npm run dev:learn       # learn site at http://localhost:4322
 
 ## Editing content
 
-Use the admin panel at `https://<your-domain>/admin/`. Sign in with a GitHub personal
-access token that has *Contents: read and write* on this repository. In Chrome or Edge you can also choose
-**Work with Local Repository** to edit this folder directly, without signing in.
+Use the admin panel at `https://<your-domain>/admin/` and click **Sign In**: a popup asks for
+your admin username and password (set with `deploy/admin-auth.sh`). Alternatives:
+**Sign In Using Access Token** with a GitHub token, or, in Chrome or Edge,
+**Work with Local Repository** to edit this folder directly.
 
 Or edit the files in [`content/`](content/) directly. The build validates everything and
 fails with a clear message if something is wrong.
