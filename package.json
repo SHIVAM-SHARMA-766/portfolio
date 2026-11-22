@@ -15,7 +15,7 @@
     "build": "npm run build -w @portfolio/site && npm run build -w @portfolio/learn",
     "build:site": "npm run build -w @portfolio/site",
     "build:learn": "npm run build -w @portfolio/learn",
-    "test": "node --test packages/game/test/",
+    "test": "node --test \"packages/game/test/*.test.js\"",
     "test:e2e": "node tests/e2e.mjs"
   },
   "devDependencies": {
