@@ -1,6 +1,6 @@
 ---
 import Panel from '../Panel.astro';
-import { profile } from '../../../lib/content';
+import { profile, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block } = Astro.props as { block: BlockOf<'projects'> };
 let list = block.filter === 'featured' ? profile.projects.filter((p) => p.featured) : profile.projects;
@@ -14,7 +14,7 @@ if (block.limit) list = list.slice(0, block.limit);
         <h3>{p.name}</h3>
         <p>{p.summary}</p>
         <p class="q-loot">{p.tags.map((t) => <span>{t}</span>)}</p>
-        <details class="q-accept" data-xp="15" data-xp-id={`project:${p.slug}`} data-xp-label={`Quest accepted: ${p.name}`}>
+        <details class="q-accept" data-xp={rewards.project} data-xp-id={ids.project(p.slug)} data-xp-label={`Quest accepted: ${p.name}`}>
           <summary>▶ Accept quest</summary>
           {p.highlights.length > 0 && <ul class="q-list">{p.highlights.map((h) => <li>{h}</li>)}</ul>}
           {p.links.map((l) => <a class="q-btn" href={l.url} target="_blank" rel="noopener">{l.label} ↗</a>)}

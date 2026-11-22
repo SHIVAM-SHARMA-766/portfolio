@@ -3,6 +3,8 @@
 import { paletteCss, palettesFor } from '@portfolio/tokens';
 import { site, gameConfig, pageUrl } from '../lib/content';
 import '@portfolio/game/game.css';
+import missionsRaw from '../../../../content/missions.json';
+const sourceFlag = missionsRaw.missions.find((m) => m.kind === 'page-source')?.flag;
 
 interface Props {
   theme: string;
@@ -20,6 +22,7 @@ const defaultPalette = site.defaultPalettes[theme] ?? palettes[0];
 const config = await gameConfig(pageIdent);
 ---
 <head>
+  {sourceFlag && <Fragment set:html={`<!-- psst. you found the source. ${sourceFlag} — submit it in the terminal. -->`} />}
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{fullTitle}</title>

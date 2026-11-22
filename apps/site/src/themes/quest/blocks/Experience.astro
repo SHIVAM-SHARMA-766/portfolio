@@ -1,6 +1,6 @@
 ---
 import Panel from '../Panel.astro';
-import { profile, formatMonth } from '../../../lib/content';
+import { profile, formatMonth, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block } = Astro.props as { block: BlockOf<'experience'> };
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
@@ -16,7 +16,7 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice
       {job.progression && <p class="q-levels">🪜 {job.progression}</p>}
       {job.highlights.length > 0 && <ul class="q-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
       {job.engagements.map((e) => (
-        <details class="q-quest" data-xp="5" data-xp-id={`exp:${slugify(e.title)}`} data-xp-label="Side quest read">
+        <details class="q-quest" data-xp={rewards.experience} data-xp-id={ids.experience(e.title)} data-xp-label="Side quest read">
           <summary><span class="q-quest-mark" aria-hidden="true">!</span> Side quest: {e.title}</summary>
           <ul class="q-list">{e.highlights.map((h) => <li>{h}</li>)}</ul>
         </details>

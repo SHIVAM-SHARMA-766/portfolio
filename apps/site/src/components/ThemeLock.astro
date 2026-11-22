@@ -1,0 +1,23 @@
+---
+// Overlay for a theme the visitor hasn't unlocked. The page stays in the HTML
+// (search engines, no-JS visitors); the game layer decides whether to show this.
+import { shopItem, site, pageUrl } from '../lib/content';
+interface Props { item: string; slug: string }
+const { item, slug } = Astro.props;
+const it = shopItem(item);
+---
+{it && it.price > 0 && (
+  <div class="g-theme-lock" data-theme-lock={item} hidden role="dialog" aria-modal="true" aria-labelledby="lock-title">
+    <div class="g-theme-lock__box">
+      <h2 id="lock-title">🔒 {it.label}</h2>
+      <p>{it.description}</p>
+      <p>Unlock it for <b>🪙 <span data-price>{it.price}</span> coins</b>. You have <b>🪙 <span data-game-coins>0</span></b>.</p>
+      <div class="g-theme-lock__actions">
+        <button type="button" class="g-primary" data-buy={item}>Unlock</button>
+        <button type="button" data-open-login data-account-guest>Sign in</button>
+        <a href={pageUrl(site.defaultTheme, slug)}>Back to {site.defaultTheme}</a>
+        <a href={pageUrl('studio', slug)}>Studio (free)</a>
+      </div>
+    </div>
+  </div>
+)}

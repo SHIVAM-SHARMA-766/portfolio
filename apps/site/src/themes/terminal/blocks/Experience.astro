@@ -1,6 +1,6 @@
 ---
 import Cmd from '../Cmd.astro';
-import { profile, formatMonth } from '../../../lib/content';
+import { profile, formatMonth, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block } = Astro.props as { block: BlockOf<'experience'> };
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(16).slice(0, 7);
@@ -15,7 +15,7 @@ const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >
       {job.progression && <p class="t-dim">{job.progression}</p>}
       {job.highlights.length > 0 && <ul class="t-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
       {job.engagements.map((e) => (
-        <details class="t-details" data-xp="5" data-xp-id={`exp:${hash(e.title)}`} data-xp-label="Reading the log">
+        <details class="t-details" data-xp={rewards.experience} data-xp-id={ids.experience(e.title)} data-xp-label="Reading the log">
           <summary>{e.title}</summary>
           <ul class="t-list">{e.highlights.map((h) => <li>{h}</li>)}</ul>
         </details>

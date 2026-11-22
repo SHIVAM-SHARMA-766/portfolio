@@ -1,0 +1,9 @@
+{
+  "missions": [
+    { "id": "recon", "kind": "hidden-file", "title": "Recon", "brief": "Every box has secrets. Some files don't show up in a plain listing.", "hint": "Try `ls -a` in your home directory.", "reward": 25, "flag": "FLAG{d0tf1les_arent_h1dden}" },
+    { "id": "decoder", "kind": "base64", "title": "Decoder", "brief": "Something in a project README looks like gibberish. It isn't.", "hint": "`cat projects/portfolio/README.md`, then `decode <text>`.", "reward": 30, "flag": "FLAG{base64_is_not_encryption}" },
+    { "id": "grep", "kind": "grep", "title": "Log diver", "brief": "An incident left a trace somewhere in the experience logs.", "hint": "`grep -r FLAG experience`", "reward": 30, "flag": "FLAG{grep_beats_scrolling}" },
+    { "id": "portscan", "kind": "port-scan", "title": "Port scan", "brief": "A test box has exactly one open port between 1 and 1024. Find it in 11 probes.", "hint": "Run `hack` and think binary search.", "reward": 40, "flag": "FLAG{bin4ry_s3arch_ftw}" },
+    { "id": "source", "kind": "page-source", "title": "View source", "brief": "Browsers show you less than they download.", "hint": "Open the page source (Ctrl+U) and look near the top.", "reward": 35, "flag": "FLAG{v1ew_s0urce_alw4ys}" }
+  ]
+}

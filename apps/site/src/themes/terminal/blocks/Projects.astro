@@ -1,6 +1,6 @@
 ---
 import Cmd from '../Cmd.astro';
-import { profile } from '../../../lib/content';
+import { profile, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block } = Astro.props as { block: BlockOf<'projects'> };
 let list = block.filter === 'featured' ? profile.projects.filter((p) => p.featured) : profile.projects;
@@ -8,9 +8,9 @@ if (block.limit) list = list.slice(0, block.limit);
 ---
 <Cmd cmd={`ls -la projects/${block.filter === 'featured' ? ' | grep featured' : ''}`}>
   {block.heading && <h2 class="t-h"># {block.heading}</h2>}
-  <p class="t-dim">total {list.length} — click a project to open its README (+15 XP)</p>
+  <p class="t-dim">total {list.length} — click a project to open its README (+{rewards.project} XP)</p>
   {list.map((p) => (
-    <details class="t-details t-project" data-xp="15" data-xp-id={`project:${p.slug}`} data-xp-label={p.name}>
+    <details class="t-details t-project" data-xp={rewards.project} data-xp-id={ids.project(p.slug)} data-xp-label={p.name}>
       <summary><span class="t-dim">drwxr-xr-x {p.year ?? ''}</span> <span class="t-acc">{p.slug}/</span>{p.featured && <span class="t-tag">★ featured</span>}</summary>
       <div class="t-readme">
         <p class="t-dim">$ cat projects/{p.slug}/README.md</p>

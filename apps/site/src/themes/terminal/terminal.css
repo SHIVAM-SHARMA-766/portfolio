@@ -100,8 +100,8 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; back
 .sw-theme, .sw-palette { font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--border); padding: .1rem .45rem; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: .3rem; }
 .sw-theme[aria-current='true'], .sw-palette[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
 .sw-swatch { width: 10px; height: 10px; background: var(--sw-accent); box-shadow: 0 0 0 2px var(--sw-bg); }
-.sw-lock { display: none; font-size: .7rem; }
-.sw-palette[data-locked] .sw-lock { display: inline; }
+
+
 
 /* Achievements dialog */
 .ach-dialog { background: var(--surface); color: var(--fg); border: 1px solid var(--accent); width: min(560px, calc(100vw - 32px)); max-height: 85vh; padding: 1.2rem; font: inherit; }

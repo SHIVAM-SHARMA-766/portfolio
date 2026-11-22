@@ -1,0 +1,35 @@
+---
+// Sign-in / account dialog and the coin shop. Shared by both sites; themes style them.
+interface Props { ownerName?: string }
+const { ownerName = 'the site owner' } = Astro.props;
+---
+<dialog id="login-dialog" class="ach-dialog acct-dialog" aria-labelledby="login-title">
+  <div class="ach-head">
+    <h2 id="login-title"><span data-account-guest>Save your progress</span><span data-account-user hidden>Your account</span></h2>
+    <form method="dialog"><button class="ach-close" aria-label="Close">✕</button></form>
+  </div>
+  <div data-account-guest>
+    <p>Sign in to keep your points on every device and spend coins to unlock themes and colour palettes. Everything you earned as a guest comes with you.</p>
+    <div data-login-providers><p class="g-muted">Loading sign-in options…</p></div>
+    <p class="acct-privacy g-muted">We store the name and email address your provider shares, to save your progress. {ownerName} may use your email to get in touch. You can delete your account at any time from this window.</p>
+  </div>
+  <div data-account-user hidden>
+    <p class="acct-who"><img data-account-avatar alt="" width="48" height="48" hidden /><span><b data-account-name></b><small data-account-email></small></span></p>
+    <p>🪙 <b data-game-coins>0</b> coins · <b data-game-xp>0</b> XP · level <b data-game-level>1</b></p>
+    <div class="ach-actions">
+      <button type="button" data-open-shop>Open shop</button>
+      <button type="button" data-account-logout>Sign out</button>
+      <button type="button" data-account-delete>Delete account</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="shop-dialog" class="ach-dialog acct-dialog" aria-labelledby="shop-title">
+  <div class="ach-head">
+    <h2 id="shop-title">Shop · 🪙 <span data-game-coins>0</span></h2>
+    <form method="dialog"><button class="ach-close" aria-label="Close">✕</button></form>
+  </div>
+  <p class="g-muted">Earn coins by exploring: every XP point is a coin. Spending coins never lowers your level.</p>
+  <p data-account-guest><button type="button" class="acct-cta" data-open-login>Sign in to buy</button></p>
+  <ul class="g-shop" data-shop-list></ul>
+</dialog>

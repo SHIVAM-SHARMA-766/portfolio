@@ -8,6 +8,8 @@
     "./core": "./src/core.js",
     "./storage": "./src/storage.js",
     "./game.css": "./src/game.css",
-    "./AchievementsDialog.astro": "./AchievementsDialog.astro"
+    "./AchievementsDialog.astro": "./AchievementsDialog.astro",
+    "./ids": "./src/ids.js",
+    "./AccountDialogs.astro": "./AccountDialogs.astro"
   }
 }

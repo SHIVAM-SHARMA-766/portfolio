@@ -2,6 +2,8 @@
 // Header controls: Starlight's dark/light select, plus palette and XP.
 import Default from '@astrojs/starlight/components/ThemeSelect.astro';
 import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
+import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
+import { site } from '../lib/game';
 import { LEARN_PALETTES } from '../lib/game';
 // ThemeSelect renders twice (header and mobile menu); the dialog must exist once.
 const locals = Astro.locals as any;
@@ -9,6 +11,9 @@ const renderDialog = !locals.achDialogRendered;
 locals.achDialogRendered = true;
 ---
 <div class="learn-tools">
+  <span class="g-live" data-live data-offline>…</span>
+  <button type="button" class="xp-chip" data-open-login data-account-guest>Sign in</button>
+  <button type="button" class="xp-chip" data-open-login data-account-user hidden><img data-account-avatar alt="" width="18" height="18" hidden style="border-radius:50%" /><span data-account-name></span></button>
   <button type="button" class="xp-chip g-only" data-open-ach aria-label="Your points and achievements">
     <span class="xp-ring" data-game-progress aria-hidden="true"></span><b data-game-xp>0</b>&nbsp;XP
   </button>
@@ -18,6 +23,7 @@ locals.achDialogRendered = true;
   <Default />
 </div>
 {renderDialog && <AchievementsDialog />}
+{renderDialog && <AccountDialogs ownerName={site.name} />}
 <script>
   import { mountGame } from '@portfolio/game';
   import { initLearn } from '../scripts/learn';

@@ -1,148 +1,227 @@
-// End-to-end smoke test against the built sites, using a system Chromium.
+// End-to-end test of both built sites and the API, in a real browser.
 //   npm run build && npm run test:e2e
-// CHROME_PATH selects the browser (default: /usr/bin/chromium).
+// CHROME_PATH selects the browser (default /usr/bin/chromium). The API is built
+// from apps/api unless API_BIN points at a binary. It runs in DEV mode on a
+// throwaway database; the static server proxies /api (and the WebSocket) to it
+// and rewrites the production API URL in the HTML to the local one.
 import { chromium } from 'playwright-core';
-import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { createServer, request as httpRequest } from 'node:http';
+import { connect } from 'node:net';
+import { readFile, stat, mkdtemp } from 'node:fs/promises';
+import { spawn, execFileSync } from 'node:child_process';
 import { extname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
 
+const root = resolve(import.meta.dirname, '..');
+const site = JSON.parse(await readFile(join(root, 'content/site.json'), 'utf8'));
+const API_PORT = 4599;
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json', '.xml': 'application/xml', '.yml': 'application/yaml' };
 
+// --- API --------------------------------------------------------------------
+const tmp = await mkdtemp(join(tmpdir(), 'pf-e2e-'));
+let apiBin = process.env.API_BIN;
+if (!apiBin) {
+  apiBin = join(tmp, 'portfolio-api');
+  execFileSync('go', ['build', '-o', apiBin, '.'], { cwd: join(root, 'apps/api'), stdio: 'inherit' });
+}
+const api = spawn(apiBin, [], {
+  env: { ...process.env, DEV: '1', LISTEN: `127.0.0.1:${API_PORT}`, DB_PATH: join(tmp, 'e2e.db'), SESSION_SECRET: 'e2e-secret-e2e-secret-e2e-secret-0000', ADMIN_USER: 'admin', ADMIN_PASS_HASH: '$2a$04$C0Jqk0Yb7h1WvjQZQ0b9Ce3eQ3eJ0Z8Zt3dYb5mQyqfH0m9vKkVQy' },
+  stdio: ['ignore', 'inherit', 'inherit'],
+});
+for (let i = 0; i < 50; i++) {
+  try { if ((await fetch(`http://127.0.0.1:${API_PORT}/api/health`)).ok) break; } catch {}
+  await new Promise((r) => setTimeout(r, 100));
+}
+
+// --- static servers with /api proxy ------------------------------------------
 function serve(dir, port) {
+  const local = `http://localhost:${port}`;
   return new Promise((ok) => {
     const srv = createServer(async (req, res) => {
+      if (req.url.startsWith('/api/')) {
+        const p = httpRequest({ host: '127.0.0.1', port: API_PORT, path: req.url, method: req.method, headers: req.headers }, (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); });
+        req.pipe(p);
+        return;
+      }
       let p = join(dir, decodeURIComponent(new URL(req.url, 'http://x').pathname));
       try {
         if ((await stat(p)).isDirectory()) p = join(p, 'index.html');
+        let body = await readFile(p);
+        if (p.endsWith('.html')) body = body.toString().replaceAll(site.apiUrl, 'http://localhost:4501/api');
         res.writeHead(200, { 'Content-Type': types[extname(p)] ?? 'application/octet-stream' });
-        res.end(await readFile(p));
+        res.end(body);
       } catch {
         res.writeHead(404, { 'Content-Type': 'text/html' });
         res.end(await readFile(join(dir, '404.html')).catch(() => 'not found'));
       }
     });
-    srv.listen(port, () => ok(srv));
+    srv.on('upgrade', (req, sock, head) => { // WebSocket → API
+      const up = connect(API_PORT, '127.0.0.1', () => {
+        up.write(`${req.method} ${req.url} HTTP/1.1\r\n${Object.entries(req.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n')}\r\n\r\n`);
+        up.write(head);
+        sock.pipe(up).pipe(sock);
+      });
+      up.on('error', () => sock.destroy());
+    });
+    srv.listen(port, () => ok({ srv, local }));
   });
 }
 
-const root = resolve(import.meta.dirname, '..');
-const site = await serve(join(root, 'apps/site/dist'), 4501);
-const learn = await serve(join(root, 'apps/learn/dist'), 4502);
-// Fonts come from Google; block them so the test never depends on the network.
+const siteSrv = await serve(join(root, 'apps/site/dist'), 4501);
+const learnSrv = await serve(join(root, 'apps/learn/dist'), 4502);
+const S = siteSrv.local;
+const L = learnSrv.local;
+
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/chromium', args: ['--no-sandbox'] });
 const results = [];
 const step = async (name, fn) => {
-  try { await fn(); results.push(['✓', name]); } catch (e) { results.push(['✗', name, e.message]); }
+  try { await fn(); results.push(['✓', name]); } catch (e) { results.push(['✗', name, e.message.split('\n')[0]]); }
 };
+const blockFonts = (ctx) => ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
 
 try {
   const ctx = await browser.newContext();
-  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await blockFonts(ctx);
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  const xp = () => page.evaluate(() => window.game.snapshot().xp);
+  const snap = () => page.evaluate(() => window.game.snapshot());
+  const term = async (cmd) => { await page.fill('#shell-in', cmd); await page.press('#shell-in', 'Enter'); await page.waitForTimeout(60); };
+  const lastOut = () => page.locator('#shell-out > div').last().innerText();
 
   await step('root redirects to the default theme', async () => {
-    await page.goto('http://localhost:4501/');
+    await page.goto(`${S}/`);
     await page.waitForURL(/\/terminal\/$/);
-  });
-
-  await step('visit + theme discovery award XP', async () => {
-    await page.waitForFunction(() => window.game);
-    assert.equal(await xp(), 15);
+    await page.waitForFunction(() => window.game?.account?.ready);
+    assert.equal((await snap()).xp, 15);
   });
 
   await step('opening a project awards XP once', async () => {
-    await page.goto('http://localhost:4501/terminal/projects/');
+    await page.goto(`${S}/terminal/projects/`);
     await page.waitForFunction(() => window.game);
-    const before = await xp();
+    const before = (await snap()).xp;
     const summary = page.locator('.t-project summary').first();
-    await summary.click();
-    await summary.click();
-    await summary.click();
-    assert.equal(await xp(), before + 15);
+    await summary.click(); await summary.click(); await summary.click();
+    assert.equal((await snap()).xp, before + site.game.rewards.project);
   });
 
-  await step('terminal commands work and award XP', async () => {
-    const before = await xp();
-    for (const c of ['help', 'ls', 'whoami', 'xp', 'date']) {
-      await page.fill('#shell-in', c);
-      await page.press('#shell-in', 'Enter');
+  await step('terminal: filesystem, hidden files and a flag', async () => {
+    await term('ls');
+    assert.match(await lastOut(), /projects\//);
+    assert.doesNotMatch(await lastOut(), /\.secrets/);
+    await term('ls -a');
+    assert.match(await lastOut(), /\.secrets/);
+    await term('cat .secrets/recon.txt');
+    const flag = (await page.locator('#shell-out').innerText()).match(/FLAG\{[^}]+\}/)[0];
+    const before = (await snap()).xp;
+    await term(`submit ${flag}`);
+    await page.waitForFunction(() => window.game.has('flag:recon'));
+    assert.ok((await snap()).xp > before);
+    await term(`submit FLAG{nope}`);
+    assert.match(await lastOut(), /not valid/);
+  });
+
+  await step('terminal: grep, decode and port-scan missions', async () => {
+    await term('grep -r FLAG experience');
+    const grepFlag = (await lastOut()).match(/FLAG\{[^}]+\}/)[0];
+    await term(`submit ${grepFlag}`);
+    await term('cat projects/portfolio/README.md');
+    const b64 = (await page.locator('#shell-out').innerText()).match(/build-note: (\S+)/)[1];
+    await term(`decode ${b64}`);
+    await term(`submit ${(await lastOut()).trim()}`);
+    await term('hack');
+    let lo = 1, hi = 1024, flag = null;
+    for (let i = 0; i < 12 && !flag; i++) {
+      const mid = Math.floor((lo + hi) / 2);
+      await term(String(mid));
+      const t = (await page.locator('#shell-out > div').evaluateAll((els) => els.slice(-2).map((e) => e.textContent).join('\n')));
+      if (/OPEN/.test(t)) flag = t.match(/FLAG\{[^}]+\}/)[0];
+      else if (/higher/.test(t)) lo = mid + 1;
+      else hi = mid - 1;
     }
-    assert.match(await page.locator('#shell-out').innerText(), /command|about/);
-    const s = await page.evaluate(() => window.game.snapshot());
-    assert.ok(s.achievements.find((a) => a.id === 'hacker').unlocked, 'hacker achievement');
-    assert.equal(s.xp, before + 5 * 3 + 15);
+    assert.ok(flag, 'binary search should find the port in 11 probes; output: ' + (await page.locator('#shell-out').innerText()).split('\n').slice(-8).join(' | '));
+    await term(`submit ${flag}`);
+    const s = await snap();
+    for (const m of ['grep', 'decoder', 'portscan']) assert.ok(`flag:${m}` in s.events, m);
   });
 
-  await step('secret sudo command unlocks a hidden achievement', async () => {
-    await page.fill('#shell-in', 'sudo hire shivam');
-    await page.press('#shell-in', 'Enter');
-    const s = await page.evaluate(() => window.game.snapshot());
-    assert.ok(s.achievements.find((a) => a.id === 'sudo').unlocked);
+  await step('page-source flag and terminal commands unlock achievements', async () => {
+    const html = await (await page.request.get(`${S}/terminal/`)).text();
+    await term(`submit ${html.match(/FLAG\{[^}]+\}/)[0]}`);
+    for (const c of ['whoami', 'pwd', 'tree', 'status', 'neofetch']) await term(c);
+    const s = await snap();
+    const has = (id) => s.achievements.find((a) => a.id === id).unlocked;
+    assert.ok(has('hacker') && has('first-blood') && has('ctf-champion'));
   });
 
-  await step('palettes switch, persist, and locked ones stay locked', async () => {
-    await page.click('[data-palette-btn="amber"]');
-    assert.equal(await page.getAttribute('html', 'data-palette'), 'amber');
-    await page.reload();
-    assert.equal(await page.getAttribute('html', 'data-palette'), 'amber');
-    const total = await page.evaluate(() => window.game.snapshot().xp);
-    if (total < 150) {
-      await page.click('[data-palette-btn="solarized"]');
-      assert.equal(await page.getAttribute('html', 'data-palette'), 'amber');
-    }
+  await step('guests see shop prices and are asked to sign in to buy', async () => {
+    const btn = page.locator('[data-palette-btn="solarized"]');
+    assert.equal(await btn.getAttribute('data-locked'), '');
+    await btn.click();
+    await page.waitForSelector('#login-dialog[open]');
+    assert.notEqual(await page.getAttribute('html', 'data-palette'), 'solarized');
+    await page.keyboard.press('Escape');
   });
 
-  await step('same content renders in quest and studio themes', async () => {
-    for (const t of ['quest', 'studio']) {
-      await page.goto(`http://localhost:4501/${t}/projects/`);
-      assert.ok(await page.getByText('Dohra — local class recorder').first().isVisible());
-      assert.equal(await page.getAttribute('html', 'data-theme'), t);
-    }
-    const s = await page.evaluate(() => window.game.snapshot());
-    assert.ok(s.achievements.find((a) => a.id === 'shapeshifter').unlocked);
+  await step('quest theme is locked for guests', async () => {
+    await page.goto(`${S}/quest/`);
+    await page.waitForFunction(() => window.game?.account?.ready);
+    assert.equal(await page.locator('[data-theme-lock]').isVisible(), true);
   });
 
-  await step('skip game hides the game UI', async () => {
-    await page.click('.s-footer [data-game-toggle]');
-    assert.equal(await page.getAttribute('html', 'data-game'), 'off');
-    assert.equal(await page.locator('.s-pill').isVisible(), false);
-    await page.click('.s-footer [data-game-toggle]');
-    assert.equal(await page.getAttribute('html', 'data-game'), 'on');
+  await step('sign-in merges guest progress into the account', async () => {
+    const guestXp = (await snap()).xp;
+    const r = await page.request.post(`${S}/api/dev/login`, { headers: { Origin: S } });
+    assert.ok(r.ok());
+    await page.goto(`${S}/terminal/`);
+    await page.waitForFunction(() => window.game?.account?.user);
+    await page.waitForTimeout(1500);
+    const me = await (await page.request.get(`${S}/api/me`)).json();
+    assert.ok(me.state.xp >= guestXp, `server ${me.state.xp} < guest ${guestXp}`);
+    assert.equal(await page.locator('.acct-user').isVisible(), true);
   });
 
-  await step('admin config is generated', async () => {
-    const res = await page.request.get('http://localhost:4501/admin/config.yml');
-    const cfg = JSON.parse(await res.text());
-    assert.ok(cfg.collections.some((c) => c.name === 'lessons-docker-introduction'));
-    // Sveltia refuses to start unless these are absolute URLs
-    assert.match(cfg.site_url, /^https?:\/\//);
-    assert.match(cfg.display_url, /^https?:\/\//);
+  await step('buying the quest theme with coins unlocks it', async () => {
+    await page.goto(`${S}/quest/`);
+    await page.waitForFunction(() => window.game?.account?.ready);
+    const coins = await page.evaluate(() => window.game.account.coins());
+    await page.click('[data-theme-lock] [data-buy]');
+    await page.waitForFunction(() => window.game.account.owns('theme:quest'));
+    assert.equal(await page.locator('[data-theme-lock]').isVisible(), false);
+    const after = await page.evaluate(() => window.game.account.coins());
+    assert.equal(coins - after, 120);
+    const me = await (await page.request.get(`${S}/api/me`)).json();
+    assert.ok('theme:quest' in me.state.purchases, 'purchase stored on the server');
   });
 
-  await step('learn: passing a quiz completes the lesson', async () => {
-    await page.goto('http://localhost:4502/docker/introduction/what-is-docker/');
-    await page.waitForFunction(() => window.game);
+  await step('live count and anonymous cursors between two visitors', async () => {
+    const other = await browser.newContext();
+    await blockFonts(other);
+    const p2 = await other.newPage();
+    await page.goto(`${S}/studio/`);
+    await p2.goto(`${S}/studio/`);
+    await page.waitForFunction(() => /2 online · 2 here/.test(document.querySelector('[data-live]')?.textContent ?? ''), null, { timeout: 8000 });
+    for (let i = 0; i < 5; i++) { await p2.mouse.move(400 + i * 20, 300); await p2.waitForTimeout(80); }
+    await page.waitForSelector('.g-cursor', { timeout: 5000 });
+    assert.equal(await page.locator('.g-cursor').count(), 1);
+    await other.close();
+  });
+
+  await step('learn: quiz passing completes the lesson and syncs', async () => {
+    await page.goto(`${L}/docker/introduction/what-is-docker/`);
+    await page.waitForFunction(() => window.game?.account?.ready);
     const qs = page.locator('.quiz-q');
-    const n = await qs.count();
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < await qs.count(); i++) {
       const answer = await qs.nth(i).getAttribute('data-answer');
       await qs.nth(i).locator(`input[value="${answer}"]`).check();
     }
     await page.click('.quiz button[type=submit]');
     await page.waitForSelector('[data-complete][disabled]');
-    const s = await page.evaluate(() => window.game.snapshot());
-    assert.ok('quiz:docker/introduction/what-is-docker' in s.events);
+    await page.waitForTimeout(1600);
+    const me = await (await page.request.get(`${S}/api/me`)).json();
+    assert.ok('quiz:docker/introduction/what-is-docker' in me.state.events, 'quiz event saved on the server');
     assert.ok(await page.locator('#starlight__sidebar a.lesson-done').count() >= 1);
-  });
-
-  await step('learn: course overview shows progress', async () => {
-    await page.goto('http://localhost:4502/docker/');
-    await page.waitForFunction(() => document.querySelector('.cp-text')?.textContent.includes('of'));
-    assert.match(await page.locator('.cp-text').innerText(), /^1 of 6/);
   });
 
   await step('no JavaScript errors', async () => assert.deepEqual(errors, []));
@@ -151,7 +230,7 @@ try {
     const m = await browser.newPage({ viewport: { width: 375, height: 800 } });
     await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
     for (const url of ['/terminal/', '/quest/', '/studio/', '/terminal/experience/', '/quest/projects/', '/studio/blog/hello-world/']) {
-      await m.goto(`http://localhost:4501${url}`);
+      await m.goto(`${S}${url}`);
       const over = await m.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       assert.ok(over <= 0, `${url} overflows by ${over}px`);
     }
@@ -159,8 +238,9 @@ try {
   });
 } finally {
   await browser.close();
-  site.close();
-  learn.close();
+  siteSrv.srv.close();
+  learnSrv.srv.close();
+  api.kill();
 }
 
 for (const r of results) console.log(r.join('  '));

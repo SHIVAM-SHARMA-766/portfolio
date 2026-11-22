@@ -3,10 +3,12 @@
 import { getCollection } from 'astro:content';
 import { marked } from 'marked';
 import { z } from 'astro/zod';
-import { siteSchema, profileSchema, achievementSchema, courseSchema, type Page } from './schema';
+import { siteSchema, profileSchema, achievementSchema, courseSchema, shopSchema, type Page } from './schema';
 import siteRaw from '../../../../content/site.json';
 import profileRaw from '../../../../content/profile.json';
 import achievementsRaw from '../../../../content/achievements.json';
+import shopRaw from '../../../../content/shop.json';
+export { ids, slugify } from '@portfolio/game/ids';
 
 function parse<T>(schema: z.ZodType<T>, data: unknown, file: string): T {
   const r = schema.safeParse(data);
@@ -17,6 +19,9 @@ function parse<T>(schema: z.ZodType<T>, data: unknown, file: string): T {
 export const site = parse(siteSchema, siteRaw, 'content/site.json');
 export const profile = parse(profileSchema, profileRaw, 'content/profile.json');
 export const achievements = parse(z.array(achievementSchema), achievementsRaw.achievements, 'content/achievements.json');
+export const shop = parse(shopSchema, shopRaw, 'content/shop.json').items;
+export const rewards = site.game.rewards as Record<string, number>;
+export const shopItem = (id: string) => shop.find((i) => i.id === id);
 
 export const THEMES = [
   { id: 'terminal', label: 'Terminal', blurb: 'A hacker shell. Type commands.' },
@@ -105,5 +110,7 @@ export async function gameConfig(currentPageId: string | null) {
     achievements,
     pageIds: pages.map((p) => pageId(p.slug)),
     pageId: currentPageId,
+    apiUrl: site.apiUrl ?? null,
+    shop,
   };
 }

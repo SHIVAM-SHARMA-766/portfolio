@@ -10,12 +10,22 @@
 //   [data-game-toggle]                                  turns the game layer on/off (recruiter mode)
 //   [data-game-sound]                                   toggles sound
 //   [data-game-reset]                                   wipes progress after confirm()
-//   [data-unlock-xp="60"]                               gets [data-locked] while XP is below the value
+//   [data-game-coins]                                   spendable coins (XP minus purchases)
+//   [data-shop-item="palette:x"] [data-price]           gets [data-locked] until owned; price filled in
+//   [data-theme-lock="theme:quest"]                     shown when the visitor doesn't own that theme
+//   [data-account-guest] / [data-account-user]          shown for guests / signed-in visitors
+//   [data-account-name] [data-account-email] [data-account-avatar]
+//   [data-login-providers]                              sign-in buttons for configured providers
+//   [data-open-login] [data-open-shop]                  open #login-dialog / #shop-dialog
+//   [data-shop-list]                                    shop items with buy buttons ([data-buy])
+//   [data-account-logout] [data-account-delete]
 //
 // Exposes window.game for theme scripts (e.g. terminal commands).
 
 import { createEngine, mergeStates } from './core.js';
 import { createStorage, readPrefs, writePrefs } from './storage.js';
+import { createAccount } from './account.js';
+import { mountLive } from './live.js';
 
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
@@ -101,11 +111,69 @@ function render(snap) {
   document.querySelectorAll('[data-game-ach-count]').forEach((el) => {
     el.textContent = `${snap.achievements.filter((a) => a.unlocked).length}/${snap.achievements.length}`;
   });
-  document.querySelectorAll('[data-unlock-xp]').forEach((el) => {
-    const need = Number(el.getAttribute('data-unlock-xp')) || 0;
-    if (xp >= need) el.removeAttribute('data-locked');
-    else el.setAttribute('data-locked', '');
+  renderAccount(xp);
+}
+
+let account = null;
+const PROVIDER_LABEL = { google: 'Google', github: 'GitHub', linkedin: 'LinkedIn' };
+
+function renderAccount(xp) {
+  const a = account;
+  const coins = a ? a.coins() : xp;
+  document.querySelectorAll('[data-game-coins]').forEach((el) => (el.textContent = String(coins)));
+  document.querySelectorAll('[data-shop-item]').forEach((el) => {
+    const id = el.getAttribute('data-shop-item');
+    const item = a?.item(id);
+    const owned = a ? a.owns(id) : !item;
+    el.toggleAttribute('data-locked', !owned);
+    el.querySelectorAll('[data-price]').forEach((p) => (p.textContent = item && !owned ? `🪙 ${item.price}` : ''));
   });
+  if (!a?.ready) return;
+  document.querySelectorAll('[data-theme-lock]').forEach((el) => {
+    el.hidden = a.owns(el.getAttribute('data-theme-lock'));
+    el.querySelectorAll('[data-price]').forEach((p) => (p.textContent = String(a.item(el.getAttribute('data-theme-lock'))?.price ?? '')));
+  });
+  const u = a.user;
+  document.querySelectorAll('[data-account-guest]').forEach((el) => (el.hidden = !!u));
+  document.querySelectorAll('[data-account-user]').forEach((el) => (el.hidden = !u));
+  document.querySelectorAll('[data-account-name]').forEach((el) => (el.textContent = u?.name || u?.email || ''));
+  document.querySelectorAll('[data-account-email]').forEach((el) => (el.textContent = u?.email || ''));
+  document.querySelectorAll('[data-account-avatar]').forEach((el) => {
+    if (u?.avatar) { el.src = u.avatar; el.hidden = false; } else el.hidden = true;
+  });
+  document.querySelectorAll('[data-login-providers]').forEach((el) => {
+    el.innerHTML = a.providers.length
+      ? a.providers.map((p) => `<a class="g-login g-login--${p}" href="${esc(a.loginUrl(p))}">Continue with ${PROVIDER_LABEL[p] ?? p}</a>`).join('')
+      : '<p class="g-muted">Sign-in is not available right now. Your progress is kept in this browser.</p>';
+  });
+  document.querySelectorAll('[data-shop-list]').forEach((el) => {
+    el.innerHTML = a.shop.map((it) => {
+      const owned = a.owns(it.id);
+      return `<li class="g-shop-item ${owned ? 'is-owned' : ''}">
+        <span><b>${esc(it.label)}</b>${it.description ? `<small>${esc(it.description)}</small>` : ''}</span>
+        ${owned ? '<span class="g-owned">Owned ✓</span>' : `<button type="button" data-buy="${esc(it.id)}">🪙 ${it.price}</button>`}
+      </li>`;
+    }).join('');
+  });
+}
+
+function openDialog(id) {
+  const d = document.getElementById(id);
+  if (d && !d.open) d.showModal();
+}
+
+async function buyItem(id) {
+  if (!account) return;
+  const it = account.item(id);
+  if (!account.user) {
+    toast(`🔒 <span><small>Sign in to unlock</small><b>${esc(it?.label ?? id)}</b></span>`, 'level');
+    openDialog('login-dialog');
+    return;
+  }
+  const r = await account.buy(id);
+  if (r.ok) toast(`🎉 <span><small>Unlocked</small><b>${esc(it?.label ?? id)}</b></span>`, 'achievement');
+  else if (r.reason === 'coins') toast(`🪙 <span><small>Not enough coins</small><b>Need ${it.price - account.coins()} more</b></span>`, 'level');
+  else toast(`⚠️ <span><small>Could not buy</small><b>${esc(r.message ?? 'Try again')}</b></span>`, 'level');
 }
 
 export function mountGame() {
@@ -127,6 +195,7 @@ export function mountGame() {
     },
     save: (s) => storage.save(s),
     emit: (type, detail) => {
+      if (type === 'award') account?.queue(detail.id, detail.points);
       if (type === 'award' && detail.points > 0) {
         toast(`<b>+${detail.points} XP</b> <span>${esc(detail.meta.label ?? '')}</span>`);
         if (sound) beep(880);
@@ -221,7 +290,35 @@ export function mountGame() {
     }
   });
 
+  account = config.apiUrl
+    ? createAccount({ apiUrl: config.apiUrl, shop: config.shop ?? [], engine, onChange: () => render(engine.snapshot()) })
+    : null;
+
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t.closest?.('[data-open-login]')) openDialog('login-dialog');
+    if (t.closest?.('[data-open-shop]')) openDialog('shop-dialog');
+    const buy = t.closest?.('[data-buy]');
+    if (buy) buyItem(buy.getAttribute('data-buy'));
+    if (t.closest?.('[data-account-logout]')) account?.logout().then(() => toast('👋 <span><b>Signed out</b></span>', 'level'));
+    if (t.closest?.('[data-account-delete]') && confirm('Delete your account and all saved progress? This cannot be undone.')) {
+      account?.deleteAccount().then((ok) => toast(ok ? '🗑️ <span><b>Account deleted</b></span>' : '⚠️ <span><b>Could not delete</b></span>', 'level'));
+    }
+  });
+
+  const loginResult = new URLSearchParams(location.search).get('login');
+  if (loginResult) {
+    const clean = new URL(location.href);
+    clean.searchParams.delete('login');
+    history.replaceState(null, '', clean);
+  }
+
   render(engine.snapshot());
+  if (config.apiUrl && config.live !== false) mountLive({ apiUrl: config.apiUrl });
+  account?.init().then(() => {
+    if (loginResult === 'ok' && account.user) toast(`✅ <span><small>Signed in as ${esc(account.user.name || account.user.email)}</small><b>Progress saved</b></span>`, 'achievement');
+    if (loginResult === 'failed') toast('⚠️ <span><small>Sign-in failed</small><b>Please try again</b></span>', 'level');
+  });
 
   const api = {
     award: engine.award,
@@ -231,6 +328,9 @@ export function mountGame() {
     reset: engine.reset,
     toast,
     rewards,
+    get account() { return account; },
+    buy: buyItem,
+    openDialog,
     on: (fn) => (listeners.add(fn), () => listeners.delete(fn)),
   };
   window.game = api;

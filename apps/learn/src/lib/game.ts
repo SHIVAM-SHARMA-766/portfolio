@@ -2,6 +2,7 @@
 // portfolio, so XP feels like one game across both sites.
 import site from '../../../../content/site.json';
 import achievementsFile from '../../../../content/achievements.json';
+import shopFile from '../../../../content/shop.json';
 
 export const gameConfig = {
   enabled: site.game.enabled,
@@ -11,6 +12,8 @@ export const gameConfig = {
   achievements: achievementsFile.achievements,
   pageIds: [] as string[],
   pageId: null,
+  apiUrl: (site as any).apiUrl ?? null,
+  shop: shopFile.items,
 };
 
 export const LEARN_PALETTES = [

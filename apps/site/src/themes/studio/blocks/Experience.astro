@@ -1,5 +1,5 @@
 ---
-import { profile, formatMonth } from '../../../lib/content';
+import { profile, formatMonth, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block } = Astro.props as { block: BlockOf<'experience'> };
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
@@ -16,7 +16,7 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice
           {job.progression && <p class="s-small">{job.progression}</p>}
           {job.highlights.length > 0 && <ul>{job.highlights.map((h) => <li>{h}</li>)}</ul>}
           {job.engagements.map((e) => (
-            <details class="s-card s-eng" data-xp="5" data-xp-id={`exp:${slugify(e.title)}`} data-xp-label="Reading the details" open>
+            <details class="s-card s-eng" data-xp={rewards.experience} data-xp-id={ids.experience(e.title)} data-xp-label="Reading the details" open>
               <summary>{e.title}</summary>
               <ul>{e.highlights.map((h) => <li>{h}</li>)}</ul>
             </details>

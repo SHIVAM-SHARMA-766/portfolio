@@ -1,120 +1,33 @@
 ---
-// Interactive prompt at the bottom of every terminal page.
-import { THEMES, site, pageUrl } from '../../lib/content';
+// Interactive prompt at the bottom of every terminal page. The logic lives in
+// shell.ts; the filesystem and missions are built from content in fs.ts.
+import { THEMES, site } from '../../lib/content';
 import { palettesFor } from '@portfolio/tokens';
-import type { Page } from '../../lib/schema';
-interface Props { theme: string; nav: Page[] }
-const { theme, nav } = Astro.props;
+import { buildFs } from './fs';
+interface Props { theme: string }
+const { theme } = Astro.props;
+const built = await buildFs(theme);
 const data = {
-  pages: nav.map((p) => ({ name: p.slug || 'home', title: p.title, url: pageUrl(theme, p.slug) })),
+  ...built,
   themes: THEMES.map((t) => t.id),
-  palettes: palettesFor(theme).map((p) => ({ id: p.id, unlockXp: p.unlockXp })),
+  palettes: palettesFor(theme).map((p) => p.id),
   email: site.email ?? '',
   name: site.name,
   role: site.role,
   learnUrl: site.learnUrl ?? '',
+  theme,
 };
 ---
 <section class="t-shell" aria-label="Interactive terminal">
   <div class="t-shell-out" id="shell-out" aria-live="polite"></div>
   <form class="t-shell-form" id="shell-form" autocomplete="off">
-    <label for="shell-in"><span class="t-ps1">shivam@portfolio</span><span class="t-dim">:~$</span></label>
-    <input id="shell-in" name="cmd" spellcheck="false" autocapitalize="off" placeholder="type 'help' and press Enter" />
+    <label for="shell-in"><span class="t-ps1">shivam@portfolio</span><span class="t-dim" id="shell-cwd">:~$</span></label>
+    <input id="shell-in" name="cmd" spellcheck="false" autocapitalize="off" placeholder="type 'missions' and press Enter" />
   </form>
   <script type="application/json" id="shell-data" set:html={JSON.stringify(data)}></script>
 </section>
 
 <script>
-  type Data = { pages: { name: string; title: string; url: string }[]; themes: string[]; palettes: { id: string; unlockXp: number }[]; email: string; name: string; role: string; learnUrl: string };
-  const data: Data = JSON.parse(document.getElementById('shell-data')!.textContent!);
-  const out = document.getElementById('shell-out')!;
-  const form = document.getElementById('shell-form') as HTMLFormElement;
-  const input = document.getElementById('shell-in') as HTMLInputElement;
-  const history: string[] = [];
-  let hIdx = 0;
-
-  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-  const print = (html: string, cls = '') => {
-    const p = document.createElement('div');
-    if (cls) p.className = cls;
-    p.innerHTML = html;
-    out.appendChild(p);
-    p.scrollIntoView({ block: 'nearest' });
-  };
-  const go = (url: string) => { print(`<span class="t-dim">opening ${esc(url)}…</span>`); setTimeout(() => (location.href = url), 300); };
-  const theme = document.documentElement.dataset.theme;
-
-  const commands: Record<string, { help: string; run: (args: string[]) => void; hidden?: boolean }> = {
-    help: { help: 'list commands', run: () => print(Object.entries(commands).filter(([, c]) => !c.hidden).map(([k, c]) => `<span class="t-acc">${k.padEnd(13)}</span> ${esc(c.help)}`).join('\n'), 't-pre') },
-    ls: { help: 'list pages', run: () => print(data.pages.map((p) => `<a href="${p.url}">${esc(p.name)}/</a>`).join('  ') + (data.learnUrl ? `  <a href="${data.learnUrl}">learn/</a>` : '')) },
-    cd: { help: 'cd <page> — open a page', run: ([p]) => {
-      const name = (p ?? 'home').replace(/\/$/, '').replace(/^~\/?/, '') || 'home';
-      if (name === 'learn' && data.learnUrl) return go(data.learnUrl);
-      const page = data.pages.find((x) => x.name === name);
-      page ? go(page.url) : print(`cd: ${esc(name)}: No such file or directory`, 't-err');
-    } },
-    whoami: { help: 'who is this', run: () => print(`<b>${esc(data.name)}</b> — ${esc(data.role)}`) },
-    theme: { help: 'theme <name> — switch theme', run: ([t]) => {
-      if (!t || !data.themes.includes(t)) return print(`themes: ${data.themes.join(', ')}`);
-      go(location.pathname.replace(/^\/[^/]+/, `/${t}`));
-    } },
-    palette: { help: 'palette <name> — switch colours', run: ([p]) => {
-      const btn = document.querySelector<HTMLElement>(`[data-palette-btn="${CSS.escape(p ?? '')}"]`);
-      if (!btn) return print(`palettes: ${data.palettes.map((x) => x.id + (x.unlockXp ? ` (${x.unlockXp} XP)` : '')).join(', ')}`);
-      btn.click();
-      print(btn.hasAttribute('data-locked') ? `palette: locked until ${btn.dataset.unlockXp} XP` : `palette set to ${esc(p!)}`);
-    } },
-    xp: { help: 'your level and points', run: () => {
-      const s = window.game?.snapshot();
-      if (!s) return print('game is not running');
-      print(`level ${s.level.number} (${esc(s.level.name)}) · ${s.xp} XP · ${s.achievements.filter((a: any) => a.unlocked).length}/${s.achievements.length} achievements`);
-    } },
-    achievements: { help: 'open the achievements panel', run: () => (document.getElementById('ach-dialog') as HTMLDialogElement).showModal() },
-    contact: { help: 'how to reach me', run: () => print(data.email ? `<a href="mailto:${esc(data.email)}">${esc(data.email)}</a>` : 'see the contact page') },
-    clear: { help: 'clear the screen', run: () => (out.innerHTML = '') },
-    date: { help: 'current date', run: () => print(new Date().toString()) },
-    echo: { help: 'echo <text>', run: (a) => print(esc(a.join(' '))) },
-    exit: { help: 'leave', run: () => print('there is no exit. try <span class="t-acc">theme studio</span> for the quiet version.') },
-    sudo: { help: '', hidden: true, run: (a) => {
-      if (a.join(' ').toLowerCase() === 'hire shivam') {
-        window.game?.award('secret:sudo-hire', 0, { label: 'Secret found' });
-        print('[sudo] permission granted. excellent decision. 🎉', 't-acc');
-        if (data.email) print(`→ <a href="mailto:${esc(data.email)}?subject=Let's%20work%20together">${esc(data.email)}</a>`);
-      } else print('nice try. this incident will be reported. (hint: sudo hire …)', 't-err');
-    } },
-    rm: { help: '', hidden: true, run: () => print("rm: permission denied. my portfolio is backed up in Git anyway.", 't-err') },
-  };
-  commands.open = { ...commands.cd, help: 'alias of cd', hidden: true };
-  commands.cat = { ...commands.cd, help: 'alias of cd', hidden: true };
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const line = input.value.trim();
-    input.value = '';
-    if (!line) return;
-    history.push(line);
-    hIdx = history.length;
-    print(`<span class="t-ps1">shivam@portfolio</span><span class="t-dim">:~$</span> ${esc(line)}`);
-    const [name, ...args] = line.split(/\s+/);
-    const cmd = commands[name.toLowerCase()];
-    if (!cmd) return print(`${esc(name)}: command not found. type <span class="t-acc">help</span>`, 't-err');
-    window.game?.award(`terminal:${name.toLowerCase()}`, window.game.rewards.terminalCommand ?? 3, { label: `ran ${name.toLowerCase()}` });
-    cmd.run(args);
-  });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowUp' && hIdx > 0) { input.value = history[--hIdx]; e.preventDefault(); }
-    if (e.key === 'ArrowDown') { hIdx = Math.min(history.length, hIdx + 1); input.value = history[hIdx] ?? ''; }
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const [n, a] = input.value.split(/\s+/);
-      if (a === undefined) { const m = Object.keys(commands).find((k) => k.startsWith(n) && !commands[k].hidden); if (m) input.value = m + ' '; }
-      else if (['cd', 'open', 'cat'].includes(n)) { const m = data.pages.find((p) => p.name.startsWith(a)); if (m) input.value = `${n} ${m.name}`; }
-      else if (n === 'theme') { const m = data.themes.find((t) => t.startsWith(a)); if (m) input.value = `theme ${m}`; }
-    }
-  });
-  // Typing anywhere focuses the prompt
-  document.addEventListener('keydown', (e) => {
-    const t = e.target as HTMLElement;
-    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && !t.closest('input,textarea,dialog,select') && theme === 'terminal') input.focus();
-  });
+  import { startShell } from './shell';
+  startShell();
 </script>

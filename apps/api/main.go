@@ -84,6 +84,20 @@ func buildHandler(cfg *config.Config, st *store.Store) (http.Handler, *server) {
 	mux.HandleFunc("POST /api/auth/logout", s.auth.Logout)
 	mux.Handle("GET /api/live", hub)
 	admin.New(cfg, st, hub).Routes(mux)
+	if cfg.Dev {
+		// Local testing only: sign in without an OAuth provider. Never enabled in
+		// production (DEV is unset in /etc/portfolio-api/env).
+		mux.HandleFunc("POST /api/dev/login", func(w http.ResponseWriter, r *http.Request) {
+			uid, err := st.UpsertIdentity(r.Context(), store.Identity{Provider: "dev", ProviderID: "tester", Email: "tester@example.com", EmailVerified: true, Name: "Test Visitor"})
+			if err != nil {
+				httpx.Error(w, 500, err.Error())
+				return
+			}
+			tok, _ := st.NewSession(r.Context(), uid, "user", time.Hour)
+			http.SetCookie(w, &http.Cookie{Name: auth.SessionCookie, Value: tok, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode})
+			httpx.JSON(w, 200, map[string]bool{"ok": true})
+		})
+	}
 	return origins.CORS(mux), s
 }
 

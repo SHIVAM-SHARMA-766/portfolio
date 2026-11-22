@@ -134,8 +134,8 @@ a { color: var(--accent); }
 .sw-theme, .sw-palette { font: inherit; font-size: .9rem; display: inline-flex; gap: .4rem; align-items: center; padding: .3rem .6rem; background: var(--bg); color: var(--fg); border: 3px solid var(--border); cursor: pointer; text-decoration: none; }
 .sw-theme[aria-current='true'], .sw-palette[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
 .sw-swatch { width: 14px; height: 14px; background: var(--sw-accent); border: 3px solid var(--sw-bg); }
-.sw-lock { display: none; }
-.sw-palette[data-locked] .sw-lock { display: inline; }
+
+
 
 /* Achievements dialog */
 .ach-dialog { background: var(--surface); color: var(--fg); border: 0; width: min(600px, calc(100vw - 40px)); max-height: 85vh; padding: 1.4rem; font: inherit; }

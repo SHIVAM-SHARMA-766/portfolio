@@ -1,5 +1,5 @@
 ---
-import { site, mdInline } from '../../../lib/content';
+import { site, mdInline, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block } = Astro.props as { block: BlockOf<'contact'> };
 ---
@@ -7,6 +7,6 @@ const { block } = Astro.props as { block: BlockOf<'contact'> };
   {block.heading && <h2 class="s-display">{block.heading}</h2>}
   {block.body && <p class="s-lead" set:html={mdInline(block.body)} />}
   {site.email && <a class="s-email" href={`mailto:${site.email}`}>{site.email} →</a>}
-  <p class="s-ctas">{site.socials.map((s) => <a class="s-btn s-btn--ghost" href={s.url} target="_blank" rel="noopener" data-xp="5" data-xp-id={`contact:${s.label.toLowerCase()}`} data-xp-label="Following along">{s.label} ↗</a>)}</p>
+  <p class="s-ctas">{site.socials.map((s) => <a class="s-btn s-btn--ghost" href={s.url} target="_blank" rel="noopener" data-xp={rewards.contact} data-xp-id={ids.contact(s.label)} data-xp-label="Following along">{s.label} ↗</a>)}</p>
   {site.location && <p class="s-muted">Based in {site.location}</p>}
 </section>

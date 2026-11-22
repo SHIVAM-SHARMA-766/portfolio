@@ -54,6 +54,7 @@ export const siteSchema = z.object({
   email: z.string().nullish(),
   siteUrl: z.string().url(),
   learnUrl: z.string().url().nullish(),
+  apiUrl: z.string().url().nullish(),
   cookieDomain: z.string().default(''),
   socials: z.array(link).default([]),
   defaultTheme: z.enum(['terminal', 'quest', 'studio']),
@@ -109,6 +110,10 @@ export const achievementSchema = z.object({
     z.object({ type: z.literal('all-of'), ids: z.array(z.string()) }),
     z.object({ type: z.literal('all-pages') }),
   ]),
+});
+
+export const shopSchema = z.object({
+  items: z.array(z.object({ id: z.string(), label: z.string(), description: z.string().nullish(), price: z.number().int().min(0) })),
 });
 
 export const courseSchema = z.object({

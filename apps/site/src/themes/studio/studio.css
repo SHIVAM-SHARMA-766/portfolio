@@ -36,8 +36,8 @@ h1, h2, h3, .s-display, .s-logo { font-family: Fraunces, Georgia, serif; font-we
 .sw-theme, .sw-palette { font: inherit; font-size: .85rem; display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .7rem; border-radius: 99px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); text-decoration: none; cursor: pointer; }
 .sw-theme[aria-current='true'], .sw-palette[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .sw-swatch { width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(135deg, var(--sw-bg) 50%, var(--sw-accent) 50%); border: 1px solid var(--border); }
-.sw-lock { display: none; font-size: .7rem; }
-.sw-palette[data-locked] .sw-lock { display: inline; }
+
+
 
 /* Sections */
 .s-main { padding-bottom: 4rem; }

@@ -166,6 +166,32 @@
       }
     },
     {
+      "id": "first-blood",
+      "title": "First blood",
+      "description": "Capture your first flag in the terminal.",
+      "icon": "🚩",
+      "bonus": 10,
+      "hidden": false,
+      "rule": {
+        "type": "events",
+        "prefix": "flag:",
+        "min": 1
+      }
+    },
+    {
+      "id": "ctf-champion",
+      "title": "CTF champion",
+      "description": "Capture every flag in the terminal.",
+      "icon": "🏴‍☠️",
+      "bonus": 100,
+      "hidden": false,
+      "rule": {
+        "type": "events",
+        "prefix": "flag:",
+        "min": 5
+      }
+    },
+    {
       "id": "legend",
       "title": "Legend",
       "description": "Reach 550 XP.",

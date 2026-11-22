@@ -62,3 +62,7 @@
 .course-card .meta { color: var(--sl-color-gray-3); }
 
 @media (max-width: 50rem) { .pal { display: none; } }
+.learn-tools .g-live { font-size: var(--sl-text-xs); }
+.learn-tools [data-account-user] span { max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-dialog .g-login { color: var(--sl-color-white); }
+@media (max-width: 72rem) { .learn-tools .g-live { display: none; } }

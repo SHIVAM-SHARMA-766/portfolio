@@ -19,16 +19,19 @@
     const target = e.target as HTMLElement;
     const btn = target.closest<HTMLElement>('[data-palette-btn]');
     if (btn) {
+      const apply = () => {
+        const id = btn.dataset.paletteBtn!;
+        root.dataset.palette = id;
+        const prefs = readPrefs();
+        writePrefs({ palettes: { ...(prefs.palettes ?? {}), [theme]: id } });
+        markPalette();
+        game?.award(`palette:${theme}-${id}`, game.rewards.palette ?? 5, { label: 'New palette' });
+      };
       if (btn.hasAttribute('data-locked')) {
-        game?.toast(`🔒 <span><small>Locked</small><b>Unlocks at ${btn.dataset.unlockXp} XP</b></span>`, 'level');
+        game?.buy(btn.dataset.shopItem!).then(() => { if (!btn.hasAttribute('data-locked')) apply(); });
         return;
       }
-      const id = btn.dataset.paletteBtn!;
-      root.dataset.palette = id;
-      const prefs = readPrefs();
-      writePrefs({ palettes: { ...(prefs.palettes ?? {}), [theme]: id } });
-      markPalette();
-      game?.award(`palette:${theme}-${id}`, game.rewards.palette ?? 5, { label: 'New palette' });
+      apply();
     }
     if (target.closest('[data-open-ach]')) {
       (document.getElementById('ach-dialog') as HTMLDialogElement | null)?.showModal();
@@ -37,7 +40,7 @@
 
   // Contact links count towards "Say hello"
   document.querySelectorAll<HTMLAnchorElement>('a[href^="mailto:"]').forEach((a) => {
-    a.dataset.xp ??= '10';
+    a.dataset.xp ??= String(window.game?.rewards.contactEmail ?? 10);
     a.dataset.xpId ??= 'contact:email';
     a.dataset.xpLabel ??= 'Saying hello';
   });

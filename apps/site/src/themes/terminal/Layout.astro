@@ -3,6 +3,8 @@ import Head from '../../components/Head.astro';
 import Switcher from '../../components/Switcher.astro';
 import GameBoot from '../../components/GameBoot.astro';
 import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
+import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
+import AccountChip from '../../components/AccountChip.astro';
 import Shell from './Shell.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
@@ -27,6 +29,7 @@ const cwd = slug ? `~/${slug}` : '~';
           <span class="t-meter" data-game-progress role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100"></span>
           <span><b data-game-xp>0</b> XP</span>
         </button>
+        <AccountChip />
         <button type="button" class="t-btn t-skip" data-game-toggle data-off-text="skip game" data-on-text="play game"><span data-label>skip game</span></button>
       </header>
       <div class="t-body">
@@ -49,6 +52,7 @@ const cwd = slug ? `~/${slug}` : '~';
       </div>
     </div>
     <AchievementsDialog />
+    <AccountDialogs ownerName={site.name} />
     <GameBoot />
   </body>
 </html>
