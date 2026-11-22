@@ -74,8 +74,9 @@ if command -v netfilter-persistent >/dev/null; then netfilter-persistent save >/
 
 # 4. Caddyfile
 printf '%s\n' "$CADDYFILE" > /etc/caddy/Caddyfile
-chown -R caddy:caddy /var/log/caddy
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+# validate runs as root and creates the log file, so fix ownership afterwards
+chown -R caddy:caddy /var/log/caddy
 systemctl enable caddy >/dev/null
 systemctl restart caddy
 systemctl is-active caddy
