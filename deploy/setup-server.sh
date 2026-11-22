@@ -3,7 +3,7 @@
 #
 # Run from your machine, in the repo root:
 #   ./deploy/setup-server.sh <ssh-target> <deploy-public-key-file>
-#   e.g. ./deploy/setup-server.sh ubuntu@80.225.217.150 ~/.ssh/portfolio-deploy.pub
+#   ./deploy/setup-server.sh ubuntu@80.225.217.150 ~/.ssh/portfolio-deploy.pub
 #
 # What it does on the host (idempotent):
 #   1. installs Caddy from its official apt repository
@@ -45,7 +45,7 @@ if ! command -v caddy >/dev/null; then
   apt-get update -qq
   apt-get install -y -qq caddy
 fi
-# Keep Caddy small on a 1 GB host that also runs n8n.
+# Keep Caddy bounded on a 1 GB host.
 mkdir -p /etc/systemd/system/caddy.service.d
 cat > /etc/systemd/system/caddy.service.d/limits.conf <<'UNIT'
 [Service]

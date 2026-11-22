@@ -135,7 +135,7 @@ in the admin config, and optionally to each theme.
 
 See [docs/DEPLOY.md](docs/DEPLOY.md). In short: GitHub Actions runs unit tests, builds,
 runs browser tests, then rsyncs both `dist` folders to the always-free OCI VM
-`n8n-runner`. There, Caddy serves them with automatic HTTPS. The deploy SSH key can only
+`n8n-runner` (now dedicated to the portfolio). There, Caddy serves them with automatic HTTPS. The deploy SSH key can only
 rsync inside `/srv/portfolio`.
 
 ## Gotchas
