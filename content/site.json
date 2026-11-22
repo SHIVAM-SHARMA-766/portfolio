@@ -8,7 +8,7 @@
   "email": "developer.shivamsharma@gmail.com",
   "siteUrl": "https://shivamsharma.duckdns.org",
   "learnUrl": "https://learn.shivamsharma.duckdns.org",
-  "cookieDomain": "",
+  "cookieDomain": ".shivamsharma.duckdns.org",
   "socials": [
     { "label": "GitHub", "url": "https://github.com/SHIVAM-SHARMA-766" }
   ],
