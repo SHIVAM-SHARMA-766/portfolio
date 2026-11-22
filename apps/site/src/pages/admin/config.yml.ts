@@ -9,6 +9,8 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const REPO = 'SHIVAM-SHARMA-766/portfolio';
+// Sveltia requires absolute URLs for site_url / display_url.
+const SITE_URL: string = JSON.parse(readFileSync(resolve(process.cwd(), '../../content/site.json'), 'utf8')).siteUrl;
 const BRANCH = 'main';
 
 const str = (name: string, label: string, extra: object = {}) => ({ name, label, widget: 'string', ...extra });
@@ -83,8 +85,8 @@ export function GET() {
 
   const config = {
     backend: { name: 'github', repo: REPO, branch: BRANCH, commit_messages: { create: 'Create {{collection}} “{{slug}}”', update: 'Update {{collection}} “{{slug}}”', delete: 'Delete {{collection}} “{{slug}}”' } },
-    site_url: '/',
-    display_url: '/',
+    site_url: SITE_URL,
+    display_url: SITE_URL,
     media_folder: 'apps/site/public/uploads',
     public_folder: '/uploads',
     collections: [

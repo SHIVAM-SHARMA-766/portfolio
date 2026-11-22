@@ -118,6 +118,9 @@ try {
     const res = await page.request.get('http://localhost:4501/admin/config.yml');
     const cfg = JSON.parse(await res.text());
     assert.ok(cfg.collections.some((c) => c.name === 'lessons-docker-introduction'));
+    // Sveltia refuses to start unless these are absolute URLs
+    assert.match(cfg.site_url, /^https?:\/\//);
+    assert.match(cfg.display_url, /^https?:\/\//);
   });
 
   await step('learn: passing a quiz completes the lesson', async () => {
