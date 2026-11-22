@@ -1,8 +1,8 @@
-node_modules/
-dist/
+apps/api/internal/game/data/game-data.json
 .astro/
+dist/
+.DS_Store
 .env
 .env.*
 *.log
-.DS_Store
-apps/api/internal/game/data/game-data.json
+node_modules/

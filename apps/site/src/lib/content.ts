@@ -101,7 +101,7 @@ export function pageId(slug: string) {
 
 /** Config handed to the game engine on every page. */
 export async function gameConfig(currentPageId: string | null) {
-  const pages = await getPages();
+  const pages = await getNav(); // "visit every page" counts menu pages only
   return {
     enabled: site.game.enabled,
     cookieDomain: site.cookieDomain,

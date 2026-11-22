@@ -26,7 +26,7 @@ if (!apiBin) {
   execFileSync('go', ['build', '-o', apiBin, '.'], { cwd: join(root, 'apps/api'), stdio: 'inherit' });
 }
 const api = spawn(apiBin, [], {
-  env: { ...process.env, DEV: '1', LISTEN: `127.0.0.1:${API_PORT}`, DB_PATH: join(tmp, 'e2e.db'), SESSION_SECRET: 'e2e-secret-e2e-secret-e2e-secret-0000', ADMIN_USER: 'admin', ADMIN_PASS_HASH: '$2a$04$C0Jqk0Yb7h1WvjQZQ0b9Ce3eQ3eJ0Z8Zt3dYb5mQyqfH0m9vKkVQy' },
+  env: { ...process.env, DEV: '1', LISTEN: `127.0.0.1:${API_PORT}`, DB_PATH: join(tmp, 'e2e.db'), SESSION_SECRET: 'e2e-secret-e2e-secret-e2e-secret-0000', ADMIN_USER: 'admin', ADMIN_PASS_HASH: '$2a$14$mrA8qWH7awOLViqiXwrCVOFtYL6FUfV8Qwq1QgVnI.eLXRQNNFK2S' /* e2e-admin-password */ },
   stdio: ['ignore', 'inherit', 'inherit'],
 });
 for (let i = 0; i < 50; i++) {
@@ -44,7 +44,13 @@ function serve(dir, port) {
         req.pipe(p);
         return;
       }
-      let p = join(dir, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+      let pathname = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+      let base = dir;
+      if (port === 4501 && pathname.startsWith('/admin')) {
+        base = join(root, 'apps/admin/dist');
+        pathname = pathname.replace(/^\/admin/, '') || '/';
+      }
+      let p = join(base, pathname);
       try {
         if ((await stat(p)).isDirectory()) p = join(p, 'index.html');
         let body = await readFile(p);
@@ -222,6 +228,25 @@ try {
     const me = await (await page.request.get(`${S}/api/me`)).json();
     assert.ok('quiz:docker/introduction/what-is-docker' in me.state.events, 'quiz event saved on the server');
     assert.ok(await page.locator('#starlight__sidebar a.lesson-done').count() >= 1);
+  });
+
+  await step('admin: sign in, dashboard and the visitor list', async () => {
+    const a = await ctx.newPage();
+    a.on('pageerror', (e) => errors.push('admin: ' + e.message));
+    await a.goto(`${S}/admin/`);
+    await a.fill('input[autocomplete=username]', 'admin');
+    await a.fill('input[type=password]', 'wrong-password');
+    await a.click('button.primary');
+    await a.waitForSelector('.error');
+    await a.fill('input[type=password]', 'e2e-admin-password');
+    await a.click('button.primary');
+    await a.waitForSelector('.tiles');
+    await a.click('.side >> text=Visitors');
+    await a.waitForSelector('.table');
+    assert.match(await a.locator('.table').innerText(), /tester@example\.com/);
+    const csv = await (await a.request.get(`${S}/api/admin/visitors.csv`)).text();
+    assert.match(csv, /tester@example\.com/);
+    await a.close();
   });
 
   await step('no JavaScript errors', async () => assert.deepEqual(errors, []));

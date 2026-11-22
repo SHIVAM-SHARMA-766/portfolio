@@ -23,11 +23,14 @@ const THEMES = ['terminal', 'quest', 'studio'];
 const frontmatter = (src) => src.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? '';
 const isDraft = (src) => /^draft:\s*true\s*$/m.test(frontmatter(src));
 
-const pages = readdirSync(join(root, 'content/pages'))
+const pageEntries = readdirSync(join(root, 'content/pages'))
   .filter((f) => f.endsWith('.json'))
   .map((f) => read(`content/pages/${f}`))
-  .filter((p) => !p.draft)
-  .map((p) => (p.slug === '' ? 'home' : p.slug));
+  .filter((p) => !p.draft);
+const pageIdOf = (p) => (p.slug === '' ? 'home' : p.slug);
+const pages = pageEntries.map(pageIdOf);
+// "Visit every page" counts only pages in the menu (not e.g. the privacy page).
+const navPages = pageEntries.filter((p) => p.inNav !== false).map(pageIdOf);
 
 const posts = readdirSync(join(root, 'content/blog'))
   .filter((f) => f.endsWith('.md') && !isDraft(readFileSync(join(root, 'content/blog', f), 'utf8')))
@@ -73,7 +76,7 @@ const data = {
   learnUrl: site.learnUrl,
   cookieDomain: site.cookieDomain,
   levels: site.game.levels,
-  pageIds: pages,
+  pageIds: navPages,
   achievements,
   shop: shop.items,
   events,

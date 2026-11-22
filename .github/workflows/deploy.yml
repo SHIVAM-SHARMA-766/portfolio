@@ -1,6 +1,7 @@
 # Build, test and deploy both sites.
 #
-# Every push and pull request: unit tests, build, browser end-to-end tests.
+# Every push and pull request: JS and Go tests, build, browser end-to-end tests
+# (which run the real API binary).
 # Pushes to main (including every save in the admin panel) also deploy:
 # the built files are rsynced to the web host over SSH, using a key that the
 # host restricts to rsync inside /srv/portfolio (see deploy/setup-server.sh).
@@ -38,14 +39,24 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+
       - run: npm ci
       - run: npm test
+      - name: API tests
+        run: npm run test:api
       - run: npm run build
+      - name: Build API binary
+        run: npm run build:api
 
       - name: End-to-end tests
         run: npm run test:e2e
         env:
           CHROME_PATH: /usr/bin/google-chrome
+          API_BIN: dist/portfolio-api
 
       - name: Deploy
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -66,6 +77,11 @@ jobs:
               -e "ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=yes" \
               "$1" "deploy@${DEPLOY_HOST}:$2"
           }
+          # The API goes first so new pages never talk to an old API.
+          rsync -rlz --delay-updates --chmod=D755,F755 \
+            -e "ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=yes" \
+            dist/portfolio-api "deploy@${DEPLOY_HOST}:api/"
+          sync_dir apps/admin/dist/ admin/
           sync_dir apps/site/dist/ site/
           sync_dir apps/learn/dist/ learn/
           echo "Deployed $(git rev-parse --short HEAD)"
@@ -74,6 +90,7 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         continue-on-error: true # DNS may not point at the host yet
         run: |
-          for url in $(node -p "const s=require('./content/site.json'); [s.siteUrl + '/terminal/', s.learnUrl + '/'].join(' ')"); do
+          sleep 5 # the API restarts when its binary changes
+          for url in $(node -p "const s=require('./content/site.json'); [s.siteUrl + '/terminal/', s.learnUrl + '/', s.siteUrl + '/admin/', s.apiUrl + '/health'].join(' ')"); do
             curl -fsS --max-time 20 -o /dev/null -w "%{http_code} $url\n" "$url"
           done

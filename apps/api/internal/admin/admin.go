@@ -78,7 +78,8 @@ func (a *Admin) authLog(msg string) {
 
 func (a *Admin) login(w http.ResponseWriter, r *http.Request) {
 	ip := httpx.ClientIP(r)
-	if !a.limiter.Allow(ip) {
+	// Only failed attempts count towards the limit, so signing in often is fine.
+	if a.limiter.Blocked(ip) {
 		a.authLog("admin-login-throttled ip=" + ip)
 		httpx.Error(w, http.StatusTooManyRequests, "too many attempts, try again in 10 minutes")
 		return
@@ -96,6 +97,7 @@ func (a *Admin) login(w http.ResponseWriter, r *http.Request) {
 	}
 	passOK := bcrypt.CompareHashAndPassword([]byte(hash), []byte(body.Password)) == nil
 	if !userOK || !passOK {
+		a.limiter.Allow(ip)
 		a.authLog("admin-login-failed ip=" + ip)
 		time.Sleep(500 * time.Millisecond)
 		httpx.Error(w, http.StatusUnauthorized, "wrong username or password")

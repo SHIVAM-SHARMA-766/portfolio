@@ -123,6 +123,14 @@ func NewLimiter(max int, window time.Duration) *Limiter {
 	return l
 }
 
+// Blocked reports whether the key has used up its allowance, without counting.
+func (l *Limiter) Blocked(key string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	b := l.hits[key]
+	return b != nil && time.Now().Before(b.reset) && b.n >= l.max
+}
+
 // Allow records a hit and reports whether the key is still under the limit.
 func (l *Limiter) Allow(key string) bool {
 	l.mu.Lock()

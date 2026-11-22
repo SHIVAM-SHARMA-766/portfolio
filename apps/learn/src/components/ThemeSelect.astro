@@ -23,7 +23,7 @@ locals.achDialogRendered = true;
   <Default />
 </div>
 {renderDialog && <AchievementsDialog />}
-{renderDialog && <AccountDialogs ownerName={site.name} />}
+{renderDialog && <AccountDialogs ownerName={site.name} privacyUrl={`${site.siteUrl}/studio/privacy/`} />}
 <script>
   import { mountGame } from '@portfolio/game';
   import { initLearn } from '../scripts/learn';

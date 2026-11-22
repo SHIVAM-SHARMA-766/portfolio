@@ -66,7 +66,7 @@ func buildHandler(cfg *config.Config, st *store.Store) (http.Handler, *server) {
 	cat := game.Catalog()
 	originURLs := []string{cat.SiteURL, cat.LearnURL}
 	if cfg.Dev {
-		originURLs = append(originURLs, "http://localhost:4321", "http://localhost:4322", "http://localhost:4501", "http://localhost:4502")
+		originURLs = append(originURLs, "http://localhost:4321", "http://localhost:4322", "http://localhost:4501", "http://localhost:4502", "http://localhost:4330", "http://localhost:4620")
 	}
 	origins := httpx.NewOrigins(originURLs...)
 

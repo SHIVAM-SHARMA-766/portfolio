@@ -8,12 +8,14 @@ rendered in three entirely different themes, with a learning site for free cours
 
 ## Highlights
 
-- **Three themes, one content model.** *Terminal* is an interactive hacker shell you can type into. *Quest* is a pixel RPG with a world map and quest board. *Studio* is a clean editorial layout for recruiters. Every page works in every theme, and visitors switch with one click.
-- **Twelve colour palettes**, four per theme, switched instantly and remembered per visitor.
-- **A points game.** Visiting pages, opening projects, running terminal commands, trying themes, finishing lessons and passing quizzes all earn XP. Visitors level up, unlock achievements (some secret) and unlock palettes. Recruiters can turn the game off with one click.
-- **An admin panel at `/admin/`.** Add, edit, reorder and delete pages built from blocks, plus blog posts, courses, chapters, lessons, quizzes, your profile, the game's levels and achievements. Every save is a Git commit that deploys itself.
-- **Courses with real structure.** Search, sidebar, prev/next, callouts, code highlighting, a quiz per lesson, "mark complete", per-course progress and "continue where you left off".
-- **Static and fast.** Plain HTML/CSS with a little JavaScript, served by Caddy with automatic HTTPS, at zero cost.
+- **Three themes, one content model.** *Terminal* is a real shell to explore. *Quest* is a pixel RPG with a world map and quest board. *Studio* is a clean editorial layout for recruiters. Every page works in every theme.
+- **A game with an economy.** Visiting pages, opening projects, running commands, finishing lessons and capturing flags earn XP and coins. Spend coins to unlock the Quest theme and extra palettes. Levels, achievements (some secret) and a one-click "skip the game" for recruiters.
+- **A terminal CTF.** Explore a filesystem built from the portfolio (`ls -a`, `cat`, `grep -r`, `tree`), find five flags hidden in dotfiles, base64, logs, page source and a port-scan mini-game, and `submit` them.
+- **Accounts.** Visitors sign in with Google, GitHub or LinkedIn to save progress across devices; everything earned as a guest comes along. They can delete their account at any time.
+- **Live presence.** See how many people are online and on the same page, with their pointers moving in real time, anonymously.
+- **Learn site** at `learn.`: courses → chapters → lessons with quizzes, progress and search.
+- **Custom admin panel** at `/admin/`: a dashboard of who's online and where, the list of signed-up visitors (with CSV export), and editors for pages and blocks, blog, courses and lessons, profile, media, shop, missions, achievements and settings. Every save is a Git commit that deploys itself in about a minute.
+- **Zero cost.** Static sites plus a single Go binary and SQLite on an always-free VM, served by Caddy with automatic HTTPS.
 
 ## Quick start
 
@@ -26,19 +28,18 @@ npm run dev:learn       # learn site at http://localhost:4322
 
 | Command | Does |
 |---|---|
-| `npm run build` | Build both sites into `apps/*/dist` |
-| `npm test` | Unit tests for the game engine |
-| `npm run test:e2e` | Browser tests against the built sites (needs Chromium; set `CHROME_PATH`) |
+| `npm run build` | Generate game data, build site, learn and admin into `apps/*/dist` |
+| `npm run build:api` | Build the API binary into `dist/portfolio-api` (needs Go 1.26) |
+| `npm test` / `npm run test:api` | Game-engine unit tests / Go API tests |
+| `npm run test:e2e` | Browser tests of everything against the real API (needs Chromium; `CHROME_PATH`) |
+| `npm run dev:admin` | Admin panel dev server (expects the API on 127.0.0.1:8787) |
 
 ## Editing content
 
-Use the admin panel at `https://<your-domain>/admin/` and click **Sign In**: a popup asks for
-your admin username and password (set with `deploy/admin-auth.sh`). Alternatives:
-**Sign In Using Access Token** with a GitHub token, or, in Chrome or Edge,
-**Work with Local Repository** to edit this folder directly.
-
-Or edit the files in [`content/`](content/) directly. The build validates everything and
-fails with a clear message if something is wrong.
+Open `https://<your-domain>/admin/` and sign in with the admin username and password
+(set with `deploy/secrets.sh`). Saving commits to GitHub; the deploy badge in the admin
+shows when the change is live. If a change is invalid the build fails and the live site
+stays as it was. You can also edit [`content/`](content/) directly and push.
 
 ## Documentation
 

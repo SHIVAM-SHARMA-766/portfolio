@@ -1,7 +1,7 @@
 ---
 // Sign-in / account dialog and the coin shop. Shared by both sites; themes style them.
-interface Props { ownerName?: string }
-const { ownerName = 'the site owner' } = Astro.props;
+interface Props { ownerName?: string; privacyUrl?: string }
+const { ownerName = 'the site owner', privacyUrl = '/studio/privacy/' } = Astro.props;
 ---
 <dialog id="login-dialog" class="ach-dialog acct-dialog" aria-labelledby="login-title">
   <div class="ach-head">
@@ -11,7 +11,7 @@ const { ownerName = 'the site owner' } = Astro.props;
   <div data-account-guest>
     <p>Sign in to keep your points on every device and spend coins to unlock themes and colour palettes. Everything you earned as a guest comes with you.</p>
     <div data-login-providers><p class="g-muted">Loading sign-in options…</p></div>
-    <p class="acct-privacy g-muted">We store the name and email address your provider shares, to save your progress. {ownerName} may use your email to get in touch. You can delete your account at any time from this window.</p>
+    <p class="acct-privacy g-muted">We store the name and email address your provider shares, to save your progress. {ownerName} may use your email to get in touch. You can delete your account at any time from this window. <a href={privacyUrl}>Privacy</a></p>
   </div>
   <div data-account-user hidden>
     <p class="acct-who"><img data-account-avatar alt="" width="48" height="48" hidden /><span><b data-account-name></b><small data-account-email></small></span></p>

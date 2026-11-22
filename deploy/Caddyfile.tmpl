@@ -4,24 +4,14 @@
 	email __ACME_EMAIL__
 }
 
-(static) {
+(common) {
 	encode zstd gzip
-	file_server
 	header {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		-Server
-	}
-	# Hashed build assets never change; everything else revalidates.
-	@immutable path /_astro/* /pagefind/*
-	header @immutable Cache-Control "public, max-age=31536000, immutable"
-	@html path *.html */
-	header @html Cache-Control "public, max-age=0, must-revalidate"
-	handle_errors {
-		rewrite * /404.html
-		file_server
 	}
 	log {
 		output file /var/log/caddy/access.log {
@@ -31,20 +21,54 @@
 	}
 }
 
+(static) {
+	file_server
+	# Hashed build assets never change; everything else revalidates.
+	@immutable path /_astro/* /pagefind/* /admin/assets/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+	@html path *.html */
+	header @html Cache-Control "public, max-age=0, must-revalidate"
+}
+
+(notfound) {
+	handle_errors {
+		root * {args[0]}
+		rewrite * /404.html
+		file_server
+	}
+}
+
 __SITE_HOST__ {
-	root * /srv/portfolio/site
-	import static
-	# Admin username/password login, written by deploy/admin-auth.sh. Absent until that runs.
-	import /etc/caddy/admin-auth.d/*.caddy
-	# The admin panel loads Sveltia CMS from unpkg and talks to the GitHub API.
-	@admin path /admin/*
-	header @admin Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://api.github.com https://*.githubusercontent.com https://unpkg.com; frame-ancestors 'none'"
-	@public not path /admin/* /admin-auth*
-	header @public Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'"
+	import common
+	import notfound /srv/portfolio/site
+
+	# The API (Go service on localhost): sign-in, progress, shop, live presence, admin.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8787
+	}
+
+	# The admin panel: a single-page app in /srv/portfolio/admin.
+	handle /admin* {
+		root * /srv/portfolio
+		try_files {path} /admin/index.html
+		file_server
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+		header Cache-Control "no-store"
+		@assets path /admin/assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+	}
+
+	handle {
+		root * /srv/portfolio/site
+		import static
+		header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' wss://__SITE_HOST__; frame-ancestors 'none'"
+	}
 }
 
 __LEARN_HOST__ {
+	import common
+	import notfound /srv/portfolio/learn
 	root * /srv/portfolio/learn
 	import static
-	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'"
+	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://__SITE_HOST__ wss://__SITE_HOST__; frame-ancestors 'none'"
 }

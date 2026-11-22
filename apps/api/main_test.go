@@ -138,6 +138,12 @@ func TestAdminLoginAndLimit(t *testing.T) {
 	if rec.Code != 200 || len(out["visitors"].([]any)) != 1 {
 		t.Fatalf("visitors: %d %v", rec.Code, out)
 	}
+	// Successful sign-ins never count towards the limit.
+	for i := 0; i < 6; i++ {
+		if rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true); rec.Code != 200 {
+			t.Fatalf("repeated good logins must not be throttled: %d", rec.Code)
+		}
+	}
 	codes := []int{}
 	for i := 0; i < 6; i++ {
 		rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"nope"}`, "", true)
