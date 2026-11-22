@@ -17,19 +17,19 @@ export const collections = {
     loader: glob({ pattern: ['**/*.{md,mdx}', ...drafts], base: '../../content/courses' }),
     schema: docsSchema({
       extend: z.object({
-        difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-        minutes: z.number().optional(),
-        lab: z.string().url().optional(),
+        difficulty: z.enum(['beginner', 'intermediate', 'advanced']).or(z.literal('')).nullish(),
+        minutes: z.number().nullish(),
+        lab: z.string().url().or(z.literal('')).nullish(),
         quiz: z
           .array(
             z.object({
               question: z.string(),
               options: z.array(z.string()).min(2),
               answer: z.number().int().min(0),
-              explanation: z.string().optional(),
+              explanation: z.string().nullish(),
             }),
           )
-          .optional(),
+          .nullish(),
       }),
     }),
   }),

@@ -4,6 +4,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { parse as parseYaml } from 'yaml';
 
 const contentDir = new URL('../../content/', import.meta.url);
 const site = JSON.parse(readFileSync(new URL('site.json', contentDir), 'utf8'));
@@ -16,6 +17,23 @@ const courses = readdirSync(coursesDir, { withFileTypes: true })
 
 const published = courses.filter((c) => c.status === 'published');
 
+// Lessons of one chapter, sorted by `sidebar.order`. Listed explicitly by id:
+// Starlight's `autogenerate` only matches files inside src/content/docs.
+function chapterLessons(course, chapter) {
+  const dir = new URL(`${course}/${chapter}/`, coursesDir);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => /\.mdx?$/.test(f))
+    .map((f) => {
+      const src = readFileSync(new URL(f, dir), 'utf8');
+      const fm = parseYaml(src.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? '') ?? {};
+      return { slug: `${course}/${chapter}/${f.replace(/\.mdx?$/, '')}`, order: fm.sidebar?.order ?? 999, draft: fm.draft === true };
+    })
+    .filter((l) => !l.draft || process.env.NODE_ENV !== 'production')
+    .sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug))
+    .map((l) => ({ slug: l.slug }));
+}
+
 const sidebar = [
   { label: 'All courses', link: '/' },
   ...published.map((c, i) => ({
@@ -23,7 +41,7 @@ const sidebar = [
     collapsed: i > 0,
     items: [
       { label: 'Course overview', slug: c.slug },
-      ...c.chapters.map((ch) => ({ label: ch.title, items: [{ autogenerate: { directory: `${c.slug}/${ch.slug}` } }] })),
+      ...c.chapters.map((ch) => ({ label: ch.title, items: chapterLessons(c.slug, ch.slug) })),
     ],
   })),
 ];
