@@ -1,0 +1,61 @@
+---
+import Head from '../../components/Head.astro';
+import Switcher from '../../components/Switcher.astro';
+import GameBoot from '../../components/GameBoot.astro';
+import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
+import { site, pageUrl } from '../../lib/content';
+import type { Page } from '../../lib/schema';
+import './quest.css';
+
+interface Props { theme: string; title: string; description?: string; slug: string; nav: Page[]; pageIdent: string | null; current?: string }
+const { theme, title, description, slug, nav, pageIdent, current = slug } = Astro.props;
+const initials = site.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+---
+<html lang="en" data-theme="quest">
+  <Head theme={theme} title={title} description={description} slug={slug} pageIdent={pageIdent}
+    fonts="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;600&display=swap" />
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="q-hud">
+      <a class="q-avatar" href={pageUrl(theme, '')} aria-label="Home">{initials}</a>
+      <div class="q-who">
+        <strong>{site.name}</strong>
+        <span class="g-only">LV <b data-game-level>1</b> · <span data-game-level-name>Visitor</span></span>
+      </div>
+      <div class="q-xp g-only">
+        <div class="q-xpbar" data-game-progress role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+        <small><span class="q-coin" aria-hidden="true"></span><b data-game-xp>0</b> XP · <span data-game-next></span></small>
+      </div>
+      <div class="q-hud-actions">
+        <button type="button" class="q-btn g-only" data-open-ach>🏆 <span class="q-hide-sm">Quest log</span> <span data-game-ach-count>0/0</span></button>
+        <button type="button" class="q-btn q-btn--ghost" data-game-toggle data-off-text="Skip game" data-on-text="Play game"><span data-label>Skip game</span></button>
+      </div>
+    </header>
+
+    <nav class="q-map" aria-label="World map">
+      {nav.map((p) => (
+        <a class="q-zone" href={pageUrl(theme, p.slug)} aria-current={p.slug === current ? 'page' : undefined}>
+          <span class="q-zone-icon" aria-hidden="true">{p.icon ?? '⭐'}</span>
+          <span>{p.navLabel ?? p.title}</span>
+        </a>
+      ))}
+      {site.learnUrl && <a class="q-zone" href={site.learnUrl}><span class="q-zone-icon" aria-hidden="true">🏯</span><span>Dojo ↗</span></a>}
+    </nav>
+
+    <main id="main" class="q-main">
+      <slot />
+      <div data-game-end aria-hidden="true"></div>
+    </main>
+
+    <footer class="q-footer">
+      <details class="q-settings">
+        <summary>⚙️ Settings — themes & palettes</summary>
+        <Switcher theme={theme} slug={slug} />
+      </details>
+      <p class="q-tip g-only">Tip: legends speak of a secret code… ↑ ↑ ↓ ↓</p>
+      <p>© {new Date().getFullYear()} {site.name}</p>
+    </footer>
+    <AchievementsDialog />
+    <GameBoot />
+  </body>
+</html>

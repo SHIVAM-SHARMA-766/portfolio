@@ -1,0 +1,8 @@
+---
+interface Props { title?: string; icon?: string; variant?: string }
+const { title, icon, variant = '' } = Astro.props;
+---
+<section class={`q-panel ${variant}`}>
+  {title && <h2 class="q-title">{icon && <span aria-hidden="true">{icon} </span>}{title}</h2>}
+  <slot />
+</section>

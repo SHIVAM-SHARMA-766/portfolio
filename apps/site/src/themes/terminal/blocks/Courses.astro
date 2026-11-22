@@ -1,0 +1,17 @@
+---
+import Cmd from '../Cmd.astro';
+import { getCourses } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'courses'> };
+const courses = getCourses();
+---
+{courses.length > 0 && (
+  <Cmd cmd="ls ~/learn">
+    {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+    <ul class="t-list">
+      {courses.map((c) => (
+        <li><a href={c.url}>{c.slug}/</a> <span class="t-dim">— {c.title} · {c.level} · {c.lessons} lessons</span><br />{c.description}</li>
+      ))}
+    </ul>
+  </Cmd>
+)}

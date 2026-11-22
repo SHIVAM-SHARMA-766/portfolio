@@ -1,0 +1,13 @@
+---
+import { resolveHref, mdInline } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string };
+---
+<section class="s-wrap s-hero">
+  {block.subheading && <p class="s-eyebrow">{block.subheading}</p>}
+  <h1>{block.heading}</h1>
+  {block.body && <p class="s-lead" set:html={mdInline(block.body)} />}
+  {block.ctas.length > 0 && (
+    <div class="s-ctas">{block.ctas.map((c, i) => <a class={i === 0 ? 's-btn' : 's-btn s-btn--ghost'} href={resolveHref(theme, c.href)}>{c.label}</a>)}</div>
+  )}
+</section>

@@ -1,0 +1,14 @@
+---
+import Panel from '../Panel.astro';
+import { profile } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'skills'> };
+---
+<Panel title={block.heading ?? 'Inventory'} icon="🎒">
+  {profile.skills.map((g) => (
+    <div class="q-bag">
+      <h3>{g.group} <small class="q-muted">({g.items.length})</small></h3>
+      <ul class="q-slots">{g.items.map((i) => <li>{i}</li>)}</ul>
+    </div>
+  ))}
+</Panel>

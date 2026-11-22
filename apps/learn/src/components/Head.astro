@@ -1,0 +1,22 @@
+---
+import Default from '@astrojs/starlight/components/Head.astro';
+import { gameConfig, LEARN_PALETTES } from '../lib/game';
+const palettes = LEARN_PALETTES.map((p) => p.id);
+---
+<Default />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" />
+<script is:inline define:vars={{ palettes }}>
+  (function () {
+    var pal = palettes[0];
+    try {
+      var p = JSON.parse(localStorage.getItem('pf.prefs.v1')) || {};
+      var saved = (p.palettes || {}).learn;
+      if (saved && palettes.indexOf(saved) !== -1) pal = saved;
+      if (p.gameOff) document.documentElement.dataset.game = 'off';
+    } catch (e) {}
+    document.documentElement.dataset.palette = pal;
+  })();
+</script>
+<script type="application/json" id="game-config" set:html={JSON.stringify(gameConfig)}></script>

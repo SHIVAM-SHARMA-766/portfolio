@@ -1,0 +1,54 @@
+---
+import Head from '../../components/Head.astro';
+import Switcher from '../../components/Switcher.astro';
+import GameBoot from '../../components/GameBoot.astro';
+import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
+import Shell from './Shell.astro';
+import { site, pageUrl } from '../../lib/content';
+import type { Page } from '../../lib/schema';
+import './terminal.css';
+
+interface Props { theme: string; title: string; description?: string; slug: string; nav: Page[]; pageIdent: string | null; current?: string }
+const { theme, title, description, slug, nav, pageIdent, current = slug } = Astro.props;
+const cwd = slug ? `~/${slug}` : '~';
+---
+<html lang="en" data-theme="terminal">
+  <Head theme={theme} title={title} description={description} slug={slug} pageIdent={pageIdent}
+    fonts="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" />
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="t-window">
+      <header class="t-bar">
+        <span class="t-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="t-title">{site.shortName}@portfolio: {cwd}</span>
+        <button type="button" class="t-hud g-only" data-open-ach aria-label="Open achievements">
+          <span>LVL <b data-game-level>1</b></span>
+          <span class="t-hud-name" data-game-level-name>Visitor</span>
+          <span class="t-meter" data-game-progress role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100"></span>
+          <span><b data-game-xp>0</b> XP</span>
+        </button>
+        <button type="button" class="t-btn t-skip" data-game-toggle data-off-text="skip game" data-on-text="play game"><span data-label>skip game</span></button>
+      </header>
+      <div class="t-body">
+        <nav class="t-nav" aria-label="Pages">
+          <p class="t-dim">$ ls ~</p>
+          <ul>
+            {nav.map((p) => (
+              <li><a href={pageUrl(theme, p.slug)} aria-current={p.slug === current ? 'page' : undefined}>{p.slug || 'home'}/</a></li>
+            ))}
+            {site.learnUrl && <li><a href={site.learnUrl}>learn/ ↗</a></li>}
+          </ul>
+          <Switcher theme={theme} slug={slug} />
+          <button type="button" class="t-btn g-only" data-open-ach>achievements [<span data-game-ach-count>0/0</span>]</button>
+        </nav>
+        <main id="main" class="t-main">
+          <slot />
+          <div data-game-end aria-hidden="true"></div>
+          <Shell theme={theme} nav={nav} />
+        </main>
+      </div>
+    </div>
+    <AchievementsDialog />
+    <GameBoot />
+  </body>
+</html>

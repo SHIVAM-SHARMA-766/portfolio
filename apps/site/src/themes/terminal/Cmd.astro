@@ -1,0 +1,9 @@
+---
+// One "command + output" pair; every terminal block is built from these.
+interface Props { cmd: string; id?: string }
+const { cmd, id } = Astro.props;
+---
+<section class="t-block" id={id}>
+  <p class="t-cmd"><span class="t-ps1">shivam@portfolio</span><span class="t-dim">:~$</span> <span class="t-typed">{cmd}</span></p>
+  <div class="t-out"><slot /></div>
+</section>

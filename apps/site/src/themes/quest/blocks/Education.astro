@@ -1,0 +1,12 @@
+---
+import Panel from '../Panel.astro';
+import { profile, formatMonth } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'education'> };
+---
+<Panel title={block.heading ?? 'Origin story'} icon="🏰">
+  <ul class="q-trophies">
+    {profile.education.map((e) => <li><span aria-hidden="true">🎓</span><div><b>{e.degree}</b><small>{e.institution} · {formatMonth(e.end)}</small></div></li>)}
+    {profile.certifications.map((c) => <li><span aria-hidden="true">🏅</span><div><b>{c.name}</b>{c.status && <small>{c.status}</small>}</div></li>)}
+  </ul>
+</Panel>

@@ -1,0 +1,13 @@
+---
+import { profile } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'skills'> };
+---
+<section class="s-wrap s-split">
+  <h2 class="s-h2">{block.heading ?? 'Skills'}</h2>
+  <div class="s-skills">
+    {profile.skills.map((g) => (
+      <div><h3 class="s-kicker">{g.group}</h3><p class="s-chips">{g.items.map((i) => <span>{i}</span>)}</p></div>
+    ))}
+  </div>
+</section>

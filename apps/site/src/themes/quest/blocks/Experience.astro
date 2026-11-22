@@ -1,0 +1,26 @@
+---
+import Panel from '../Panel.astro';
+import { profile, formatMonth } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'experience'> };
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+---
+<Panel title={block.heading ?? 'Campaign log'} icon="⚔️">
+  {profile.experience.map((job) => (
+    <article class="q-chapter">
+      <div class="q-chapter-head">
+        <h3>{job.role} <span class="q-muted">@ {job.company}</span></h3>
+        <span class={`q-badge ${job.end ? '' : 'q-badge--live'}`}>{job.end ? 'Completed' : 'In progress'}</span>
+      </div>
+      <p class="q-muted">{formatMonth(job.start)} – {formatMonth(job.end)}{job.location && ` · ${job.location}`}</p>
+      {job.progression && <p class="q-levels">🪜 {job.progression}</p>}
+      {job.highlights.length > 0 && <ul class="q-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
+      {job.engagements.map((e) => (
+        <details class="q-quest" data-xp="5" data-xp-id={`exp:${slugify(e.title)}`} data-xp-label="Side quest read">
+          <summary><span class="q-quest-mark" aria-hidden="true">!</span> Side quest: {e.title}</summary>
+          <ul class="q-list">{e.highlights.map((h) => <li>{h}</li>)}</ul>
+        </details>
+      ))}
+    </article>
+  ))}
+</Panel>

@@ -7,6 +7,7 @@
     ".": "./src/index.js",
     "./core": "./src/core.js",
     "./storage": "./src/storage.js",
-    "./game.css": "./src/game.css"
+    "./game.css": "./src/game.css",
+    "./AchievementsDialog.astro": "./AchievementsDialog.astro"
   }
 }

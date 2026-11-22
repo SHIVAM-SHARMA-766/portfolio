@@ -1,0 +1,17 @@
+---
+import Cmd from '../Cmd.astro';
+import { getPosts } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'posts'>; theme: string };
+let posts = await getPosts();
+if (block.limit) posts = posts.slice(0, block.limit);
+---
+<Cmd cmd="ls -t blog/">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  {posts.length === 0 && <p class="t-dim">(empty — first post coming soon)</p>}
+  <ul class="t-list t-posts">
+    {posts.map((p) => (
+      <li><span class="t-dim">{p.data.date.toISOString().slice(0, 10)}</span> <a href={`/${theme}/blog/${p.id}/`}>{p.id}.md</a><br /><span class="t-dim">{p.data.description}</span></li>
+    ))}
+  </ul>
+</Cmd>

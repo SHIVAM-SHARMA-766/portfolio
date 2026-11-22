@@ -1,0 +1,55 @@
+---
+// Shared <head>: meta, palette tokens, pre-paint preferences, game config.
+import { paletteCss, palettesFor } from '@portfolio/tokens';
+import { site, gameConfig, pageUrl } from '../lib/content';
+import '@portfolio/game/game.css';
+
+interface Props {
+  theme: string;
+  title: string;
+  description?: string;
+  slug: string;
+  pageIdent: string | null;
+  fonts?: string;
+}
+const { theme, title, description = site.description, slug, pageIdent, fonts } = Astro.props;
+const fullTitle = slug === '' && title === 'Home' ? `${site.name} — ${site.role}` : `${title} · ${site.name}`;
+const canonical = new URL(pageUrl(site.defaultTheme, slug), site.siteUrl).href;
+const palettes = palettesFor(theme).map((p) => p.id);
+const defaultPalette = site.defaultPalettes[theme] ?? palettes[0];
+const config = await gameConfig(pageIdent);
+---
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{fullTitle}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <meta property="og:title" content={fullTitle} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonical} />
+  <meta name="theme-color" content="#111111" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="alternate" type="application/rss+xml" title={`${site.name} — Blog`} href="/rss.xml" />
+  {fonts && <link rel="preconnect" href="https://fonts.googleapis.com" />}
+  {fonts && <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />}
+  {fonts && <link rel="stylesheet" href={fonts} />}
+  <style set:html={paletteCss(theme)}></style>
+  <script is:inline define:vars={{ theme, palettes, defaultPalette }}>
+    // Runs before paint so the saved palette never flashes.
+    (function () {
+      var pal = defaultPalette, root = document.documentElement;
+      try {
+        var p = JSON.parse(localStorage.getItem('pf.prefs.v1')) || {};
+        var saved = (p.palettes || {})[theme];
+        if (saved && palettes.indexOf(saved) !== -1) pal = saved;
+        if (p.gameOff) root.dataset.game = 'off';
+        p.theme = theme;
+        localStorage.setItem('pf.prefs.v1', JSON.stringify(p));
+      } catch (e) {}
+      root.dataset.palette = pal;
+    })();
+  </script>
+  <script type="application/json" id="game-config" set:html={JSON.stringify(config)}></script>
+</head>

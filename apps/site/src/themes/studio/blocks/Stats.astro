@@ -1,0 +1,8 @@
+---
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'stats'> };
+---
+<section class="s-wrap s-section">
+  {block.heading && <h2 class="s-kicker">{block.heading}</h2>}
+  <dl class="s-stats">{block.items.map((s) => <div><dt>{s.value}</dt><dd>{s.label}</dd></div>)}</dl>
+</section>

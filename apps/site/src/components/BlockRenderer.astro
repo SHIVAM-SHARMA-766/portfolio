@@ -1,0 +1,16 @@
+---
+// Renders a page's blocks with the current theme's components. A theme that
+// lacks a renderer for a block type falls back to GenericBlock, so new block
+// types never break a theme.
+import type { Block } from '../lib/schema';
+import GenericBlock from './GenericBlock.astro';
+
+interface Props { blocks: Block[]; theme: string }
+const { blocks, theme } = Astro.props;
+const renderers = import.meta.glob('../themes/*/blocks/*.astro', { eager: true }) as Record<string, { default: any }>;
+const pascal = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+---
+{blocks.map((block, index) => {
+  const Comp = renderers[`../themes/${theme}/blocks/${pascal(block.type)}.astro`]?.default ?? GenericBlock;
+  return <Comp block={block} theme={theme} index={index} />;
+})}

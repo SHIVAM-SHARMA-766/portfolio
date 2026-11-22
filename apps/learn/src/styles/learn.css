@@ -1,0 +1,64 @@
+/* Learn site: Starlight with the portfolio's accent palettes. */
+:root { --sl-font: Inter, system-ui, sans-serif; --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace; }
+
+/* Palette → Starlight accent tokens (dark is default, light overrides) */
+:root[data-palette='green'] { --sl-color-accent-low: #0f2e1a; --sl-color-accent: #22c55e; --sl-color-accent-high: #bbf7d0; }
+:root[data-palette='amber'] { --sl-color-accent-low: #3a2604; --sl-color-accent: #f59e0b; --sl-color-accent-high: #fde68a; }
+:root[data-palette='violet'] { --sl-color-accent-low: #2a1a4a; --sl-color-accent: #a78bfa; --sl-color-accent-high: #ddd6fe; }
+:root[data-palette='ocean'] { --sl-color-accent-low: #0c2f3a; --sl-color-accent: #22b8cf; --sl-color-accent-high: #c5f3fa; }
+:root[data-theme='light'][data-palette='green'] { --sl-color-accent-low: #dcfce7; --sl-color-accent: #15803d; --sl-color-accent-high: #14532d; }
+:root[data-theme='light'][data-palette='amber'] { --sl-color-accent-low: #fef3c7; --sl-color-accent: #b45309; --sl-color-accent-high: #78350f; }
+:root[data-theme='light'][data-palette='violet'] { --sl-color-accent-low: #ede9fe; --sl-color-accent: #6d28d9; --sl-color-accent-high: #3b0764; }
+:root[data-theme='light'][data-palette='ocean'] { --sl-color-accent-low: #cffafe; --sl-color-accent: #0e7490; --sl-color-accent-high: #164e63; }
+
+/* Game UI uses these generic names */
+:root { --bg: var(--sl-color-bg); --surface: var(--sl-color-bg-nav); --fg: var(--sl-color-white); --muted: var(--sl-color-gray-3); --accent: var(--sl-color-accent); --accent-2: var(--sl-color-accent-high); --border: var(--sl-color-hairline); --g-radius: 10px; }
+
+/* Header tools */
+.learn-tools { display: flex; align-items: center; gap: .75rem; }
+.xp-chip { display: inline-flex; align-items: center; gap: .35rem; font: inherit; font-size: var(--sl-text-sm); color: var(--sl-color-white); background: transparent; border: 1px solid var(--sl-color-hairline-shade); border-radius: 99px; padding: .15rem .6rem .15rem .25rem; cursor: pointer; white-space: nowrap; }
+.xp-chip:hover { border-color: var(--sl-color-accent); }
+.xp-ring { width: 18px; height: 18px; border-radius: 50%; background: conic-gradient(var(--sl-color-accent) calc(var(--progress) * 360deg), var(--sl-color-gray-5) 0); mask: radial-gradient(circle, transparent 4px, #000 5px); }
+.pal { display: flex; gap: .3rem; }
+.pal-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.pal-dot[aria-pressed='true'] { border-color: var(--sl-color-white); }
+.pal-green { background: #22c55e; } .pal-amber { background: #f59e0b; } .pal-violet { background: #a78bfa; } .pal-ocean { background: #22b8cf; }
+:root[data-game='off'] .g-only { display: none !important; }
+
+/* Sidebar ticks */
+#starlight__sidebar a.lesson-done::after { content: '✓'; margin-inline-start: auto; color: var(--sl-color-accent); font-weight: 600; padding-inline-start: .5rem; }
+
+/* Lesson end */
+.lesson-end { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--sl-color-hairline); }
+.quiz { background: var(--sl-color-bg-nav); border: 1px solid var(--sl-color-hairline-shade); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+.quiz h2 { margin-top: 0; font-size: var(--sl-text-h4); }
+.quiz-q { border: 0; padding: 0; margin: 0 0 1.25rem; }
+.quiz-q legend { font-weight: 600; margin-bottom: .5rem; color: var(--sl-color-white); }
+.quiz-q label { display: flex; gap: .5rem; align-items: baseline; padding: .3rem .5rem; border-radius: 6px; cursor: pointer; }
+.quiz-q label:hover { background: var(--sl-color-accent-low); }
+.quiz-q.is-right legend::after { content: ' ✓'; color: #22c55e; }
+.quiz-q.is-wrong legend::after { content: ' ✗'; color: #ef4444; }
+.quiz-why { font-size: var(--sl-text-sm); color: var(--sl-color-gray-2); border-inline-start: 3px solid var(--sl-color-accent); padding-inline-start: .75rem; margin: .5rem 0 0; }
+.quiz-result { font-weight: 600; margin: .75rem 0 0; }
+.learn-btn { display: inline-flex; align-items: center; gap: .3rem; font: inherit; font-weight: 600; font-size: var(--sl-text-sm); padding: .55rem 1.1rem; border-radius: 99px; border: 1px solid var(--sl-color-accent); background: var(--sl-color-accent); color: var(--sl-color-black); cursor: pointer; text-decoration: none; }
+.learn-btn--ghost { background: transparent; color: var(--sl-color-white); }
+.learn-btn:disabled { opacity: .7; cursor: default; border-color: var(--sl-color-hairline-shade); }
+.complete-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.course-mini { font-size: var(--sl-text-sm); color: var(--sl-color-gray-3); }
+.lab a { font-weight: 600; }
+
+/* Course progress */
+.course-progress { margin-top: 2.5rem; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--sl-color-hairline-shade); background: var(--sl-color-bg-nav); }
+.course-progress h2 { margin-top: 0; font-size: var(--sl-text-h4); }
+.cp-bar, .card-bar { height: 8px; border-radius: 99px; background: var(--sl-color-gray-6); overflow: hidden; }
+.cp-bar span, .card-bar span { display: block; height: 100%; width: calc(var(--cp, 0) * 100%); background: var(--sl-color-accent); transition: width .4s; }
+
+/* Home course cards */
+.course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.course-card { display: flex; flex-direction: column; gap: .4rem; padding: 1.25rem; border: 1px solid var(--sl-color-hairline-shade); border-radius: 14px; background: var(--sl-color-bg-nav); text-decoration: none; color: var(--sl-color-white); }
+.course-card:hover { border-color: var(--sl-color-accent); }
+.course-card h3 { margin: 0; font-size: var(--sl-text-h4); color: var(--sl-color-white); }
+.course-card p { margin: 0; color: var(--sl-color-gray-2); font-size: var(--sl-text-sm); }
+.course-card .meta { color: var(--sl-color-gray-3); }
+
+@media (max-width: 50rem) { .pal { display: none; } }

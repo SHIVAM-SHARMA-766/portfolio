@@ -1,0 +1,8 @@
+---
+import { md } from '../lib/content';
+const { block } = Astro.props;
+---
+<section class="generic-block">
+  {block.heading && <h2>{block.heading}</h2>}
+  {block.body && <div class="prose" set:html={md(block.body)} />}
+</section>

@@ -1,0 +1,12 @@
+---
+import { profile, formatMonth } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'education'> };
+---
+<section class="s-wrap s-split">
+  <h2 class="s-h2">{block.heading ?? 'Education'}</h2>
+  <ul class="s-plain">
+    {profile.education.map((e) => <li><b>{e.degree}</b><span class="s-muted">{e.institution} · {formatMonth(e.end)}</span></li>)}
+    {profile.certifications.map((c) => <li><b>{c.name}</b>{c.status && <span class="s-muted">{c.status}</span>}</li>)}
+  </ul>
+</section>

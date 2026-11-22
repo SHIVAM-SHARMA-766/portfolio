@@ -1,0 +1,7 @@
+---
+import Layout from '../../../themes/quest/Layout.astro';
+import PostRoute from '../../../components/PostRoute.astro';
+import { postPaths } from '../../../lib/routes';
+export const getStaticPaths = postPaths;
+---
+<PostRoute post={Astro.props.post} theme="quest" Layout={Layout} />

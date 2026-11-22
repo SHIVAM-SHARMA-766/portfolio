@@ -1,0 +1,31 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { readCourses, lessonIds } from '../lib/courses';
+import { site } from '../lib/game';
+
+const courses = await Promise.all(readCourses().map(async (c) => ({ ...c, lessons: await lessonIds(c.slug) })));
+---
+<StarlightPage
+  frontmatter={{
+    title: 'Learn',
+    description: `Free, hands-on courses by ${site.name}.`,
+    template: 'splash',
+    hero: {
+      title: 'Learn DevOps by doing',
+      tagline: 'Free, hands-on courses — short lessons, real commands and a quiz at the end of each. Earn XP as you go.',
+      actions: courses[0] ? [{ text: `Start ${courses[0].title}`, link: `/${courses[0].slug}/`, icon: 'right-arrow' }, { text: 'Portfolio', link: site.siteUrl, variant: 'minimal', icon: 'external' }] : [],
+    },
+  }}
+>
+  <h2>Courses</h2>
+  <div class="course-grid">
+    {courses.map((c) => (
+      <a class="course-card" href={`/${c.slug}/`}>
+        <h3>{c.icon} {c.title}</h3>
+        <p>{c.description}</p>
+        <p class="meta">{c.level} · {c.lessons.length} lessons · {c.duration}</p>
+        <div class="card-bar" data-course-progress={c.slug} data-lessons={JSON.stringify(c.lessons)}><span></span></div>
+      </a>
+    ))}
+  </div>
+</StarlightPage>

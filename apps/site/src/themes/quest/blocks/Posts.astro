@@ -1,0 +1,16 @@
+---
+import Panel from '../Panel.astro';
+import { getPosts } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'posts'>; theme: string };
+let posts = await getPosts();
+if (block.limit) posts = posts.slice(0, block.limit);
+---
+<Panel title={block.heading ?? 'Library'} icon="📚">
+  {posts.length === 0 && <p class="q-muted">The shelves are empty… for now.</p>}
+  <ul class="q-books">
+    {posts.map((p) => (
+      <li><a href={`/${theme}/blog/${p.id}/`}><span class="q-book" aria-hidden="true">📕</span><span><b>{p.data.title}</b><small>{p.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })} · {p.data.description}</small></span></a></li>
+    ))}
+  </ul>
+</Panel>

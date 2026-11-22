@@ -1,0 +1,11 @@
+---
+import Cmd from '../Cmd.astro';
+import { md } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'text'> };
+const file = (block.heading ?? 'notes').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+---
+<Cmd cmd={`cat ${file}.md`}>
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  <div class="prose" set:html={md(block.body)} />
+</Cmd>

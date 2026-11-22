@@ -1,0 +1,15 @@
+---
+import Cmd from '../Cmd.astro';
+import { profile } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'skills'> };
+---
+<Cmd cmd="apt list --installed">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  {profile.skills.map((g) => (
+    <div class="t-skill">
+      <p class="t-acc-2">[{g.group}]</p>
+      <p class="t-tags">{g.items.map((i) => <span class="t-pkg">{i.toLowerCase().replace(/\s+/g, '-')}<span class="t-dim">/stable</span></span>)}</p>
+    </div>
+  ))}
+</Cmd>

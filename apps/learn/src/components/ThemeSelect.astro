@@ -1,0 +1,26 @@
+---
+// Header controls: Starlight's dark/light select, plus palette and XP.
+import Default from '@astrojs/starlight/components/ThemeSelect.astro';
+import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
+import { LEARN_PALETTES } from '../lib/game';
+// ThemeSelect renders twice (header and mobile menu); the dialog must exist once.
+const locals = Astro.locals as any;
+const renderDialog = !locals.achDialogRendered;
+locals.achDialogRendered = true;
+---
+<div class="learn-tools">
+  <button type="button" class="xp-chip g-only" data-open-ach aria-label="Your points and achievements">
+    <span class="xp-ring" data-game-progress aria-hidden="true"></span><b data-game-xp>0</b>&nbsp;XP
+  </button>
+  <div class="pal" role="group" aria-label="Accent colour">
+    {LEARN_PALETTES.map((p) => <button type="button" class={`pal-dot pal-${p.id}`} data-learn-palette={p.id} aria-label={p.label} title={p.label}></button>)}
+  </div>
+  <Default />
+</div>
+{renderDialog && <AchievementsDialog />}
+<script>
+  import { mountGame } from '@portfolio/game';
+  import { initLearn } from '../scripts/learn';
+  mountGame();
+  initLearn();
+</script>

@@ -1,0 +1,13 @@
+---
+import Cmd from '../Cmd.astro';
+import { profile, formatMonth } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'education'> };
+---
+<Cmd cmd="cat /etc/education /etc/certs">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  <ul class="t-list">
+    {profile.education.map((e) => <li><b>{e.degree}</b> — {e.institution} <span class="t-dim">({formatMonth(e.end)})</span></li>)}
+    {profile.certifications.map((c) => <li><b>{c.name}</b>{c.status && <span class="t-dim"> — {c.status}</span>}</li>)}
+  </ul>
+</Cmd>

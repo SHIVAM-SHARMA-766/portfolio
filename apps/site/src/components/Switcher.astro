@@ -1,0 +1,33 @@
+---
+// Theme and palette switcher. Markup is shared; each theme styles .sw-*.
+import { palettesFor } from '@portfolio/tokens';
+import { THEMES, pageUrl } from '../lib/content';
+interface Props { theme: string; slug: string; path?: string }
+const { theme, slug, path } = Astro.props;
+const palettes = palettesFor(theme);
+const target = (t: string) => (path ? `/${t}/${path}` : pageUrl(t, slug));
+---
+<div class="sw">
+  <div class="sw-group" role="group" aria-label="Theme">
+    <span class="sw-label">Theme</span>
+    <div class="sw-items">
+      {THEMES.map((t) => (
+        <a class="sw-theme" href={target(t.id)} aria-current={t.id === theme ? 'true' : undefined} title={t.blurb}>{t.label}</a>
+      ))}
+    </div>
+  </div>
+  <div class="sw-group" role="group" aria-label="Colour palette">
+    <span class="sw-label">Palette</span>
+    <div class="sw-items">
+      {palettes.map((p) => (
+        <button type="button" class="sw-palette" data-palette-btn={p.id} data-unlock-xp={p.unlockXp || undefined}
+          title={p.unlockXp ? `${p.label} — unlocks at ${p.unlockXp} XP` : p.label}
+          style={`--sw-bg:${p.colors.bg};--sw-accent:${p.colors.accent}`}>
+          <span class="sw-swatch" aria-hidden="true"></span>
+          <span class="sw-name">{p.label}</span>
+          {p.unlockXp > 0 && <span class="sw-lock" aria-hidden="true">🔒</span>}
+        </button>
+      ))}
+    </div>
+  </div>
+</div>

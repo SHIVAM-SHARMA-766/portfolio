@@ -1,0 +1,11 @@
+---
+import Cmd from '../Cmd.astro';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'stats'> };
+---
+<Cmd cmd="uptime --stats">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  <dl class="t-stats">
+    {block.items.map((s) => <div><dt>{s.value}</dt><dd>{s.label}</dd></div>)}
+  </dl>
+</Cmd>

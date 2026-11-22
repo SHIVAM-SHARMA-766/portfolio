@@ -1,0 +1,13 @@
+---
+import Panel from '../Panel.astro';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'stats'> };
+const icons = ['⚔️', '💰', '🛡️', '✨', '🏹', '🔮'];
+---
+<Panel title={block.heading ?? 'Character stats'} icon="📊">
+  <div class="q-stats">
+    {block.items.map((s, i) => (
+      <div class="q-stat"><span class="q-stat-icon" aria-hidden="true">{icons[i % icons.length]}</span><b>{s.value}</b><small>{s.label}</small></div>
+    ))}
+  </div>
+</Panel>

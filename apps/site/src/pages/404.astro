@@ -1,0 +1,15 @@
+---
+import { site, pageUrl } from '../lib/content';
+const home = pageUrl(site.defaultTheme, '');
+---
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Not found · {site.name}</title></head>
+  <body style="background:#070b08;color:#c6f7cf;font-family:ui-monospace,monospace;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px">
+    <main>
+      <p>$ cd {Astro.url.pathname}</p>
+      <p>bash: cd: No such file or directory (404)</p>
+      <p><a href={home} style="color:#3dff74">cd ~</a></p>
+    </main>
+  </body>
+</html>

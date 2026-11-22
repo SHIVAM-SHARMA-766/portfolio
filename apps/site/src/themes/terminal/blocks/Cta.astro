@@ -1,0 +1,13 @@
+---
+import Cmd from '../Cmd.astro';
+import { resolveHref, mdInline } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'cta'>; theme: string };
+---
+<Cmd cmd="cat motd">
+  <div class="t-box">
+    <p class="t-acc"><b>{block.heading}</b></p>
+    {block.body && <p set:html={mdInline(block.body)} />}
+    <p><a class="t-link-btn" href={resolveHref(theme, block.href)}>[ {block.label} → ]</a></p>
+  </div>
+</Cmd>

@@ -1,0 +1,7 @@
+---
+import Panel from '../Panel.astro';
+import { md } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'text'> };
+---
+<Panel title={block.heading} icon="📜" variant="q-scroll"><div class="prose" set:html={md(block.body)} /></Panel>

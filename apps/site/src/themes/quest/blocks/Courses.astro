@@ -1,0 +1,21 @@
+---
+import Panel from '../Panel.astro';
+import { getCourses } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'courses'> };
+const courses = getCourses();
+---
+{courses.length > 0 && (
+  <Panel title={block.heading ?? 'Training grounds'} icon="🏯">
+    <div class="q-board">
+      {courses.map((c) => (
+        <a class="q-card q-card--link" href={c.url}>
+          <span class="q-rarity">{c.level}</span>
+          <h3>{c.icon} {c.title}</h3>
+          <p>{c.description}</p>
+          <p class="q-muted">{c.lessons} lessons · {c.duration}</p>
+        </a>
+      ))}
+    </div>
+  </Panel>
+)}

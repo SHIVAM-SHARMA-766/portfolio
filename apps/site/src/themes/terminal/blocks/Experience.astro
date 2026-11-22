@@ -1,0 +1,25 @@
+---
+import Cmd from '../Cmd.astro';
+import { profile, formatMonth } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'experience'> };
+const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(16).slice(0, 7);
+---
+<Cmd cmd="git log --career">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  {profile.experience.map((job) => (
+    <article class="t-job">
+      <p><span class="t-acc-2">commit {hash(job.company + job.start)}</span> <span class="t-dim">(HEAD → {job.end ? 'past' : 'main'})</span></p>
+      <p class="t-dim">Date: {formatMonth(job.start)} – {formatMonth(job.end)}{job.location && ` · ${job.location}`}</p>
+      <h3 class="t-job-title">{job.role} @ {job.company}</h3>
+      {job.progression && <p class="t-dim">{job.progression}</p>}
+      {job.highlights.length > 0 && <ul class="t-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
+      {job.engagements.map((e) => (
+        <details class="t-details" data-xp="5" data-xp-id={`exp:${hash(e.title)}`} data-xp-label="Reading the log">
+          <summary>{e.title}</summary>
+          <ul class="t-list">{e.highlights.map((h) => <li>{h}</li>)}</ul>
+        </details>
+      ))}
+    </article>
+  ))}
+</Cmd>

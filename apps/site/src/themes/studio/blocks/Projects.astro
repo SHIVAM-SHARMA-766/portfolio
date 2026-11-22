@@ -1,0 +1,27 @@
+---
+import { profile } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'projects'> };
+let list = block.filter === 'featured' ? profile.projects.filter((p) => p.featured) : profile.projects;
+if (block.limit) list = list.slice(0, block.limit);
+---
+<section class="s-wrap s-section">
+  {block.heading && <h2 class="s-h2">{block.heading}</h2>}
+  <div class="s-grid">
+    {list.map((p) => (
+      <article class="s-card s-project">
+        <p class="s-small s-muted">{p.year}{p.featured && ' · Featured'}</p>
+        <h3>{p.name}</h3>
+        <p>{p.summary}</p>
+        <p class="s-chips">{p.tags.map((t) => <span>{t}</span>)}</p>
+        {(p.highlights.length > 0 || p.links.length > 0) && (
+          <details data-xp="15" data-xp-id={`project:${p.slug}`} data-xp-label={p.name}>
+            <summary>More details</summary>
+            <ul>{p.highlights.map((h) => <li>{h}</li>)}</ul>
+            {p.links.map((l) => <a class="s-arrow" href={l.url} target="_blank" rel="noopener">{l.label} ↗</a>)}
+          </details>
+        )}
+      </article>
+    ))}
+  </div>
+</section>

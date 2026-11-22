@@ -1,0 +1,12 @@
+---
+// Renders one content page inside whichever layout the route passes in.
+import { getNav, pageId } from '../lib/content';
+import type { Page } from '../lib/schema';
+import BlockRenderer from './BlockRenderer.astro';
+interface Props { page: Page; theme: string; Layout: any }
+const { page, theme, Layout } = Astro.props;
+const nav = await getNav();
+---
+<Layout theme={theme} title={page.title} description={page.description} slug={page.slug} nav={nav} pageIdent={pageId(page.slug)}>
+  <BlockRenderer blocks={page.blocks} theme={theme} />
+</Layout>

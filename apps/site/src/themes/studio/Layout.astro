@@ -1,0 +1,53 @@
+---
+import Head from '../../components/Head.astro';
+import Switcher from '../../components/Switcher.astro';
+import GameBoot from '../../components/GameBoot.astro';
+import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
+import { site, pageUrl } from '../../lib/content';
+import type { Page } from '../../lib/schema';
+import './studio.css';
+
+interface Props { theme: string; title: string; description?: string; slug: string; nav: Page[]; pageIdent: string | null; current?: string }
+const { theme, title, description, slug, nav, pageIdent, current = slug } = Astro.props;
+---
+<html lang="en" data-theme="studio">
+  <Head theme={theme} title={title} description={description} slug={slug} pageIdent={pageIdent}
+    fonts="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" />
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="s-top">
+      <div class="s-wrap s-top-inner">
+        <a class="s-logo" href={pageUrl(theme, '')}>{site.name}</a>
+        <nav class="s-nav" aria-label="Pages">
+          {nav.filter((p) => p.slug !== '').map((p) => (
+            <a href={pageUrl(theme, p.slug)} aria-current={p.slug === current ? 'page' : undefined}>{p.navLabel ?? p.title}</a>
+          ))}
+          {site.learnUrl && <a href={site.learnUrl}>Learn ↗</a>}
+        </nav>
+        <div class="s-tools">
+          <button type="button" class="s-pill g-only" data-open-ach aria-label="Your points and achievements">
+            <span class="s-ring" data-game-progress aria-hidden="true"></span>
+            <span><b data-game-xp>0</b> XP</span>
+          </button>
+          <details class="s-appearance">
+            <summary aria-label="Appearance" title="Theme &amp; colours">Aa</summary>
+            <div class="s-pop"><Switcher theme={theme} slug={slug} /></div>
+          </details>
+        </div>
+      </div>
+    </header>
+    <main id="main" class="s-main">
+      <slot />
+      <div data-game-end aria-hidden="true"></div>
+    </main>
+    <footer class="s-footer">
+      <div class="s-wrap s-footer-inner">
+        <p>© {new Date().getFullYear()} {site.name} · {site.role}</p>
+        <p class="s-footer-game g-only">This site is also a small game — you're level <b data-game-level>1</b>. <button type="button" class="s-link" data-open-ach>See achievements</button></p>
+        <button type="button" class="s-link" data-game-toggle data-off-text="Hide the game" data-on-text="Show the game"><span data-label>Hide the game</span></button>
+      </div>
+    </footer>
+    <AchievementsDialog />
+    <GameBoot />
+  </body>
+</html>

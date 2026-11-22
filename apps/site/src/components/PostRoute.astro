@@ -1,0 +1,14 @@
+---
+import { render } from 'astro:content';
+import { getNav } from '../lib/content';
+import PostView from './PostView.astro';
+interface Props { post: any; theme: string; Layout: any }
+const { post, theme, Layout } = Astro.props;
+const { Content } = await render(post);
+const nav = await getNav();
+---
+<Layout theme={theme} title={post.data.title} description={post.data.description} slug={`blog/${post.id}`} nav={nav} pageIdent={`blog/${post.id}`} current="blog">
+  <PostView theme={theme} title={post.data.title} date={post.data.date} tags={post.data.tags}>
+    <Content />
+  </PostView>
+</Layout>

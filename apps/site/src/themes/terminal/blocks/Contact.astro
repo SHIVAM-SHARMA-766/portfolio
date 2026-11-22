@@ -1,0 +1,16 @@
+---
+import Cmd from '../Cmd.astro';
+import { site, mdInline } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'contact'> };
+---
+<Cmd cmd="./contact.sh">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  {block.body && <p set:html={mdInline(block.body)} />}
+  <ul class="t-list t-contact">
+    {site.email && <li>email &nbsp;→ <a href={`mailto:${site.email}`}>{site.email}</a></li>}
+    {site.socials.map((s) => <li>{s.label.toLowerCase()} → <a href={s.url} target="_blank" rel="noopener" data-xp="5" data-xp-id={`contact:${s.label.toLowerCase()}`} data-xp-label="Following along">{s.url.replace(/^https?:\/\//, '')}</a></li>)}
+    {site.location && <li>where &nbsp;→ {site.location}</li>}
+  </ul>
+  <p class="t-dim">tip: there's a command that gets you hired faster. try the prompt below.</p>
+</Cmd>
