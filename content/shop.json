@@ -1,0 +1,9 @@
+{
+  "items": [
+    { "id": "theme:quest", "label": "Quest theme", "description": "A pixel adventure: world map, quest board, skill inventory.", "price": 120 },
+    { "id": "palette:terminal-dracula", "label": "Dracula palette (Terminal)", "price": 60 },
+    { "id": "palette:terminal-solarized", "label": "Solarized palette (Terminal)", "price": 90 },
+    { "id": "palette:quest-dungeon", "label": "Dungeon palette (Quest)", "price": 80 },
+    { "id": "palette:quest-neon", "label": "Neon arcade palette (Quest)", "price": 150 }
+  ]
+}

@@ -10,10 +10,17 @@
   "learnUrl": "https://learn.shivamsharma.duckdns.org",
   "cookieDomain": ".shivamsharma.duckdns.org",
   "socials": [
-    { "label": "GitHub", "url": "https://github.com/SHIVAM-SHARMA-766" }
+    {
+      "label": "GitHub",
+      "url": "https://github.com/SHIVAM-SHARMA-766"
+    }
   ],
   "defaultTheme": "terminal",
-  "defaultPalettes": { "terminal": "matrix", "quest": "forest", "studio": "light" },
+  "defaultPalettes": {
+    "terminal": "matrix",
+    "quest": "forest",
+    "studio": "light"
+  },
   "game": {
     "enabled": true,
     "rewards": {
@@ -23,15 +30,40 @@
       "palette": 5,
       "terminalCommand": 3,
       "lesson": 15,
-      "quiz": 20
+      "quiz": 20,
+      "project": 15,
+      "experience": 5,
+      "contact": 5,
+      "contactEmail": 10,
+      "course": 50,
+      "flag": 25
     },
     "levels": [
-      { "xp": 0, "name": "Visitor" },
-      { "xp": 40, "name": "Explorer" },
-      { "xp": 100, "name": "Adventurer" },
-      { "xp": 200, "name": "Pathfinder" },
-      { "xp": 350, "name": "Champion" },
-      { "xp": 550, "name": "Legend" }
+      {
+        "xp": 0,
+        "name": "Visitor"
+      },
+      {
+        "xp": 40,
+        "name": "Explorer"
+      },
+      {
+        "xp": 100,
+        "name": "Adventurer"
+      },
+      {
+        "xp": 200,
+        "name": "Pathfinder"
+      },
+      {
+        "xp": 350,
+        "name": "Champion"
+      },
+      {
+        "xp": 550,
+        "name": "Legend"
+      }
     ]
-  }
+  },
+  "apiUrl": "https://shivamsharma.duckdns.org/api"
 }
