@@ -1,0 +1,17 @@
+{
+  "achievements": [
+    { "id": "first-steps", "title": "First steps", "description": "Visit your first page.", "icon": "👣", "bonus": 0, "hidden": false, "rule": { "type": "events", "prefix": "visit:", "min": 1 } },
+    { "id": "explorer", "title": "Explorer", "description": "Visit every page of the portfolio.", "icon": "🧭", "bonus": 25, "hidden": false, "rule": { "type": "all-pages" } },
+    { "id": "bookworm", "title": "Bookworm", "description": "Read three pages to the end.", "icon": "📖", "bonus": 10, "hidden": false, "rule": { "type": "events", "prefix": "read:", "min": 3 } },
+    { "id": "quest-taker", "title": "Quest taker", "description": "Open three projects.", "icon": "🗡️", "bonus": 15, "hidden": false, "rule": { "type": "events", "prefix": "project:", "min": 3 } },
+    { "id": "shapeshifter", "title": "Shapeshifter", "description": "Try every theme.", "icon": "🎭", "bonus": 20, "hidden": false, "rule": { "type": "events", "prefix": "theme:", "min": 3 } },
+    { "id": "painter", "title": "Painter", "description": "Try four colour palettes.", "icon": "🎨", "bonus": 10, "hidden": false, "rule": { "type": "events", "prefix": "palette:", "min": 4 } },
+    { "id": "hacker", "title": "Hacker", "description": "Run five different terminal commands.", "icon": "💻", "bonus": 15, "hidden": false, "rule": { "type": "events", "prefix": "terminal:", "min": 5 } },
+    { "id": "student", "title": "Student", "description": "Complete your first lesson.", "icon": "🎓", "bonus": 10, "hidden": false, "rule": { "type": "events", "prefix": "lesson:", "min": 1 } },
+    { "id": "quiz-master", "title": "Quiz master", "description": "Pass three quizzes.", "icon": "🧠", "bonus": 25, "hidden": false, "rule": { "type": "events", "prefix": "quiz:", "min": 3 } },
+    { "id": "say-hello", "title": "Say hello", "description": "Open a way to contact me.", "icon": "👋", "bonus": 10, "hidden": false, "rule": { "type": "events", "prefix": "contact:", "min": 1 } },
+    { "id": "konami", "title": "Old school", "description": "↑ ↑ ↓ ↓ ← → ← → B A", "icon": "🕹️", "bonus": 50, "hidden": true, "rule": { "type": "event", "id": "secret:konami" } },
+    { "id": "sudo", "title": "Root access", "description": "Found the command that matters most.", "icon": "🔑", "bonus": 50, "hidden": true, "rule": { "type": "event", "id": "secret:sudo-hire" } },
+    { "id": "legend", "title": "Legend", "description": "Reach 550 XP.", "icon": "👑", "bonus": 0, "hidden": false, "rule": { "type": "xp", "min": 550 } }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Blog",
+  "slug": "blog",
+  "navLabel": "Blog",
+  "icon": "📚",
+  "order": 4,
+  "inNav": true,
+  "draft": false,
+  "description": "Notes on DevOps, security and running things for free.",
+  "blocks": [
+    { "type": "posts", "heading": "Writing" }
+  ]
+}

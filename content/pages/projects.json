@@ -1,0 +1,13 @@
+{
+  "title": "Projects",
+  "slug": "projects",
+  "navLabel": "Projects",
+  "icon": "🗺️",
+  "order": 3,
+  "inNav": true,
+  "draft": false,
+  "description": "Things I've built.",
+  "blocks": [
+    { "type": "projects", "heading": "Projects", "filter": "all" }
+  ]
+}

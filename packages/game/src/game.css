@@ -1,0 +1,19 @@
+/* Theme-neutral game UI. Themes restyle these using their own palette vars. */
+.g-toasts { position: fixed; z-index: 1000; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: .5rem; pointer-events: none; max-width: min(22rem, calc(100vw - 2rem)); }
+.g-toast { display: flex; gap: .6rem; align-items: center; padding: .6rem .9rem; background: var(--surface); color: var(--fg); border: 2px solid var(--accent); border-radius: var(--g-radius, 8px); box-shadow: 0 6px 24px rgb(0 0 0 / .25); animation: g-in .25s ease-out; font: inherit; font-size: .9rem; }
+.g-toast b { color: var(--accent); }
+.g-toast small { display: block; color: var(--muted); font-size: .75rem; }
+.g-toast__icon { font-size: 1.5rem; line-height: 1; }
+.g-toast--achievement, .g-toast--level { border-color: var(--accent-2); }
+.g-toast--out { opacity: 0; transform: translateY(8px); transition: opacity .5s, transform .5s; }
+@keyframes g-in { from { opacity: 0; transform: translateY(12px) scale(.96); } }
+:root[data-game="off"] .g-only { display: none !important; }
+[data-game-progress] { --progress: 0; }
+[data-locked] { opacity: .55; }
+.g-ach { display: grid; grid-template-columns: 2rem 1fr auto; gap: .6rem; align-items: center; padding: .5rem 0; border-bottom: 1px solid var(--border); }
+.g-ach__icon { font-size: 1.4rem; text-align: center; }
+.g-ach__text small { display: block; color: var(--muted); }
+.g-ach__state { font-size: .75rem; color: var(--muted); }
+.g-ach--on .g-ach__state { color: var(--accent); }
+.g-ach--off .g-ach__icon { filter: grayscale(1); opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .g-toast, .g-toast--out { animation: none; transition: none; } }

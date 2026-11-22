@@ -1,0 +1,12 @@
+{
+  "name": "@portfolio/game",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./core": "./src/core.js",
+    "./storage": "./src/storage.js",
+    "./game.css": "./src/game.css"
+  }
+}

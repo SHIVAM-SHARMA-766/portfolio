@@ -1,0 +1,20 @@
+{
+  "terminal": [
+    { "id": "matrix", "label": "Matrix", "unlockXp": 0, "colors": { "bg": "#070b08", "surface": "#0d150f", "fg": "#c6f7cf", "muted": "#7fae88", "accent": "#3dff74", "accent2": "#22d3ee", "border": "#1f3a26" } },
+    { "id": "amber", "label": "Amber CRT", "unlockXp": 0, "colors": { "bg": "#120b00", "surface": "#1c1203", "fg": "#ffd68a", "muted": "#b8955a", "accent": "#ffb000", "accent2": "#ff7a45", "border": "#3d2a08" } },
+    { "id": "dracula", "label": "Dracula", "unlockXp": 60, "colors": { "bg": "#1e1f29", "surface": "#282a36", "fg": "#f8f8f2", "muted": "#a4a9c9", "accent": "#bd93f9", "accent2": "#ff79c6", "border": "#44475a" } },
+    { "id": "solarized", "label": "Solarized", "unlockXp": 150, "colors": { "bg": "#002b36", "surface": "#073642", "fg": "#d5dcd6", "muted": "#93a1a1", "accent": "#b58900", "accent2": "#2aa198", "border": "#18505e" } }
+  ],
+  "quest": [
+    { "id": "forest", "label": "Forest", "unlockXp": 0, "colors": { "bg": "#18261b", "surface": "#263b2a", "fg": "#f4ecd0", "muted": "#bfc4a5", "accent": "#f2c14e", "accent2": "#ef8354", "border": "#0c140e" } },
+    { "id": "snow", "label": "Snowfield", "unlockXp": 0, "colors": { "bg": "#dde9f3", "surface": "#f7fbff", "fg": "#1b2838", "muted": "#4a5d72", "accent": "#1d4ed8", "accent2": "#be185d", "border": "#1b2838" } },
+    { "id": "dungeon", "label": "Dungeon", "unlockXp": 100, "colors": { "bg": "#15111d", "surface": "#251e33", "fg": "#ece2cf", "muted": "#b3a6c4", "accent": "#c084fc", "accent2": "#fb923c", "border": "#07050a" } },
+    { "id": "neon", "label": "Neon arcade", "unlockXp": 250, "colors": { "bg": "#0a0720", "surface": "#18123d", "fg": "#f2eaff", "muted": "#b4a8dc", "accent": "#22d3ee", "accent2": "#f472b6", "border": "#000000" } }
+  ],
+  "studio": [
+    { "id": "light", "label": "Paper", "unlockXp": 0, "colors": { "bg": "#fafaf7", "surface": "#ffffff", "fg": "#18181b", "muted": "#5c5c66", "accent": "#c2410c", "accent2": "#0f766e", "border": "#e4e4de" } },
+    { "id": "dark", "label": "Ink", "unlockXp": 0, "colors": { "bg": "#111214", "surface": "#1a1b1f", "fg": "#ececec", "muted": "#a1a1aa", "accent": "#ff8a4c", "accent2": "#5eead4", "border": "#2a2b31" } },
+    { "id": "ocean", "label": "Ocean", "unlockXp": 0, "colors": { "bg": "#f3f7fa", "surface": "#ffffff", "fg": "#0f2533", "muted": "#4b6475", "accent": "#0e7490", "accent2": "#7c3aed", "border": "#dbe5ec" } },
+    { "id": "sand", "label": "Sand", "unlockXp": 0, "colors": { "bg": "#f5efe4", "surface": "#fffaf2", "fg": "#2b2118", "muted": "#6b5a48", "accent": "#9a3412", "accent2": "#3f6212", "border": "#e5d9c6" } }
+  ]
+}

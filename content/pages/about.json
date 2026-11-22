@@ -1,0 +1,19 @@
+{
+  "title": "About",
+  "slug": "about",
+  "navLabel": "About",
+  "icon": "📜",
+  "order": 1,
+  "inNav": true,
+  "draft": false,
+  "description": "Who I am and how I work.",
+  "blocks": [
+    {
+      "type": "text",
+      "heading": "About me",
+      "body": "I'm a DevOps / DevSecOps engineer based in Delhi. I started as a trainee in July 2025 and now own security, compliance and cost work for one enterprise AWS organisation and the full DevOps lifecycle for another.\n\nOutside work I run my own infrastructure entirely on free tiers — Terraform for five providers, self-hosted services on Oracle Cloud, and open-source tools like **Dohra**. Zero cost is a constraint, not an excuse: everything is infrastructure as code, version-controlled and documented.\n\nI'm currently preparing for the **CKA**, followed by the **CKS**."
+    },
+    { "type": "education", "heading": "Education & certifications" },
+    { "type": "skills", "heading": "Toolbox" }
+  ]
+}

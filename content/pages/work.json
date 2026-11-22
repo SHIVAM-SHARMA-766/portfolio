@@ -1,0 +1,13 @@
+{
+  "title": "Experience",
+  "slug": "experience",
+  "navLabel": "Experience",
+  "icon": "⚔️",
+  "order": 2,
+  "inNav": true,
+  "draft": false,
+  "description": "Where I've worked and what I've shipped.",
+  "blocks": [
+    { "type": "experience", "heading": "Experience" }
+  ]
+}

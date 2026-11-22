@@ -1,0 +1,35 @@
+{
+  "title": "Home",
+  "slug": "",
+  "navLabel": "Home",
+  "icon": "🏠",
+  "order": 0,
+  "inNav": true,
+  "draft": false,
+  "description": "DevOps / DevSecOps engineer — AWS, Terraform, Kubernetes and cloud security.",
+  "blocks": [
+    {
+      "type": "hero",
+      "heading": "Shivam Sharma",
+      "subheading": "DevOps / DevSecOps Engineer",
+      "body": "I run production AWS infrastructure for two enterprise clients — security, compliance and cost across a multi-account organisation, and end-to-end DevOps for a multi-environment EKS platform.",
+      "ctas": [
+        { "label": "See my projects", "href": "projects/" },
+        { "label": "Get in touch", "href": "contact/" }
+      ]
+    },
+    {
+      "type": "stats",
+      "heading": "At a glance",
+      "items": [
+        { "value": "70+ → 47", "label": "AWS accounts consolidated with Terraform" },
+        { "value": "~$120K", "label": "yearly AWS spend cut (team of 5)" },
+        { "value": "3", "label": "environments on Amazon EKS" },
+        { "value": "$0", "label": "monthly cost of my own infrastructure" }
+      ]
+    },
+    { "type": "projects", "heading": "Featured work", "filter": "featured", "limit": 3 },
+    { "type": "courses", "heading": "Learn with me" },
+    { "type": "cta", "heading": "Earn points while you look around", "body": "Every page you visit, project you open and secret you find earns XP. Reach new levels to unlock colour palettes.", "label": "Start with my story", "href": "about/" }
+  ]
+}

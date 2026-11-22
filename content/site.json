@@ -1,0 +1,37 @@
+{
+  "name": "Shivam Sharma",
+  "shortName": "shivam",
+  "role": "DevOps / DevSecOps Engineer",
+  "tagline": "I build and secure cloud infrastructure — Terraform, Kubernetes, CI/CD and cloud security.",
+  "description": "Portfolio of Shivam Sharma, a DevOps / DevSecOps engineer working with AWS, Terraform, Kubernetes and cloud security.",
+  "location": "Delhi, India",
+  "email": "developer.shivamsharma@gmail.com",
+  "siteUrl": "https://shivamsharma.duckdns.org",
+  "learnUrl": "https://learn.shivamsharma.duckdns.org",
+  "cookieDomain": "",
+  "socials": [
+    { "label": "GitHub", "url": "https://github.com/SHIVAM-SHARMA-766" }
+  ],
+  "defaultTheme": "terminal",
+  "defaultPalettes": { "terminal": "matrix", "quest": "forest", "studio": "light" },
+  "game": {
+    "enabled": true,
+    "rewards": {
+      "visit": 5,
+      "read": 5,
+      "theme": 10,
+      "palette": 5,
+      "terminalCommand": 3,
+      "lesson": 15,
+      "quiz": 20
+    },
+    "levels": [
+      { "xp": 0, "name": "Visitor" },
+      { "xp": 40, "name": "Explorer" },
+      { "xp": 100, "name": "Adventurer" },
+      { "xp": 200, "name": "Pathfinder" },
+      { "xp": 350, "name": "Champion" },
+      { "xp": 550, "name": "Legend" }
+    ]
+  }
+}

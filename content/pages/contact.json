@@ -1,0 +1,13 @@
+{
+  "title": "Contact",
+  "slug": "contact",
+  "navLabel": "Contact",
+  "icon": "✉️",
+  "order": 5,
+  "inNav": true,
+  "draft": false,
+  "description": "How to reach me.",
+  "blocks": [
+    { "type": "contact", "heading": "Let's talk", "body": "Open to DevOps, DevSecOps and cloud security conversations. Email is the fastest way to reach me." }
+  ]
+}
