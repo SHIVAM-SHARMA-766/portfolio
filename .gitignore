@@ -1,8 +1,11 @@
 apps/api/internal/game/data/game-data.json
 .astro/
+client_secret_*.json
 dist/
 .DS_Store
 .env
 .env.*
+*.key
 *.log
 node_modules/
+*.pem
