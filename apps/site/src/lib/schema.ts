@@ -4,14 +4,34 @@ import { z } from 'astro/zod';
 
 const link = z.object({ label: z.string(), url: z.string() });
 const cta = z.object({ label: z.string(), href: z.string() });
+// A card: projects, engagements, sub-pages and hand-written lists all render as these
+export const cardSchema = z.object({
+  title: z.string(),
+  body: z.string().nullish(),
+  href: z.string().nullish(),
+  meta: z.string().nullish(),
+  badge: z.string().nullish(),
+  image: z.string().nullish(),
+  icon: z.string().nullish(),
+  tags: z.array(z.string()).default([]),
+  cta: z.string().nullish(),
+  // Award XP when the card is opened (set by generated cards, not in content)
+  xp: z.object({ id: z.string(), points: z.number(), label: z.string() }).nullish(),
+});
+export type Card = z.infer<typeof cardSchema>;
+// A sub-page of a project or an engagement
+const subPage = z.object({ slug: z.string().regex(/^[a-z0-9-]+$/), title: z.string(), summary: z.string().nullish(), body: z.string().default('') });
 
 // Block types. Adding one: add it here, to the admin config, and (optionally)
 // a renderer per theme — themes without one fall back to a generic renderer.
 export const blockSchema = z.discriminatedUnion('type', [
+  // Page banner: the top of every inner page and of every project / experience page
+  z.object({ type: z.literal('banner'), eyebrow: z.string().nullish(), heading: z.string(), body: z.string().nullish(), image: z.string().nullish(), tags: z.array(z.string()).default([]), ctas: z.array(cta).default([]), back: cta.nullish() }),
+  z.object({ type: z.literal('cards'), heading: z.string().nullish(), body: z.string().nullish(), columns: z.number().int().min(1).max(4).nullish(), items: z.array(cardSchema).default([]) }),
   z.object({ type: z.literal('hero'), heading: z.string(), subheading: z.string().nullish(), body: z.string().nullish(), ctas: z.array(cta).default([]) }),
   z.object({ type: z.literal('text'), heading: z.string().nullish(), body: z.string() }),
   z.object({ type: z.literal('stats'), heading: z.string().nullish(), items: z.array(z.object({ value: z.string(), label: z.string() })) }),
-  z.object({ type: z.literal('experience'), heading: z.string().nullish() }),
+  z.object({ type: z.literal('experience'), heading: z.string().nullish(), compact: z.boolean().default(false) }),
   z.object({ type: z.literal('projects'), heading: z.string().nullish(), filter: z.enum(['all', 'featured']).default('all'), limit: z.number().int().positive().nullish() }),
   z.object({ type: z.literal('skills'), heading: z.string().nullish() }),
   z.object({ type: z.literal('education'), heading: z.string().nullish() }),
@@ -83,7 +103,19 @@ export const profileSchema = z.object({
     start: z.string(),
     end: z.string().nullish(),
     progression: z.string().nullish(),
-    engagements: z.array(z.object({ title: z.string(), highlights: z.array(z.string()) })).default([]),
+    slug: z.string().regex(/^[a-z0-9-]+$/).nullish(),
+    summary: z.string().nullish(),
+    logo: z.string().nullish(),
+    engagements: z.array(z.object({
+      title: z.string(),
+      slug: z.string().regex(/^[a-z0-9-]+$/).nullish(),
+      summary: z.string().nullish(),
+      cover: z.string().nullish(),
+      tags: z.array(z.string()).default([]),
+      highlights: z.array(z.string()).default([]),
+      body: z.string().default(''),
+      pages: z.array(subPage).default([]),
+    })).default([]),
     highlights: z.array(z.string()).default([]),
   })),
   projects: z.array(z.object({
@@ -91,7 +123,11 @@ export const profileSchema = z.object({
     name: z.string(),
     year: z.string().nullish(),
     featured: z.boolean().default(false),
+    role: z.string().nullish(),
+    cover: z.string().nullish(),
     summary: z.string(),
+    body: z.string().default(''),
+    pages: z.array(subPage).default([]),
     highlights: z.array(z.string()).default([]),
     tags: z.array(z.string()).default([]),
     links: z.array(link).default([]),

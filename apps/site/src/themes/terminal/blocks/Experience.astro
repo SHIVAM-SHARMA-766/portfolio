@@ -1,25 +1,35 @@
 ---
 import Cmd from '../Cmd.astro';
-import { profile, formatMonth, rewards, ids } from '../../../lib/content';
+import Cards from './Cards.astro';
+import { profile } from '../../../lib/content';
+import { bases, engagementCard, jobSlug, engagementSlug, period, shortTitle } from '../../../lib/details';
+import { xpAttrs } from '../../../lib/cards';
 import type { BlockOf } from '../../../lib/schema';
-const { block } = Astro.props as { block: BlockOf<'experience'> };
+const { block, theme } = Astro.props as { block: BlockOf<'experience'>; theme: string };
+const { experience: base } = await bases();
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(16).slice(0, 7);
+const cards = profile.experience.flatMap((job) => job.engagements.map((e) => engagementCard(job, e, base)));
 ---
-<Cmd cmd="git log --career">
-  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
-  {profile.experience.map((job) => (
-    <article class="t-job">
-      <p><span class="t-acc-2">commit {hash(job.company + job.start)}</span> <span class="t-dim">(HEAD → {job.end ? 'past' : 'main'})</span></p>
-      <p class="t-dim">Date: {formatMonth(job.start)} – {formatMonth(job.end)}{job.location && ` · ${job.location}`}</p>
-      <h3 class="t-job-title">{job.role} @ {job.company}</h3>
-      {job.progression && <p class="t-dim">{job.progression}</p>}
-      {job.highlights.length > 0 && <ul class="t-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
-      {job.engagements.map((e) => (
-        <details class="t-details" data-xp={rewards.experience} data-xp-id={ids.experience(e.title)} data-xp-label="Reading the log">
-          <summary>{e.title}</summary>
-          <ul class="t-list">{e.highlights.map((h) => <li>{h}</li>)}</ul>
-        </details>
-      ))}
-    </article>
-  ))}
-</Cmd>
+{block.compact ? (
+  <Cards theme={theme} block={{ type: 'cards', heading: block.heading, body: null, columns: 2, items: cards }} />
+) : (
+  <Cmd cmd="git log --career">
+    {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+    {profile.experience.map((job) => (
+      <article class="t-job">
+        <p><span class="t-acc-2">commit {hash(job.company + job.start)}</span> <span class="t-dim">(HEAD → {job.end ? 'past' : 'main'})</span></p>
+        <p class="t-dim">Date: {period(job)}{job.location && ` · ${job.location}`}</p>
+        <h3 class="t-job-title"><a href={`/${base}/${jobSlug(job)}/`}>{job.role} @ {job.company}</a></h3>
+        {job.progression && <p class="t-dim">{job.progression}</p>}
+        {job.highlights.length > 0 && <ul class="t-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
+        {job.engagements.map((e) => (
+          <div class="t-eng">
+            <p class="t-acc">» {shortTitle(e.title)}</p>
+            <ul class="t-list">{e.highlights.slice(0, 3).map((h) => <li>{h}</li>)}</ul>
+            <a class="t-link-btn" href={`/${base}/${jobSlug(job)}/${engagementSlug(e)}/`} {...xpAttrs(engagementCard(job, e, base))}>[ cat full-log → ]</a>
+          </div>
+        ))}
+      </article>
+    ))}
+  </Cmd>
+)}

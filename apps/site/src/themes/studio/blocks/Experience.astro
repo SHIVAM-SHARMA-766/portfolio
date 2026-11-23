@@ -1,28 +1,41 @@
 ---
-import { profile, formatMonth, rewards, ids } from '../../../lib/content';
+import Cards from './Cards.astro';
+import { profile, mdInline } from '../../../lib/content';
+import { bases, engagementCard, jobSlug, period, shortTitle, engagementSlug } from '../../../lib/details';
+import { xpAttrs } from '../../../lib/cards';
 import type { BlockOf } from '../../../lib/schema';
-const { block } = Astro.props as { block: BlockOf<'experience'> };
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+const { block, theme } = Astro.props as { block: BlockOf<'experience'>; theme: string };
+const { experience: base } = await bases();
+const cards = profile.experience.flatMap((job) => job.engagements.map((e) => engagementCard(job, e, base)));
 ---
-<section class="s-wrap s-section">
-  {block.heading && <h2 class="s-h2">{block.heading}</h2>}
-  <ol class="s-timeline">
-    {profile.experience.map((job) => (
-      <li>
-        <p class="s-when">{formatMonth(job.start)} — {formatMonth(job.end)}</p>
-        <div>
-          <h3>{job.role}, <span class="s-muted">{job.company}</span></h3>
-          {job.location && <p class="s-muted">{job.location}</p>}
-          {job.progression && <p class="s-small">{job.progression}</p>}
-          {job.highlights.length > 0 && <ul>{job.highlights.map((h) => <li>{h}</li>)}</ul>}
-          {job.engagements.map((e) => (
-            <details class="s-card s-eng" data-xp={rewards.experience} data-xp-id={ids.experience(e.title)} data-xp-label="Reading the details" open>
-              <summary>{e.title}</summary>
-              <ul>{e.highlights.map((h) => <li>{h}</li>)}</ul>
-            </details>
-          ))}
-        </div>
-      </li>
-    ))}
-  </ol>
-</section>
+{block.compact ? (
+  <Cards theme={theme} block={{ type: 'cards', heading: block.heading, body: null, columns: 2, items: cards }} />
+) : (
+  <section class="s-wrap s-section">
+    {block.heading && <h2 class="s-h2">{block.heading}</h2>}
+    <ol class="s-timeline">
+      {profile.experience.map((job) => (
+        <li>
+          <p class="s-when">{period(job)}</p>
+          <div>
+            <h3><a class="s-plain" href={`/${base}/${jobSlug(job)}/`}>{job.role}, <span class="s-muted">{job.company}</span></a></h3>
+            {job.location && <p class="s-muted">{job.location}</p>}
+            {job.progression && <p class="s-small">{job.progression}</p>}
+            {job.highlights.length > 0 && <ul>{job.highlights.map((h) => <li>{h}</li>)}</ul>}
+            {job.engagements.map((e) => {
+              const card = engagementCard(job, e, base);
+              return (
+                <article class="s-card s-eng">
+                  <h4>{shortTitle(e.title)}</h4>
+                  {e.summary && <p class="s-muted" set:html={mdInline(e.summary)} />}
+                  <ul>{e.highlights.slice(0, 3).map((h) => <li>{h}</li>)}</ul>
+                  <a class="s-arrow" href={`/${base}/${jobSlug(job)}/${engagementSlug(e)}/`} {...xpAttrs(card)}>Read the full story →</a>
+                </article>
+              );
+            })}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+)}

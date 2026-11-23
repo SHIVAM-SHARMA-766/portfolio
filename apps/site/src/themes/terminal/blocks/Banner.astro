@@ -1,0 +1,19 @@
+---
+import Cmd from '../Cmd.astro';
+import { mdInline, resolveHref } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'banner'>; theme: string };
+---
+<Cmd cmd="cat README.md">
+  <div class={`t-banner ${block.image ? 't-banner--img' : ''}`}>
+    <div>
+      {block.back && <a class="t-back" href={resolveHref(theme, block.back.href)}>cd .. <span class="t-dim"># {block.back.label}</span></a>}
+      {block.eyebrow && <p class="t-dim t-banner-eyebrow">// {block.eyebrow}</p>}
+      <h1 class="t-banner-title">{block.heading}</h1>
+      {block.body && <p class="t-banner-body" set:html={mdInline(block.body)} />}
+      {block.tags.length > 0 && <p class="t-tags">{block.tags.map((t) => <span class="t-tag">{t}</span>)}</p>}
+      {block.ctas.length > 0 && <p class="t-actions">{block.ctas.map((c) => <a class="t-link-btn" href={resolveHref(theme, c.href)} {...(/^https?:/.test(c.href) ? { target: '_blank', rel: 'noopener' } : {})}>[ {c.label} ]</a>)}</p>}
+    </div>
+    {block.image && <span class="t-portrait__frame t-banner-img"><img src={block.image} alt="" /></span>}
+  </div>
+</Cmd>

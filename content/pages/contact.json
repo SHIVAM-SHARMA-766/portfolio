@@ -8,6 +8,18 @@
   "draft": false,
   "description": "How to reach me.",
   "blocks": [
-    { "type": "contact", "heading": "Let's talk", "body": "Open to DevOps, DevSecOps and cloud security conversations. Email is the fastest way to reach me." }
+    {
+      "type": "banner",
+      "eyebrow": "Contact",
+      "heading": "Let's talk",
+      "body": "Open to DevOps, DevSecOps and cloud security conversations. Email is the fastest way to reach me.",
+      "tags": [],
+      "ctas": []
+    },
+    {
+      "type": "contact",
+      "heading": null,
+      "body": null
+    }
   ]
 }

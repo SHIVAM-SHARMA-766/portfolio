@@ -50,7 +50,6 @@ const config = { ...(await gameConfig(pageIdent)), theme };
         var p = JSON.parse(localStorage.getItem('pf.prefs.v1')) || {};
         var saved = (p.palettes || {})[theme];
         if (saved && palettes.indexOf(saved) !== -1) pal = saved;
-        if (p.gameOff) root.dataset.game = 'off';
         p.theme = theme;
         localStorage.setItem('pf.prefs.v1', JSON.stringify(p));
       } catch (e) {}

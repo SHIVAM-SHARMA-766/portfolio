@@ -1,0 +1,20 @@
+---
+import { mdInline, resolveHref } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'banner'>; theme: string };
+---
+<section class={`s-banner ${block.image ? 's-banner--img' : ''}`}>
+  <div class="s-wrap s-banner__inner">
+    <div class="s-banner__text">
+      {block.back && <a class="s-back" href={resolveHref(theme, block.back.href)}>← {block.back.label}</a>}
+      {block.eyebrow && <p class="s-eyebrow">{block.eyebrow}</p>}
+      <h1>{block.heading}</h1>
+      {block.body && <p class="s-lead" set:html={mdInline(block.body)} />}
+      {block.tags.length > 0 && <p class="s-chips">{block.tags.map((t) => <span>{t}</span>)}</p>}
+      {block.ctas.length > 0 && (
+        <div class="s-ctas">{block.ctas.map((c, i) => <a class={i === 0 ? 's-btn' : 's-btn s-btn--ghost'} href={resolveHref(theme, c.href)} {...(/^https?:/.test(c.href) ? { target: '_blank', rel: 'noopener' } : {})}>{c.label}</a>)}</div>
+      )}
+    </div>
+    {block.image && <img class="s-banner__img" src={block.image} alt="" loading="eager" />}
+  </div>
+</section>

@@ -2,6 +2,7 @@
 // plants each mission's flag where its `kind` says it belongs.
 import { createHash } from 'node:crypto';
 import { profile, site, getPosts, getNav, getCourses, slugify, formatMonth, photo } from '../../lib/content';
+import { bases } from '../../lib/details';
 import missionsRaw from '../../../../../content/missions.json';
 
 export type FsNode =
@@ -21,6 +22,7 @@ export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex'
 export async function buildFs(theme: string) {
   const posts = await getPosts();
   const nav = await getNav();
+  const base = await bases();
 
   // experience/*.log — the grep mission's flag goes into the first log
   const experience: Record<string, FsNode> = {};
@@ -52,7 +54,7 @@ export async function buildFs(theme: string) {
     if (p.tags.length) lines.push('', `tags: ${p.tags.join(', ')}`);
     for (const l of p.links) lines.push(`${l.label.toLowerCase()}: ${l.url}`);
     if (p === decoderHost && flagOf('base64')) lines.push('', `build-note: ${Buffer.from(flagOf('base64')!).toString('base64')}`);
-    projects[p.slug] = dir({ 'README.md': file(lines.join('\n'), { href: '/projects/' }) });
+    projects[p.slug] = dir({ 'README.md': file(lines.join('\n'), { href: `/${base.projects}/${p.slug}/` }) });
   }
 
   const blog: Record<string, FsNode> = {};

@@ -8,6 +8,22 @@
   "draft": false,
   "description": "Where I've worked and what I've shipped.",
   "blocks": [
-    { "type": "experience", "heading": "Experience" }
+    {
+      "type": "banner",
+      "eyebrow": "Experience",
+      "heading": "Where I've worked",
+      "body": "From trainee to DevOps engineer in under a year: production AWS for two enterprise clients. Open a client for the full story.",
+      "tags": [],
+      "ctas": [
+        {
+          "label": "See my projects",
+          "href": "projects/"
+        }
+      ]
+    },
+    {
+      "type": "experience",
+      "heading": null
+    }
   ]
 }

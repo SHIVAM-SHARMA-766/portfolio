@@ -7,7 +7,7 @@ import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
 import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
 import Logo from '../../components/Logo.astro';
-import SiteLinks from '../../components/SiteLinks.astro';
+import FooterColumns from '../../components/FooterColumns.astro';
 import { site, pageUrl, photo, initials as siteInitials } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './quest.css';
@@ -35,7 +35,6 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
       <div class="q-hud-actions">
         <AccountChip />
         <button type="button" class="q-btn g-only" data-open-ach>🏆 <span class="q-hide-sm">Quest log</span> <span data-game-ach-count>0/0</span></button>
-        <button type="button" class="q-btn q-btn--ghost" data-game-toggle data-off-text="Skip game" data-on-text="Play game"><span data-label>Skip game</span></button>
       </div>
     </header>
 
@@ -59,9 +58,18 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
         <summary>⚙️ Settings — themes & palettes</summary>
         <Switcher theme={theme} slug={slug} />
       </details>
-      <p class="q-tip g-only">Tip: legends speak of a secret code… ↑ ↑ ↓ ↓</p>
-      <SiteLinks class="q-footer-links" />
-      <p>© {new Date().getFullYear()} {site.name}</p>
+      <div class="q-panel q-footer-card">
+        <div class="q-footer-brand">
+          <p class="q-footer-name"><Logo size={28} /> {site.name}</p>
+          <p>{site.tagline}</p>
+          {site.email && <a class="q-btn" href={`mailto:${site.email}`}>🕊️ Send a raven</a>}
+        </div>
+        <FooterColumns theme={theme} class="q-footer-cols" />
+      </div>
+      <div class="q-footer-bottom">
+        <p>© {new Date().getFullYear()} {site.name}{site.location && ` · ${site.location}`}</p>
+        <p class="q-tip g-only">Tip: legends speak of a secret code… ↑ ↑ ↓ ↓</p>
+      </div>
     </footer>
     <AchievementsDialog />
     <AccountDialogs ownerName={site.name} />

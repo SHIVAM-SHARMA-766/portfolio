@@ -7,7 +7,7 @@ import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
 import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
 import Logo from '../../components/Logo.astro';
-import SiteLinks from '../../components/SiteLinks.astro';
+import FooterColumns from '../../components/FooterColumns.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './studio.css';
@@ -47,11 +47,20 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
       <div data-game-end aria-hidden="true"></div>
     </main>
     <footer class="s-footer">
-      <div class="s-wrap s-footer-inner">
-        <p>© {new Date().getFullYear()} {site.name} · {site.role}</p>
-        <SiteLinks class="s-footer-links" />
-        <p class="s-footer-game g-only">This site is also a small game — you're level <b data-game-level>1</b>. <button type="button" class="s-link" data-open-ach>See achievements</button></p>
-        <button type="button" class="s-link" data-game-toggle data-off-text="Hide the game" data-on-text="Show the game"><span data-label>Hide the game</span></button>
+      <div class="s-wrap">
+        <div class="s-footer-top">
+          <div class="s-footer-brand">
+            <a class="s-logo" href={pageUrl(theme, '')} aria-label={`${site.name} — home`}><Logo size={36} /></a>
+            <p class="s-footer-name">{site.name}</p>
+            <p>{site.tagline}</p>
+            {site.email && <a class="s-btn s-btn--sm" href={`mailto:${site.email}`}>Say hello →</a>}
+          </div>
+          <FooterColumns theme={theme} class="s-footer-cols" />
+        </div>
+        <div class="s-footer-bottom">
+          <p>© {new Date().getFullYear()} {site.name}{site.location && ` · ${site.location}`}</p>
+          <p class="g-only">You're level <b data-game-level>1</b> · <button type="button" class="s-link" data-open-ach>Achievements</button> · <button type="button" class="s-link" data-open-shop>Shop</button></p>
+        </div>
       </div>
     </footer>
     <AchievementsDialog />

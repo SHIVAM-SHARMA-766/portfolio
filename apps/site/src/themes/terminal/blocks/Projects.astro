@@ -1,25 +1,11 @@
 ---
-import Cmd from '../Cmd.astro';
-import { profile, rewards, ids } from '../../../lib/content';
+import Cards from './Cards.astro';
+import { profile } from '../../../lib/content';
+import { bases, projectCard } from '../../../lib/details';
 import type { BlockOf } from '../../../lib/schema';
-const { block } = Astro.props as { block: BlockOf<'projects'> };
+const { block, theme } = Astro.props as { block: BlockOf<'projects'>; theme: string };
 let list = block.filter === 'featured' ? profile.projects.filter((p) => p.featured) : profile.projects;
 if (block.limit) list = list.slice(0, block.limit);
+const { projects: base } = await bases();
 ---
-<Cmd cmd={`ls -la projects/${block.filter === 'featured' ? ' | grep featured' : ''}`}>
-  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
-  <p class="t-dim">total {list.length} — click a project to open its README (+{rewards.project} XP)</p>
-  {list.map((p) => (
-    <details class="t-details t-project" data-xp={rewards.project} data-xp-id={ids.project(p.slug)} data-xp-label={p.name}>
-      <summary><span class="t-dim">drwxr-xr-x {p.year ?? ''}</span> <span class="t-acc">{p.slug}/</span>{p.featured && <span class="t-tag">★ featured</span>}</summary>
-      <div class="t-readme">
-        <p class="t-dim">$ cat projects/{p.slug}/README.md</p>
-        <h3>{p.name}</h3>
-        <p>{p.summary}</p>
-        {p.highlights.length > 0 && <ul class="t-list">{p.highlights.map((h) => <li>{h}</li>)}</ul>}
-        <p class="t-tags">{p.tags.map((t) => <span class="t-tag">{t}</span>)}</p>
-        {p.links.length > 0 && <p>{p.links.map((l) => <a class="t-link-btn" href={l.url} target="_blank" rel="noopener">[ {l.label} ↗ ]</a>)}</p>}
-      </div>
-    </details>
-  ))}
-</Cmd>
+<Cards theme={theme} block={{ type: 'cards', heading: block.heading, body: null, columns: 3, items: list.map((p) => projectCard(p, base)) }} />

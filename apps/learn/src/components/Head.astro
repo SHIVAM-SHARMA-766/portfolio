@@ -14,7 +14,6 @@ const palettes = LEARN_PALETTES.map((p) => p.id);
       var p = JSON.parse(localStorage.getItem('pf.prefs.v1')) || {};
       var saved = (p.palettes || {}).learn;
       if (saved && palettes.indexOf(saved) !== -1) pal = saved;
-      if (p.gameOff) document.documentElement.dataset.game = 'off';
     } catch (e) {}
     document.documentElement.dataset.palette = pal;
   })();

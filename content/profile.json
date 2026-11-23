@@ -19,6 +19,13 @@
             "Operate CrowdStrike Falcon, Palo Alto NGFW, Zscaler, OpenVPN, ECR image scanning, KMS, Secrets Manager and IAM controls.",
             "Integrated SonarQube code-quality checks and Trivy container image scanning into the CI/CD pipeline to catch vulnerabilities before deployment.",
             "Supported CIS Benchmark, ISO 27001 and SOC 2 compliance across the AWS organisation."
+          ],
+          "summary": "Security, compliance and cost for an enterprise AWS organisation: consolidating 70+ accounts with Terraform, cloud security posture management and a SIEM.",
+          "tags": [
+            "AWS",
+            "Terraform",
+            "Security Hub",
+            "Wazuh"
           ]
         },
         {
@@ -29,9 +36,17 @@
             "Built the observability stack from scratch: Prometheus, Grafana, Loki and CloudWatch.",
             "Run CI/CD on Azure Pipelines and monthly production releases; handle on-call and incident response.",
             "Manage Route 53, ALB/NLB and Nginx traffic routing; added ECR lifecycle policies to control image storage."
+          ],
+          "summary": "End-to-end DevOps for a multi-environment Amazon EKS platform: clusters, CI/CD, monthly releases, observability and on-call.",
+          "tags": [
+            "Amazon EKS",
+            "Azure Pipelines",
+            "Terraform",
+            "Grafana"
           ]
         }
-      ]
+      ],
+      "summary": "I joined VA2PT as a trainee in July 2025. Today I own security, compliance and cost work for one enterprise AWS organisation and the full DevOps lifecycle for another."
     }
   ],
   "projects": [
@@ -45,7 +60,13 @@
         "One state file per provider, so any provider can be planned, applied or destroyed on its own.",
         "Placed workloads across five providers' free tiers after verifying limits in provider docs; runs at $0/month."
       ],
-      "tags": ["Terraform", "OCI", "AWS", "Cloudflare", "GitHub"],
+      "tags": [
+        "Terraform",
+        "OCI",
+        "AWS",
+        "Cloudflare",
+        "GitHub"
+      ],
       "links": []
     },
     {
@@ -58,8 +79,18 @@
         "Go companion running whisper.cpp for live local transcription, including Hinglish in Roman script.",
         "Signed releases with one-click self-update, subtitles, search across transcripts and bookmarks."
       ],
-      "tags": ["Chrome Extension", "Go", "whisper.cpp", "MIT"],
-      "links": [{ "label": "Source", "url": "https://github.com/SHIVAM-SHARMA-766/dohra" }]
+      "tags": [
+        "Chrome Extension",
+        "Go",
+        "whisper.cpp",
+        "MIT"
+      ],
+      "links": [
+        {
+          "label": "Source",
+          "url": "https://github.com/SHIVAM-SHARMA-766/dohra"
+        }
+      ]
     },
     {
       "slug": "assessment-platform",
@@ -71,7 +102,11 @@
         "Live invigilation with camera and screen capture.",
         "Fully containerised with Docker Compose for one-command deployment."
       ],
-      "tags": ["Docker", "Docker Compose", "AWS EC2"],
+      "tags": [
+        "Docker",
+        "Docker Compose",
+        "AWS EC2"
+      ],
       "links": []
     },
     {
@@ -84,7 +119,10 @@
         "The automation server never accepts inbound traffic.",
         "Each approval link works exactly once."
       ],
-      "tags": ["n8n", "Cloudflare Workers"],
+      "tags": [
+        "n8n",
+        "Cloudflare Workers"
+      ],
       "links": []
     },
     {
@@ -97,18 +135,96 @@
         "One content model rendered by three entirely different themes.",
         "Content edited in an admin panel; every save is a Git commit that CI builds and deploys."
       ],
-      "tags": ["Astro", "Caddy", "GitHub Actions", "OCI"],
+      "tags": [
+        "Astro",
+        "Caddy",
+        "GitHub Actions",
+        "OCI"
+      ],
       "links": []
     }
   ],
   "skills": [
-    { "group": "Cloud", "items": ["AWS EKS", "EC2", "IAM", "Organizations", "Route 53", "ECR", "KMS", "Secrets Manager", "CloudWatch", "OCI", "Cloudflare"] },
-    { "group": "IaC & CI/CD", "items": ["Terraform", "Azure Pipelines", "GitHub Actions", "Docker", "Docker Compose"] },
-    { "group": "Containers", "items": ["Kubernetes", "Amazon EKS", "kubeadm", "kind"] },
-    { "group": "Security", "items": ["Security Hub", "GuardDuty", "Wazuh", "CrowdStrike Falcon", "Palo Alto NGFW", "Zscaler", "SonarQube", "Trivy"] },
-    { "group": "Compliance", "items": ["CIS Benchmarks", "ISO 27001", "SOC 2"] },
-    { "group": "Observability", "items": ["Prometheus", "Grafana", "Loki", "CloudWatch", "ZenDuty"] },
-    { "group": "Other", "items": ["Linux", "Bash", "Python", "Git", "Nginx", "Caddy", "Couchbase", "PostgreSQL", "n8n"] }
+    {
+      "group": "Cloud",
+      "items": [
+        "AWS EKS",
+        "EC2",
+        "IAM",
+        "Organizations",
+        "Route 53",
+        "ECR",
+        "KMS",
+        "Secrets Manager",
+        "CloudWatch",
+        "OCI",
+        "Cloudflare"
+      ]
+    },
+    {
+      "group": "IaC & CI/CD",
+      "items": [
+        "Terraform",
+        "Azure Pipelines",
+        "GitHub Actions",
+        "Docker",
+        "Docker Compose"
+      ]
+    },
+    {
+      "group": "Containers",
+      "items": [
+        "Kubernetes",
+        "Amazon EKS",
+        "kubeadm",
+        "kind"
+      ]
+    },
+    {
+      "group": "Security",
+      "items": [
+        "Security Hub",
+        "GuardDuty",
+        "Wazuh",
+        "CrowdStrike Falcon",
+        "Palo Alto NGFW",
+        "Zscaler",
+        "SonarQube",
+        "Trivy"
+      ]
+    },
+    {
+      "group": "Compliance",
+      "items": [
+        "CIS Benchmarks",
+        "ISO 27001",
+        "SOC 2"
+      ]
+    },
+    {
+      "group": "Observability",
+      "items": [
+        "Prometheus",
+        "Grafana",
+        "Loki",
+        "CloudWatch",
+        "ZenDuty"
+      ]
+    },
+    {
+      "group": "Other",
+      "items": [
+        "Linux",
+        "Bash",
+        "Python",
+        "Git",
+        "Nginx",
+        "Caddy",
+        "Couchbase",
+        "PostgreSQL",
+        "n8n"
+      ]
+    }
   ],
   "education": [
     {
@@ -118,6 +234,9 @@
     }
   ],
   "certifications": [
-    { "name": "Certified Kubernetes Administrator (CKA)", "status": "In preparation, followed by CKS" }
+    {
+      "name": "Certified Kubernetes Administrator (CKA)",
+      "status": "In preparation, followed by CKS"
+    }
   ]
 }

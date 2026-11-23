@@ -1,25 +1,13 @@
 ---
-import Panel from '../Panel.astro';
-import { profile, rewards, ids } from '../../../lib/content';
+import Cards from './Cards.astro';
+import { profile } from '../../../lib/content';
+import { bases, projectCard } from '../../../lib/details';
 import type { BlockOf } from '../../../lib/schema';
-const { block } = Astro.props as { block: BlockOf<'projects'> };
+const { block, theme } = Astro.props as { block: BlockOf<'projects'>; theme: string };
 let list = block.filter === 'featured' ? profile.projects.filter((p) => p.featured) : profile.projects;
 if (block.limit) list = list.slice(0, block.limit);
+const { projects: base } = await bases();
+// Quest flavour: featured projects are legendary quests
+const items = list.map((p) => ({ ...projectCard(p, base), badge: p.featured ? 'Legendary' : null, cta: 'Accept quest' }));
 ---
-<Panel title={block.heading ?? 'Quest board'} icon="🗺️">
-  <div class="q-board">
-    {list.map((p) => (
-      <article class={`q-card ${p.featured ? 'q-card--legendary' : ''}`}>
-        <span class="q-rarity">{p.featured ? 'Legendary' : 'Rare'}</span>
-        <h3>{p.name}</h3>
-        <p>{p.summary}</p>
-        <p class="q-loot">{p.tags.map((t) => <span>{t}</span>)}</p>
-        <details class="q-accept" data-xp={rewards.project} data-xp-id={ids.project(p.slug)} data-xp-label={`Quest accepted: ${p.name}`}>
-          <summary>▶ Accept quest</summary>
-          {p.highlights.length > 0 && <ul class="q-list">{p.highlights.map((h) => <li>{h}</li>)}</ul>}
-          {p.links.map((l) => <a class="q-btn" href={l.url} target="_blank" rel="noopener">{l.label} ↗</a>)}
-        </details>
-      </article>
-    ))}
-  </div>
-</Panel>
+<Cards theme={theme} block={{ type: 'cards', heading: block.heading ?? 'Quest board', body: null, columns: null, items }} />

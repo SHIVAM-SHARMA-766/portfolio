@@ -176,8 +176,14 @@ try {
 
   await step('opening a project awards XP once', async () => {
     const before = await snap();
-    const summary = page.locator('.t-project summary').first();
-    await summary.click(); await summary.click(); await summary.click();
+    const home = page.url();
+    // Project cards open the project's own page; the first open awards XP, later ones don't
+    for (let i = 0; i < 2; i++) {
+      await page.locator('.t-entry[data-xp-id^="project:"]').first().click();
+      await page.waitForURL(/\/projects\/[a-z0-9-]+\/$/);
+      assert.ok((await page.locator('.t-banner-title').innerText()).length > 3, 'project page has a banner');
+      await page.goto(home);
+    }
     assert.equal(gainedWithoutClicks(before, await snap()), site.game.rewards.project);
   });
 
@@ -369,7 +375,7 @@ try {
   await step('pages fit a 375px phone without horizontal scroll', async () => {
     const m = await browser.newPage({ viewport: { width: 375, height: 800 } });
     await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
-    for (const url of ['/?theme=terminal', '/?theme=quest', '/?theme=studio', '/experience/?theme=terminal', '/projects/?theme=quest', '/blog/hello-world/?theme=studio']) {
+    for (const url of ['/?theme=terminal', '/?theme=quest', '/?theme=studio', '/experience/?theme=terminal', '/projects/?theme=quest', '/blog/hello-world/?theme=studio', '/projects/dohra/?theme=studio', '/projects/dohra/?theme=quest', '/experience/va2pt/suzuki-digital/?theme=terminal']) {
       await m.goto(`${S}${url}`);
       const over = await m.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       assert.ok(over <= 0, `${url} overflows by ${over}px`);

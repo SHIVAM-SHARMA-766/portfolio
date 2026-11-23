@@ -1,0 +1,36 @@
+---
+// Footer link columns shared by every theme: the pages, where to find me,
+// and the rest. Themes style `.fc` (and `.fc-col`, `.fc-title`).
+import { site, getNav, pageUrl } from '../lib/content';
+interface Props { theme: string; class?: string }
+const { theme, class: cls = '' } = Astro.props;
+const nav = await getNav();
+type L = { label: string; href: string; external?: boolean };
+const columns: { title: string; links: L[] }[] = [
+  { title: 'Explore', links: nav.map((p) => ({ label: p.navLabel ?? p.title, href: pageUrl(theme, p.slug) })) },
+  {
+    title: 'Connect',
+    links: [
+      ...(site.email ? [{ label: 'Email', href: `mailto:${site.email}` }] : []),
+      ...site.socials.map((s) => ({ label: s.label, href: s.url, external: true })),
+      ...(site.resume ? [{ label: 'Download CV', href: site.resume, external: true }] : []),
+    ],
+  },
+  {
+    title: 'More',
+    links: [
+      ...(site.learnUrl ? [{ label: 'Learn (free courses)', href: site.learnUrl, external: true }] : []),
+      { label: 'RSS feed', href: '/rss.xml' },
+      { label: 'Privacy', href: '/privacy/' },
+    ],
+  },
+];
+---
+<div class={`fc ${cls}`}>
+  {columns.filter((c) => c.links.length).map((c) => (
+    <nav class="fc-col" aria-label={c.title}>
+      <p class="fc-title">{c.title}</p>
+      <ul>{c.links.map((l) => <li><a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}>{l.label}{l.external && ' ↗'}</a></li>)}</ul>
+    </nav>
+  ))}
+</div>

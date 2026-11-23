@@ -1,0 +1,29 @@
+---
+import Cmd from '../Cmd.astro';
+import { mdInline, resolveHref } from '../../../lib/content';
+import { xpAttrs, isExternal } from '../../../lib/cards';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'cards'>; theme: string };
+const cols = block.columns ?? Math.min(3, Math.max(1, block.items.length));
+---
+<Cmd cmd="ls -la">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  {block.body && <p set:html={mdInline(block.body)} />}
+  <p class="t-dim">total {block.items.length}</p>
+  <div class="t-cards" style={`--cols:${cols}`}>
+    {block.items.map((c) => {
+      const Tag = c.href ? 'a' : 'article';
+      const link = c.href ? { href: resolveHref(theme, c.href), ...(isExternal(c.href) ? { target: '_blank', rel: 'noopener' } : {}) } : {};
+      return (
+        <Tag class="t-entry" {...link} {...xpAttrs(c)}>
+          {c.image && <img class="t-entry__img" src={c.image} alt="" loading="lazy" />}
+          <span class="t-dim t-entry__meta">drwxr-xr-x {c.meta ?? ''}{c.badge && <span class="t-tag">★ {c.badge.toLowerCase()}</span>}</span>
+          <span class="t-entry__title">{c.icon && !c.xp ? `${c.icon} ` : ''}{c.title}/</span>
+          {c.body && <span class="t-entry__body" set:html={mdInline(c.body)} />}
+          {c.tags.length > 0 && <span class="t-tags">{c.tags.map((t) => <span class="t-tag">{t}</span>)}</span>}
+          {c.href && <span class="t-entry__cta">[ {(c.cta ?? 'open').toLowerCase()} → ]{c.xp && <span class="t-dim"> +{c.xp.points} XP</span>}</span>}
+        </Tag>
+      );
+    })}
+  </div>
+</Cmd>

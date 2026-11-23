@@ -175,10 +175,47 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; back
   .t-prefs[open] > summary::after { content: ' [-]'; }
 }
 
-/* Footer line */
-.t-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem 1.2rem; padding: .8rem 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .8rem; }
-.sl { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem 1rem; }
-.t-footer-links a { color: var(--muted); }
-.t-footer-links a:hover { color: var(--accent); }
-.t-footer-links a::before { content: './'; color: var(--accent); }
-@media (max-width: 760px) { .t-footer { padding-inline: 16px; } }
+/* Footer */
+.t-footer { border-top: 1px solid var(--border); background: var(--surface); padding: 1.6rem 1.4rem 1rem; font-size: .85rem; color: var(--muted); }
+.t-footer-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 2rem; padding-bottom: 1.2rem; border-bottom: 1px dashed var(--border); }
+.t-footer-brand p { margin: 0 0 .5rem; }
+.t-footer-name { display: flex; align-items: center; gap: .5rem; color: var(--accent); font-weight: 800; font-size: 1rem; }
+.fc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; }
+.fc-title { margin: 0 0 .5rem; color: var(--accent-2); }
+.fc-title::before { content: '$ ls ~/'; color: var(--muted); }
+.fc-title { text-transform: lowercase; }
+.fc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
+.t-footer-cols a { color: var(--fg); text-decoration: none; }
+.t-footer-cols a::before { content: './'; color: var(--accent); }
+.t-footer-cols a:hover { color: var(--accent); }
+.t-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem 1rem; padding-top: .8rem; }
+.t-footer-bottom b { color: var(--accent); }
+@media (max-width: 760px) { .t-footer { padding-inline: 16px; } .t-footer-top { grid-template-columns: 1fr; } .fc { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Banner (README header of inner pages) */
+.t-banner { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.6rem; align-items: start; padding: .4rem 0 .6rem; }
+.t-banner--img { grid-template-columns: minmax(0, 1fr) 280px; }
+.t-back { display: inline-block; margin-bottom: .8rem; text-decoration: none; }
+.t-banner-eyebrow { margin: 0 0 .3rem; }
+.t-banner-title { font-size: clamp(1.7rem, 5vw, 3rem); line-height: 1.1; margin: 0 0 .8rem; color: var(--accent); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent); }
+.t-banner-body { max-width: 72ch; margin: 0 0 .8rem; }
+.t-banner-img { aspect-ratio: 16 / 10; }
+.t-banner-img img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 760px) { .t-banner--img { grid-template-columns: 1fr; } }
+
+/* Cards (ls -la) */
+.t-cards { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: .8rem; margin-top: .6rem; }
+.t-entry { display: flex; flex-direction: column; gap: .35rem; padding: .9rem 1rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--fg); text-decoration: none; }
+a.t-entry:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 25%, transparent); }
+.t-entry__img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--border); margin-bottom: .3rem; }
+.t-entry__meta { font-size: .78rem; }
+.t-entry__title { color: var(--accent); font-weight: 800; }
+.t-entry__body { font-size: .88rem; }
+.t-entry__body p { margin: 0; }
+.t-entry__cta { margin-top: auto; padding-top: .3rem; font-weight: 600; color: var(--accent); font-size: .85rem; }
+.t-eng { margin: .6rem 0 .8rem; padding-left: .8rem; border-left: 1px solid var(--border); }
+.t-eng p { margin: 0 0 .2rem; }
+.t-job-title a { color: inherit; text-decoration: none; }
+.t-job-title a:hover { color: var(--accent); }
+@media (max-width: 900px) { .t-cards { grid-template-columns: repeat(min(var(--cols, 3), 2), minmax(0, 1fr)); } }
+@media (max-width: 600px) { .t-cards { grid-template-columns: 1fr; } }

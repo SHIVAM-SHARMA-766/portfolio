@@ -12,11 +12,16 @@ const obj = (name, label, fields, extra = {}) => ({ name, label, type: 'object',
 const link = [s('label', 'Label'), s('url', 'URL')];
 const heading = s('heading', 'Heading');
 
+const card = [s('title', 'Title'), text('body', 'Text'), s('href', 'Link'), s('meta', 'Small line above the title'), s('badge', 'Badge'), s('image', 'Image (e.g. /uploads/x.jpg)'), s('icon', 'Icon (emoji)'), strs('tags', 'Tags'), s('cta', 'Link label')];
+const subPages = list('pages', 'Detail pages', [s('slug', 'Slug', { pattern: '^[a-z0-9-]+$' }), s('title', 'Title'), text('summary', 'Summary'), md('body', 'Content')], { summary: 'title' });
+
 export const blockTypes = {
+  banner: { label: 'Banner (page header)', fields: [s('eyebrow', 'Small line above'), s('heading', 'Heading', { required: true }), text('body', 'Text'), s('image', 'Image (optional, e.g. /uploads/banner.jpg)'), strs('tags', 'Tags'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link')], { summary: 'label' })] },
+  cards: { label: 'Cards', fields: [heading, text('body', 'Intro'), num('columns', 'Columns (1–4)'), list('items', 'Cards', card, { summary: 'title' })] },
   hero: { label: 'Hero', fields: [s('heading', 'Heading', { required: true }), s('subheading', 'Subheading'), text('body', 'Intro (markdown)'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link — "projects/" stays inside the theme, or a full URL')], { summary: 'label' })] },
   text: { label: 'Text', fields: [heading, md('body', 'Body', { required: true })] },
   stats: { label: 'Stats', fields: [heading, list('items', 'Numbers', [s('value', 'Value'), s('label', 'Label')], { summary: 'value' })] },
-  experience: { label: 'Experience (from profile)', fields: [heading] },
+  experience: { label: 'Experience (from profile)', fields: [heading, bool('compact', 'Compact (one card per client, for the home page)')] },
   projects: { label: 'Projects (from profile)', fields: [heading, sel('filter', 'Show', ['all', 'featured']), num('limit', 'Maximum')] },
   skills: { label: 'Skills (from profile)', fields: [heading] },
   education: { label: 'Education & certifications (from profile)', fields: [heading] },
@@ -69,12 +74,17 @@ export const profileFields = [
   s('headline', 'Headline'), text('summary', 'Summary'),
   list('experience', 'Experience', [
     s('company', 'Company'), s('role', 'Role'), s('location', 'Location'), s('start', 'Start (YYYY-MM)'), s('end', 'End (YYYY-MM, empty = present)'), s('progression', 'Progression'),
-    list('engagements', 'Clients / engagements', [s('title', 'Title'), strs('highlights', 'Highlights')], { summary: 'title' }),
+    s('slug', 'URL slug (default: from the company name)', { pattern: '^[a-z0-9-]*$' }), text('summary', 'About this role (shown on its page)'), s('logo', 'Company logo (optional)'),
+    list('engagements', 'Clients / engagements', [
+      s('title', 'Title'), s('slug', 'URL slug (default: from the title)', { pattern: '^[a-z0-9-]*$' }), text('summary', 'Summary'), s('cover', 'Cover image (optional)'), strs('tags', 'Tags'),
+      strs('highlights', 'Highlights'), md('body', 'Full story (markdown, shown on its page)'), subPages,
+    ], { summary: 'title' }),
     strs('highlights', 'Highlights'),
   ], { summary: 'role' }),
   list('projects', 'Projects', [
-    s('slug', 'Slug', { pattern: '^[a-z0-9-]+$' }), s('name', 'Name'), s('year', 'Year'), bool('featured', 'Featured'), text('summary', 'Summary'),
+    s('slug', 'Slug', { pattern: '^[a-z0-9-]+$' }), s('name', 'Name'), s('year', 'Year'), bool('featured', 'Featured'), s('role', 'My role'), s('cover', 'Cover image (optional, e.g. /uploads/x.jpg, 16:9)'), text('summary', 'Summary'),
     strs('highlights', 'Highlights'), strs('tags', 'Tags'), list('links', 'Links', link, { summary: 'label' }),
+    md('body', 'Full story (markdown, shown on the project page)'), subPages,
   ], { summary: 'name' }),
   list('skills', 'Skill groups', [s('group', 'Group'), strs('items', 'Skills')], { summary: 'group' }),
   list('education', 'Education', [s('degree', 'Degree'), s('institution', 'Institution'), s('end', 'End (YYYY-MM)')], { summary: 'degree' }),

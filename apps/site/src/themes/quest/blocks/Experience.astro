@@ -1,26 +1,33 @@
 ---
 import Panel from '../Panel.astro';
-import { profile, formatMonth, rewards, ids } from '../../../lib/content';
+import Cards from './Cards.astro';
+import { profile } from '../../../lib/content';
+import { bases, engagementCard, jobSlug, engagementSlug, period, shortTitle } from '../../../lib/details';
+import { xpAttrs } from '../../../lib/cards';
 import type { BlockOf } from '../../../lib/schema';
-const { block } = Astro.props as { block: BlockOf<'experience'> };
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+const { block, theme } = Astro.props as { block: BlockOf<'experience'>; theme: string };
+const { experience: base } = await bases();
+const cards = profile.experience.flatMap((job) => job.engagements.map((e) => ({ ...engagementCard(job, e, base), cta: 'Read the side quest' })));
 ---
-<Panel title={block.heading ?? 'Campaign log'} icon="⚔️">
-  {profile.experience.map((job) => (
-    <article class="q-chapter">
-      <div class="q-chapter-head">
-        <h3>{job.role} <span class="q-muted">@ {job.company}</span></h3>
-        <span class={`q-badge ${job.end ? '' : 'q-badge--live'}`}>{job.end ? 'Completed' : 'In progress'}</span>
-      </div>
-      <p class="q-muted">{formatMonth(job.start)} – {formatMonth(job.end)}{job.location && ` · ${job.location}`}</p>
-      {job.progression && <p class="q-levels">🪜 {job.progression}</p>}
-      {job.highlights.length > 0 && <ul class="q-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
-      {job.engagements.map((e) => (
-        <details class="q-quest" data-xp={rewards.experience} data-xp-id={ids.experience(e.title)} data-xp-label="Side quest read">
-          <summary><span class="q-quest-mark" aria-hidden="true">!</span> Side quest: {e.title}</summary>
-          <ul class="q-list">{e.highlights.map((h) => <li>{h}</li>)}</ul>
-        </details>
-      ))}
-    </article>
-  ))}
-</Panel>
+{block.compact ? (
+  <Cards theme={theme} block={{ type: 'cards', heading: block.heading ?? 'Campaigns', body: null, columns: 2, items: cards }} />
+) : (
+  <Panel title={block.heading ?? 'Campaign log'} icon="⚔️">
+    {profile.experience.map((job) => (
+      <article class="q-chapter">
+        <div class="q-chapter-head">
+          <h3><a class="q-plain" href={`/${base}/${jobSlug(job)}/`}>{job.role} <span class="q-muted">@ {job.company}</span></a></h3>
+          <span class={`q-badge ${job.end ? '' : 'q-badge--live'}`}>{job.end ? 'Completed' : 'In progress'}</span>
+        </div>
+        <p class="q-muted">{period(job)}{job.location && ` · ${job.location}`}</p>
+        {job.progression && <p class="q-levels">🪜 {job.progression}</p>}
+        {job.highlights.length > 0 && <ul class="q-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
+        {job.engagements.map((e) => (
+          <a class="q-quest-link" href={`/${base}/${jobSlug(job)}/${engagementSlug(e)}/`} {...xpAttrs(engagementCard(job, e, base))}>
+            <span class="q-quest-mark" aria-hidden="true">!</span> Side quest: {shortTitle(e.title)} <span class="q-muted">▶</span>
+          </a>
+        ))}
+      </article>
+    ))}
+  </Panel>
+)}

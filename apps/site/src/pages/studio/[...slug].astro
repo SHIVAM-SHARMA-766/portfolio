@@ -4,4 +4,4 @@ import PageRoute from '../../components/PageRoute.astro';
 import { pagePaths } from '../../lib/routes';
 export const getStaticPaths = pagePaths;
 ---
-<PageRoute page={Astro.props.page} theme="studio" Layout={Layout} />
+<PageRoute page={Astro.props.page} current={Astro.props.current} detail={Astro.props.detail} theme="studio" Layout={Layout} />

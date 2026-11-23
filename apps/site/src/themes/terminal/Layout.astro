@@ -8,7 +8,7 @@ import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
 import Shell from './Shell.astro';
 import Logo from '../../components/Logo.astro';
-import SiteLinks from '../../components/SiteLinks.astro';
+import FooterColumns from '../../components/FooterColumns.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './terminal.css';
@@ -34,7 +34,6 @@ const cwd = slug ? `~/${slug}` : '~';
           <span><b data-game-xp>0</b> XP</span>
         </button>
         <AccountChip />
-        <button type="button" class="t-btn t-skip" data-game-toggle data-off-text="skip game" data-on-text="play game"><span data-label>skip game</span></button>
       </header>
       <div class="t-body">
         <nav class="t-nav" aria-label="Pages">
@@ -61,7 +60,21 @@ const cwd = slug ? `~/${slug}` : '~';
           <Shell theme={theme} nav={nav} />
         </main>
       </div>
-      <footer class="t-footer"><span>© {new Date().getFullYear()} {site.name}</span><SiteLinks class="t-footer-links" /></footer>
+      <footer class="t-footer">
+        <div class="t-footer-top">
+          <div class="t-footer-brand">
+            <p class="t-dim">$ cat ~/.signature</p>
+            <p class="t-footer-name"><Logo size={22} /> {site.name}</p>
+            <p>{site.tagline}</p>
+            {site.email && <a class="t-link-btn" href={`mailto:${site.email}`}>[ ./say-hello.sh ]</a>}
+          </div>
+          <FooterColumns theme={theme} class="t-footer-cols" />
+        </div>
+        <div class="t-footer-bottom">
+          <span>© {new Date().getFullYear()} {site.name}{site.location && ` · ${site.location}`}</span>
+          <span class="g-only">lvl <b data-game-level>1</b> · <button type="button" class="t-btn" data-open-ach>achievements</button> <button type="button" class="t-btn" data-open-shop>shop</button></span>
+        </div>
+      </footer>
     </div>
     <AchievementsDialog />
     <AccountDialogs ownerName={site.name} />

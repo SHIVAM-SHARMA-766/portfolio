@@ -8,6 +8,17 @@
   "draft": false,
   "description": "Notes on DevOps, security and running things for free.",
   "blocks": [
-    { "type": "posts", "heading": "Writing" }
+    {
+      "type": "banner",
+      "eyebrow": "Writing",
+      "heading": "Notes from the field",
+      "body": "DevOps, security and running real things on free tiers.",
+      "tags": [],
+      "ctas": []
+    },
+    {
+      "type": "posts",
+      "heading": null
+    }
   ]
 }

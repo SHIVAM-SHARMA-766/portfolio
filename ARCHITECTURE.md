@@ -32,8 +32,19 @@ everything to one always-free OCI VM.
 ## Content model
 
 A page is `{ title, slug, order, inNav, draft, blocks: [...] }`. A block has a `type`
-(`hero`, `text`, `stats`, `experience`, `projects`, `skills`, `education`, `contact`,
-`cta`, `posts`, `courses`) and its own fields. Experience, projects, skills and education
+(`banner`, `cards`, `hero`, `text`, `stats`, `experience`, `projects`, `skills`,
+`education`, `contact`, `cta`, `posts`, `courses`) and its own fields. Every inner page
+starts with a `banner` (eyebrow, heading, text, optional image, tags, buttons, back link);
+`cards` is a grid of cards (image or generated cover, meta, badge, tags, link).
+
+**Detail pages.** `src/lib/details.ts` turns `profile.json` into pages made of those
+blocks: `/<projects page>/<project>/` (+ `/<sub-page>/` for each entry in the project's
+`pages`), `/<experience page>/<company>/` and `/<experience page>/<company>/<engagement>/`
+(+ sub-pages). They are added to each theme's catch-all route (`lib/routes.ts`), highlight
+their parent in the menu, and appear in the sitemap. Projects and engagements take
+optional `cover`, `summary`, `body` (markdown) and `pages`. The projects and experience
+blocks render cards linking there; opening a card awards the `project:` / `exp:` event,
+so the game catalog is unchanged. Detail pages have no page id (no visit/read XP). Experience, projects, skills and education
 read from `profile.json`, so the resume is written once. Each theme renders each block
 type its own way. `BlockRenderer.astro` falls back to a generic renderer when a theme
 lacks one. The build fails on invalid content (Zod), and optional fields accept `null`/`""`.
@@ -67,8 +78,9 @@ coloured by `--logo-bg/--logo-fg/--logo-dot` per theme. Brand files (SVG, PNG,
 wordmarks) live in `brand/`; `public/favicon.svg` and `public/images/apple-touch-icon.png`
 are copies.
 
-**Shared bits.** `components/SiteLinks.astro` (email, socials, CV when `site.resume` is
-set, privacy, RSS) in every footer; `components/CopyEmail.astro` next to the address on
+**Shared bits.** `components/FooterColumns.astro` (Explore: the menu; Connect: email,
+socials, CV when `site.resume` is set; More: learn, RSS, privacy) in every theme's footer,
+next to the logo, tagline and a "say hello" link; `components/CopyEmail.astro` next to the address on
 the contact page. Headers show only the logo, and the signed-in chip only the avatar (or
 an initial), with the name as its label. `src/pages/404.astro` is one neutral page for
 all themes (light/dark by system). `sitemap.xml` and `robots.txt` are endpoints listing
@@ -94,8 +106,11 @@ awarded on `click`, not `pointerdown`: markup only re-renders when it changed, b
 new coin total changes buy-button text, and re-creating a button between pointerdown and
 click would swallow the click.
 
-**First visit.** A welcome card explains the game. Until it is answered, game toasts are
-held (XP toasts dropped since the HUD shows the total; achievements shown after). On
+**Always on.** The game is part of the site: there is no off switch (an old saved
+"game off" preference is cleared).
+
+**First visit.** A welcome card explains the game (one "Let's go" button). Until it is
+dismissed, game toasts are held (XP toasts dropped since the HUD shows the total; achievements shown after). On
 phones the welcome card and toasts come in from the top, because the bottom belongs to
 the theme preview bar. The live count hides itself when there is no connection.
 

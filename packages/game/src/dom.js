@@ -8,7 +8,7 @@
 //   [data-game-xp] [data-game-level] [data-game-level-name] [data-game-next]   HUD text
 //   [data-game-progress]                                gets --progress (0..1) and aria-valuenow
 //   [data-game-achievements] [data-game-ach-count]      achievements list / "3/16"
-//   [data-game-toggle] [data-game-sound] [data-game-reset]
+//   [data-game-sound] [data-game-reset]
 //   [data-game-coins]                                   spendable coins (XP minus purchases)
 //   [data-shop-item="palette:x"] [data-price]           gets [data-locked] until owned; price filled in
 //   [data-palette-btn="id"]                             applies a palette, or opens the shop if locked
@@ -381,15 +381,14 @@ function welcome() {
     card.setAttribute('aria-label', 'How this site works');
     card.innerHTML = `<b>This portfolio is a game 🎮</b>
       <p>Explore to earn XP and coins: open projects, read pages${config.theme === 'terminal' ? ', try the terminal' : ''}. Spend coins in the shop to unlock themes and colours.</p>
-      <div class="g-welcome__actions"><button type="button" class="g-btn g-btn--primary" data-welcome="play">Let's go</button><button type="button" class="g-btn g-btn--ghost" data-welcome="skip">Just show me the portfolio</button></div>`;
+      <div class="g-welcome__actions"><button type="button" class="g-btn g-btn--primary" data-welcome="play">Let's go</button></div>`;
     document.body.appendChild(card);
     card.addEventListener('click', (e) => {
       const choice = e.target.closest('[data-welcome]')?.dataset.welcome;
       if (!choice) return;
       writePrefs({ welcomed: true });
       card.remove();
-      if (choice === 'skip') { heldToasts.length = 0; document.querySelector('[data-game-toggle]')?.click(); }
-      else releaseToasts();
+      releaseToasts();
     });
   }, 600);
 }
@@ -477,16 +476,9 @@ export function mountGame() {
     if (engine.award(`click:${n + 1}`, pts, { label: 'Click', silent: true })) floatText(e.clientX, e.clientY, `+${pts}`, reduced);
   }, { passive: true });
 
-  // Game on/off, sound, reset
-  const applyOff = (off) => {
-    document.documentElement.dataset.game = off ? 'off' : 'on';
-    $$('[data-game-toggle]').forEach((b) => {
-      b.setAttribute('aria-pressed', String(!off));
-      const label = b.querySelector('[data-label]') ?? b;
-      label.textContent = off ? (b.dataset.onText ?? 'Play the game') : (b.dataset.offText ?? 'Skip the game');
-    });
-  };
-  applyOff(prefs.gameOff === true);
+  // The game is part of the site: always on (an old "game off" choice is cleared)
+  document.documentElement.dataset.game = 'on';
+  if (prefs.gameOff) writePrefs({ gameOff: false });
   $$('[data-game-sound]').forEach((b) => b.setAttribute('aria-pressed', String(sound)));
 
   account = config.apiUrl
@@ -495,11 +487,6 @@ export function mountGame() {
 
   document.addEventListener('click', (e) => {
     const t = e.target;
-    if (t.closest?.('[data-game-toggle]')) {
-      const off = document.documentElement.dataset.game !== 'off';
-      writePrefs({ gameOff: off });
-      applyOff(off);
-    }
     if (t.closest?.('[data-game-sound]')) {
       sound = !sound;
       writePrefs({ sound });

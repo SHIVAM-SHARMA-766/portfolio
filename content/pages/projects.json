@@ -8,6 +8,18 @@
   "draft": false,
   "description": "Things I've built.",
   "blocks": [
-    { "type": "projects", "heading": "Projects", "filter": "all" }
+    {
+      "type": "banner",
+      "eyebrow": "Projects",
+      "heading": "Things I've built",
+      "body": "Infrastructure, tools and platforms — open any project for the full story, what I did and the links.",
+      "tags": [],
+      "ctas": []
+    },
+    {
+      "type": "projects",
+      "heading": null,
+      "filter": "all"
+    }
   ]
 }

@@ -47,9 +47,50 @@
       ]
     },
     {
+      "type": "cards",
+      "heading": "What I do",
+      "columns": 4,
+      "items": [
+        {
+          "icon": "🛡️",
+          "title": "Cloud security & compliance",
+          "body": "Security Hub, GuardDuty and a Wazuh SIEM; CIS, ISO 27001 and SOC 2 controls across a multi-account AWS organisation.",
+          "tags": []
+        },
+        {
+          "icon": "🏗️",
+          "title": "Infrastructure as code",
+          "body": "Terraform for everything — 70+ AWS accounts consolidated to 47, and one state per provider for my own clouds.",
+          "tags": []
+        },
+        {
+          "icon": "☸️",
+          "title": "Kubernetes & CI/CD",
+          "body": "Amazon EKS across three environments; Azure Pipelines and GitHub Actions with SonarQube and Trivy gates.",
+          "tags": []
+        },
+        {
+          "icon": "📈",
+          "title": "Observability & cost",
+          "body": "Prometheus, Grafana and Loki built from scratch; part of a team that cut ~$120K a year from AWS spend.",
+          "tags": []
+        }
+      ]
+    },
+    {
       "type": "projects",
       "heading": "Featured work",
       "filter": "featured",
+      "limit": 3
+    },
+    {
+      "type": "experience",
+      "heading": "Where I work",
+      "compact": true
+    },
+    {
+      "type": "posts",
+      "heading": "Latest writing",
       "limit": 3
     },
     {
@@ -62,6 +103,11 @@
       "body": "Every page you visit, project you open and flag you capture earns XP and coins. Spend coins to unlock the Quest theme and new colour palettes. Sign in to keep your progress.",
       "label": "Start with my story",
       "href": "about/"
+    },
+    {
+      "type": "contact",
+      "heading": "Let's work together",
+      "body": "Have a cloud, security or DevOps problem? I'd like to hear about it."
     }
   ]
 }
