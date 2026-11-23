@@ -41,6 +41,7 @@ function serve(dir, port) {
     const srv = createServer(async (req, res) => {
       if (req.url.startsWith('/api/')) {
         const p = httpRequest({ host: '127.0.0.1', port: API_PORT, path: req.url, method: req.method, headers: req.headers }, (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); });
+        p.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
         req.pipe(p);
         return;
       }
@@ -63,12 +64,15 @@ function serve(dir, port) {
       }
     });
     srv.on('upgrade', (req, sock, head) => { // WebSocket → API
+      // Browsers drop sockets abruptly when pages close; never let that crash the test.
+      sock.on('error', () => up.destroy());
       const up = connect(API_PORT, '127.0.0.1', () => {
         up.write(`${req.method} ${req.url} HTTP/1.1\r\n${Object.entries(req.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n')}\r\n\r\n`);
         up.write(head);
         sock.pipe(up).pipe(sock);
       });
       up.on('error', () => sock.destroy());
+      sock.on('close', () => up.destroy());
     });
     srv.listen(port, () => ok({ srv, local }));
   });
@@ -242,8 +246,9 @@ try {
     await a.click('button.primary');
     await a.waitForSelector('.tiles');
     await a.click('.side >> text=Visitors');
-    await a.waitForSelector('.table');
-    assert.match(await a.locator('.table').innerText(), /tester@example\.com/);
+    await a.waitForSelector('h1:has-text("Visitors") >> xpath=..');
+    await a.waitForSelector('.table-wrap .table');
+    assert.match(await a.locator('.table-wrap .table').innerText(), /tester@example\.com/);
     const csv = await (await a.request.get(`${S}/api/admin/visitors.csv`)).text();
     assert.match(csv, /tester@example\.com/);
     await a.close();
