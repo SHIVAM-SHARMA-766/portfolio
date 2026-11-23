@@ -5,7 +5,7 @@ const when = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', y
 ---
 <article class="post">
   <header class="post-head">
-    <a class="post-back" href={`/${theme}/blog/`}>← All posts</a>
+    <a class="post-back" href="/blog/">← All posts</a>
     <h1>{title}</h1>
     <p class="post-meta"><time datetime={date.toISOString()}>{when}</time>{tags.length > 0 && <> · {tags.map((t) => `#${t}`).join(' ')}</>}</p>
   </header>

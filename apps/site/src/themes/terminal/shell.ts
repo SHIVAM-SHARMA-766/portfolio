@@ -17,6 +17,29 @@ const g = () => (window as any).game;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** Renders an image as ASCII art (bright pixels become dense characters on the dark terminal). */
+async function asciiArt(src: string) {
+  const img = await new Promise<HTMLImageElement>((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = fail; i.src = src; });
+  const cols = innerWidth < 600 ? 38 : 64;
+  const rows = Math.round(cols * (img.height / img.width) * 0.5);
+  const c = document.createElement('canvas');
+  c.width = cols; c.height = rows;
+  const ctx = c.getContext('2d')!;
+  ctx.drawImage(img, 0, 0, cols, rows);
+  const px = ctx.getImageData(0, 0, cols, rows).data;
+  const ramp = ' .,:;irsXA253hMHGS#9B&@';
+  let out = '';
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const i = (y * cols + x) * 4;
+      const lum = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
+      out += ramp[Math.min(ramp.length - 1, Math.floor(lum * ramp.length))];
+    }
+    out += '\n';
+  }
+  return out;
+}
+
 async function sha256(s: string) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -131,12 +154,16 @@ export function startShell() {
       setPrompt();
     } },
     pwd: { help: 'print working directory', run: () => print(esc(pathStr(cwd).replace('~', `/home/${data.name.split(' ')[0].toLowerCase()}`))) },
-    cat: { help: 'cat <file> — show a file', run: ([p]) => {
+    cat: { help: 'cat <file> — show a file', run: async ([p]) => {
       if (!p) return print('usage: cat <file>');
       const { node } = resolve(p);
       if (!node) return print(`cat: ${esc(p)}: No such file or directory`, 't-err');
       if (node.type === 'dir') return print(`cat: ${esc(p)}: Is a directory`, 't-err');
       if (node.type === 'link') return print(`→ <a href="${esc(node.href)}">${esc(node.href)}</a>`);
+      if (/\.(jpe?g|png|webp)$/i.test(p) && node.href) {
+        try { printPre(await asciiArt(node.href), 't-ascii'); } catch { print('cat: cannot read image', 't-err'); }
+        return;
+      }
       printPre(node.content);
       if (node.href) print(`<span class="t-dim">→ <a href="${esc(node.href)}">open the full page</a> or type <span class="t-acc">open ${esc(p)}</span></span>`);
     } },
@@ -228,7 +255,7 @@ export function startShell() {
     achievements: { help: 'open the achievements panel', run: () => (document.getElementById('ach-dialog') as HTMLDialogElement).showModal() },
     theme: { help: 'theme <name> — switch theme', run: ([t]) => {
       if (!t || !data.themes.includes(t)) return print(`themes: ${data.themes.join(', ')}`);
-      go(location.pathname.replace(/^\/[^/]+/, `/${t}`));
+      go(`${location.pathname}?theme=${t}`);
     } },
     palette: { help: 'palette <name> — switch colours', run: ([p]) => {
       const btn = document.querySelector<HTMLElement>(`[data-palette-btn="${CSS.escape(p ?? '')}"]`);

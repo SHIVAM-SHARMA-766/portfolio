@@ -70,6 +70,8 @@ for (const l of lessons) { add(ids.lesson(l), r.lesson); add(ids.quiz(l), r.quiz
 for (const c of courses) add(ids.course(c), r.course);
 for (const s of SECRETS) add(ids.secret(s), 0);
 for (const m of missions) add(ids.flag(m.id), m.reward ?? r.flag);
+// Clicking anywhere earns a point, for the first clickCap clicks.
+for (let i = 1; i <= (site.game.clickCap ?? 0); i++) add(`click:${i}`, r.click ?? 1);
 
 const data = {
   generated: new Date().toISOString(),

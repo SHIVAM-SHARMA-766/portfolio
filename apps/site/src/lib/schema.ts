@@ -55,6 +55,9 @@ export const siteSchema = z.object({
   siteUrl: z.string().url(),
   learnUrl: z.string().url().nullish(),
   apiUrl: z.string().url().nullish(),
+  photo: z.string().nullish(),
+  photoAlt: z.string().nullish(),
+  photoPosition: z.string().nullish(),
   cookieDomain: z.string().default(''),
   socials: z.array(link).default([]),
   defaultTheme: z.enum(['terminal', 'quest', 'studio']),
@@ -63,6 +66,7 @@ export const siteSchema = z.object({
     enabled: z.boolean().default(true),
     rewards: z.record(z.string(), z.number()),
     levels: z.array(z.object({ xp: z.number(), name: z.string() })).min(1),
+    clickCap: z.number().int().min(0).default(0),
   }),
 });
 export type Site = z.infer<typeof siteSchema>;

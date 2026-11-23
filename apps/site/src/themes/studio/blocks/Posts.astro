@@ -10,7 +10,7 @@ if (block.limit) posts = posts.slice(0, block.limit);
   {posts.length === 0 && <p class="s-muted">No posts yet.</p>}
   <ul class="s-posts">
     {posts.map((p) => (
-      <li><a href={`/${theme}/blog/${p.id}/`}><time class="s-muted">{p.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</time><span><b>{p.data.title}</b><span class="s-muted">{p.data.description}</span></span></a></li>
+      <li><a href={`/blog/${p.id}/`}><time class="s-muted">{p.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</time><span><b>{p.data.title}</b><span class="s-muted">{p.data.description}</span></span></a></li>
     ))}
   </ul>
 </section>

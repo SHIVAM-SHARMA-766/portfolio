@@ -37,6 +37,9 @@ const PROVIDER_LABEL = { google: 'Google', github: 'GitHub', linkedin: 'LinkedIn
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const $$ = (sel) => document.querySelectorAll(sel);
+// Replace markup only when it changed: re-creating a button between pointerdown
+// and click would swallow the click (every click re-renders, since clicks earn points).
+const setHTML = (el, html) => { if (el._html !== html) { el.innerHTML = html; el._html = html; } };
 
 function readConfig() {
   const el = document.getElementById('game-config');
@@ -101,12 +104,36 @@ function showXp(points, label) {
   const live = xpToast.el?.isConnected && !xpToast.el.classList.contains('g-toast--out');
   if (live) {
     xpToast.sum += points; xpToast.n += 1; xpToast.label = label || xpToast.label;
-    xpToast.el.innerHTML = `<b>+${xpToast.sum} XP</b> <span>${esc(xpToast.label)}${xpToast.n > 1 ? ` <small>· ${xpToast.n} actions</small>` : ''}</span>`;
+    xpToast.el.innerHTML = `<b>+${xpToast.sum} XP</b> <span>${esc(xpToast.label)}${xpToast.n > 1 ? ` <i class="g-toast__meta">· ${xpToast.n} actions</i>` : ''}</span>`;
     dismissLater(xpToast.el, 2400);
     return;
   }
   Object.assign(xpToast, { sum: points, n: 1, label });
   xpToast.el = toast(`<b>+${points} XP</b> <span>${esc(label)}</span>`);
+}
+
+// ---- click feedback ---------------------------------------------------------------
+
+function ripple(x, y, reduced) {
+  if (reduced) return;
+  const r = document.createElement('span');
+  r.className = 'g-ripple';
+  r.style.left = `${x}px`;
+  r.style.top = `${y}px`;
+  r.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 650);
+}
+
+function floatText(x, y, text, reduced) {
+  const f = document.createElement('span');
+  f.className = `g-plus ${reduced ? 'g-plus--still' : ''}`;
+  f.textContent = text;
+  f.style.left = `${x}px`;
+  f.style.top = `${y}px`;
+  f.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 900);
 }
 
 // ---- rendering -------------------------------------------------------------------
@@ -119,7 +146,7 @@ let pendingTimer = null;
 let focusItem = null;  // shop item to highlight
 
 function renderAchievements(list, snap) {
-  list.innerHTML = snap.achievements.map((a) => {
+  setHTML(list, snap.achievements.map((a) => {
     const hidden = a.hidden && !a.unlocked;
     return `<li class="g-ach ${a.unlocked ? 'g-ach--on' : 'g-ach--off'}">
       <span class="g-ach__icon" aria-hidden="true">${hidden ? '❔' : esc(a.icon ?? '★')}</span>
@@ -127,7 +154,7 @@ function renderAchievements(list, snap) {
       <small>${hidden ? 'Keep exploring…' : esc(a.description)}${a.bonus ? ` · +${a.bonus} XP` : ''}</small></span>
       <span class="g-ach__state">${a.unlocked ? 'Unlocked' : 'Locked'}</span>
     </li>`;
-  }).join('');
+  }).join(''));
 }
 
 function render(snap) {
@@ -163,15 +190,15 @@ function buyButton(id, { compact = false } = {}) {
 }
 
 function themeHref(theme) {
-  if (config.theme) return location.pathname.replace(/^\/[^/]+/, `/${theme}`);
-  return `${(config.siteUrl ?? '').replace(/\/$/, '')}/${theme}/`;
+  if (config.theme) return `?theme=${theme}`;
+  return `${(config.siteUrl ?? '').replace(/\/$/, '')}/?theme=${theme}`;
 }
 
 function renderShop(el) {
   const groups = shopView(account?.shop ?? config.shop ?? [], config.palettes ?? {}, config.themes ?? []);
   const coins = account ? account.coins() : engineRef.snapshot().xp;
   const guest = !account?.user;
-  el.innerHTML = `
+  setHTML(el, `
     <div class="g-shop-head">
       <span class="g-coins">🪙 <b>${coins}</b> coins</span>
       <small>Every XP point you earn is a coin. Unlocking things never lowers your level.</small>
@@ -209,7 +236,7 @@ function renderShop(el) {
           </li>`;
         }).join('')}</ul>
       </section>`;
-    }).join('')}`;
+    }).join('')}`);
 }
 
 function renderAccount(xp) {
@@ -225,7 +252,7 @@ function renderAccount(xp) {
     el.querySelectorAll('[data-price]').forEach((p) => (p.textContent = owned || !it ? '' : blocked ? '🔒' : `🪙 ${it.price}`));
     if (!owned && it) el.title = blocked ? `${it.label} — unlock ${itemOf(it.requires)?.label ?? 'its theme'} first` : `${it.label} — 🪙 ${it.price}`;
   });
-  $$('[data-buy-slot]').forEach((el) => (el.innerHTML = buyButton(el.getAttribute('data-buy-slot'))));
+  $$('[data-buy-slot]').forEach((el) => setHTML(el, buyButton(el.getAttribute('data-buy-slot'))));
   $$('[data-palette-btn]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.paletteBtn === currentPalette())));
   const shopDialog = document.getElementById('shop-dialog');
   if (shopDialog?.open) $$('[data-shop]').forEach(renderShop);
@@ -238,9 +265,9 @@ function renderAccount(xp) {
   $$('[data-account-email]').forEach((el) => (el.textContent = u?.email || ''));
   $$('[data-account-avatar]').forEach((el) => { if (u?.avatar) { el.src = u.avatar; el.hidden = false; } else el.hidden = true; });
   $$('[data-login-providers]').forEach((el) => {
-    el.innerHTML = a.providers.length
+    setHTML(el, a.providers.length
       ? a.providers.map((p) => `<a class="g-login g-login--${p}" href="${esc(a.loginUrl(p))}">Continue with ${PROVIDER_LABEL[p] ?? p}</a>`).join('')
-      : '<p class="g-muted">Sign-in is not available right now. Your progress is kept in this browser.</p>';
+      : '<p class="g-muted">Sign-in is not available right now. Your progress is kept in this browser.</p>');
   });
 }
 
@@ -251,7 +278,7 @@ function updateThemeLock() {
   $$('[data-theme-lock]').forEach((overlay) => {
     const id = overlay.getAttribute('data-theme-lock');
     const bar = document.querySelector(`[data-preview-bar="${id}"]`);
-    if (owns(id)) { overlay.hidden = true; if (bar) bar.hidden = true; clearInterval(previewTimer); return; }
+    if (owns(id)) { overlay.hidden = true; if (bar) bar.hidden = true; document.body.classList.remove('g-has-bar'); clearInterval(previewTimer); return; }
     const key = `pf.preview.${id}`;
     let start = Date.now();
     try { start = Number(sessionStorage.getItem(key)) || start; sessionStorage.setItem(key, String(start)); } catch {}
@@ -259,6 +286,7 @@ function updateThemeLock() {
       const left = Math.max(0, PREVIEW_SECONDS - Math.floor((Date.now() - start) / 1000));
       if (bar) {
         bar.hidden = left <= 0;
+        document.body.classList.toggle('g-has-bar', !bar.hidden); // lifts toasts above the bar
         bar.querySelectorAll('[data-preview-left]').forEach((el) => (el.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`));
       }
       overlay.hidden = left > 0;
@@ -374,7 +402,7 @@ export function mountGame() {
     save: (s) => storage.save(s),
     emit: (type, detail) => {
       if (type === 'award') account?.queue(detail.id, detail.points);
-      if (type === 'award' && detail.points > 0) {
+      if (type === 'award' && detail.points > 0 && !detail.meta.silent) {
         showXp(detail.points, detail.meta.label ?? '');
         if (sound) beep(880);
       }
@@ -415,6 +443,25 @@ export function mountGame() {
     pos = k === KONAMI[pos] ? pos + 1 : k === KONAMI[0] ? 1 : 0;
     if (pos === KONAMI.length) { pos = 0; engine.award('secret:konami', 0, { label: 'Secret found' }); }
   });
+
+  // Every click ripples; the first clickCap clicks are worth a point each.
+  // The ripple starts on pointerdown (instant feedback, no re-render). The point is
+  // awarded on click: by then the browser has picked the click target, so the
+  // re-render that the new coin total causes can't swallow the click.
+  const clickable = (e) => e.button === 0 && document.documentElement.dataset.game !== 'off'
+    && !e.target.closest?.('input, textarea, select, [contenteditable="true"], .g-welcome');
+  document.addEventListener('pointerdown', (e) => { if (clickable(e)) ripple(e.clientX, e.clientY, reduced); }, { passive: true });
+  let lastClickAward = 0;
+  document.addEventListener('click', (e) => {
+    if (!clickable(e) || !e.isTrusted) return;
+    const cap = config.clickCap ?? 0;
+    const n = engine.countPrefix('click:');
+    const now = performance.now();
+    if (n >= cap || now - lastClickAward < 300) return; // capped, and no auto-clicker farming
+    lastClickAward = now;
+    const pts = rewards.click ?? 1;
+    if (engine.award(`click:${n + 1}`, pts, { label: 'Click', silent: true })) floatText(e.clientX, e.clientY, `+${pts}`, reduced);
+  }, { passive: true });
 
   // Game on/off, sound, reset
   const applyOff = (off) => {

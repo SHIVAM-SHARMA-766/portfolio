@@ -8,8 +8,8 @@ rendered in three entirely different themes, with a learning site for free cours
 
 ## Highlights
 
-- **Three themes, one content model.** *Terminal* is a real shell to explore. *Quest* is a pixel RPG with a world map and quest board. *Studio* is a clean editorial layout for recruiters. Every page works in every theme.
-- **A game with an economy.** Visiting pages, opening projects, running commands, finishing lessons and capturing flags earn XP and coins. Spend coins to unlock the Quest theme and extra palettes. Levels, achievements (some secret) and a one-click "skip the game" for recruiters.
+- **Three themes, one content model, clean URLs.** *Studio* (default) is a clean editorial layout for recruiters. *Terminal* is a real shell to explore. *Quest* is a pixel RPG with a world map and quest board. Every page works in every theme at the same address, like `/about/`.
+- **A game with an economy.** Clicking around, visiting pages, opening projects, running commands, finishing lessons and capturing flags earn XP and coins, with a ripple and +1 on every click. Spend coins to unlock the Terminal and Quest themes, then their extra palettes. Locked themes can be previewed for free. Levels, achievements (some secret) and a one-click "skip the game" for recruiters.
 - **A terminal CTF.** Explore a filesystem built from the portfolio (`ls -a`, `cat`, `grep -r`, `tree`), find five flags hidden in dotfiles, base64, logs, page source and a port-scan mini-game, and `submit` them.
 - **Accounts.** Visitors sign in with Google, GitHub or LinkedIn to save progress across devices; everything earned as a guest comes along. They can delete their account at any time.
 - **Live presence.** See how many people are online and on the same page, with their pointers moving in real time, anonymously.

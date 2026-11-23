@@ -46,6 +46,7 @@ Run these once, in order. Values are filled in for the current host.
    cd ~/shivam/portfolio
    ./deploy/setup-server.sh
    ```
+   Re-run it whenever `deploy/Caddyfile.tmpl` changes (e.g. the clean-URL theme routing).
    Installs Caddy and sqlite3, the restricted `deploy` user, firewall rules, the API service
    and its restart-on-upload unit, fail2ban for admin sign-in, daily database backups, and
    the Caddyfile. It generates `SESSION_SECRET` and moves an existing admin password and

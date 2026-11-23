@@ -16,6 +16,7 @@ export const gameConfig = {
   cookieDomain: site.cookieDomain,
   rewards: site.game.rewards,
   levels: site.game.levels,
+  clickCap: (site.game as any).clickCap ?? 0,
   achievements: achievementsFile.achievements,
   pageIds: [] as string[],
   pageId: null,

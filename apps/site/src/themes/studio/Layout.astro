@@ -5,6 +5,7 @@ import GameBoot from '../../components/GameBoot.astro';
 import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
 import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
 import AccountChip from '../../components/AccountChip.astro';
+import ThemeLock from '../../components/ThemeLock.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './studio.css';
@@ -52,6 +53,7 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
     </footer>
     <AchievementsDialog />
     <AccountDialogs ownerName={site.name} />
+    <ThemeLock item={`theme:${theme}`} slug={slug} />
     <GameBoot />
   </body>
 </html>

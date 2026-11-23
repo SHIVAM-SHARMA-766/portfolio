@@ -2,7 +2,7 @@
 // A theme the visitor hasn't unlocked: a free preview with a countdown, then an
 // unlock screen. The page itself stays in the HTML for search engines and
 // no-JS visitors; the game layer decides what to show.
-import { shopItem, site, pageUrl } from '../lib/content';
+import { shopItem, site, themeUrl } from '../lib/content';
 interface Props { item: string; slug: string }
 const { item, slug } = Astro.props;
 const it = shopItem(item);
@@ -13,7 +13,7 @@ const it = shopItem(item);
       <span>👀 Previewing <b>{it.label}</b> · <b data-preview-left>1:30</b> left</span>
       <span class="g-preview-bar__actions">
         <span data-buy-slot={item}></span>
-        <a class="g-btn g-btn--ghost" href={pageUrl(site.defaultTheme, slug)}>Exit preview</a>
+        <a class="g-btn g-btn--ghost" href={themeUrl(site.defaultTheme)}>Exit preview</a>
       </span>
     </div>
     <div class="g-theme-lock" data-theme-lock={item} hidden role="dialog" aria-modal="true" aria-labelledby="lock-title">
@@ -24,8 +24,7 @@ const it = shopItem(item);
         <p class="g-theme-lock__coins">You have <b>🪙 <span data-game-coins>0</span></b> · it costs <b>🪙 {it.price}</b></p>
         <div class="g-theme-lock__actions">
           <span data-buy-slot={item}></span>
-          <a class="g-btn g-btn--ghost" href={pageUrl(site.defaultTheme, slug)}>Back to {site.defaultTheme}</a>
-          <a class="g-btn g-btn--ghost" href={pageUrl('studio', slug)}>Studio (free)</a>
+          <a class="g-btn g-btn--ghost" href={themeUrl(site.defaultTheme)}>Back to {site.defaultTheme.charAt(0).toUpperCase() + site.defaultTheme.slice(1)} (free)</a>
         </div>
         <p class="g-muted g-theme-lock__hint">Earn coins by exploring the other themes: every XP point is a coin.</p>
       </div>

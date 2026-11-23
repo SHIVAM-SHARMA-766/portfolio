@@ -83,6 +83,9 @@ export const profileFields = [
 
 export const siteFields = [
   s('name', 'Name'), s('shortName', 'Short name'), s('role', 'Role'), s('tagline', 'Tagline'), text('description', 'Description (search engines)'),
+  s('photo', 'Photo', { help: 'Upload it under Media, then paste its path here, e.g. /uploads/me-abc.jpg. A 4:5 portrait works best.' }),
+  s('photoAlt', 'Photo description (for screen readers)'),
+  s('photoPosition', 'Photo crop focus', { help: 'Which part stays in frame, e.g. "50% 25%" keeps the face near the top. First number moves left/right, second up/down.' }),
   s('location', 'Location'), s('email', 'Email'), s('siteUrl', 'Site URL'), s('learnUrl', 'Learn site URL'), s('apiUrl', 'API URL'),
   s('cookieDomain', 'Cookie domain (shares progress across subdomains)'),
   list('socials', 'Social links', link, { summary: 'label' }),
@@ -98,6 +101,7 @@ export const siteFields = [
 export const shopFields = [list('items', 'Items', [
   s('id', 'Item id', { help: 'theme:<name> or palette:<theme>-<palette>. Never change after people have bought it.' }),
   s('label', 'Label'), text('description', 'Description'), num('price', 'Price (coins)'),
+  s('requires', 'Requires (optional)', { help: 'Item that must be owned first. Palettes of a paid theme already require that theme.' }),
 ], { summary: 'label' })];
 
 export const missionFields = [list('missions', 'Missions', [

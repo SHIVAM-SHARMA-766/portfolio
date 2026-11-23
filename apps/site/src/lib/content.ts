@@ -2,6 +2,8 @@
 // validated here; pages and blog posts come from content collections.
 import { getCollection } from 'astro:content';
 import { marked } from 'marked';
+import { existsSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
 import { palettes } from '@portfolio/tokens';
 import { z } from 'astro/zod';
 import { siteSchema, profileSchema, achievementSchema, courseSchema, shopSchema, type Page } from './schema';
@@ -20,6 +22,21 @@ function parse<T>(schema: z.ZodType<T>, data: unknown, file: string): T {
 export const site = parse(siteSchema, siteRaw, 'content/site.json');
 export const profile = parse(profileSchema, profileRaw, 'content/profile.json');
 export const achievements = parse(z.array(achievementSchema), achievementsRaw.achievements, 'content/achievements.json');
+/**
+ * The portrait, if its file exists (local paths are checked at build time so a
+ * missing upload falls back to initials instead of a broken image).
+ */
+export const photo = (() => {
+  const src = site.photo;
+  if (!src) return null;
+  if (src.startsWith('/') && !existsSync(resolvePath(process.cwd(), 'public', src.slice(1)))) {
+    console.warn(`[content] photo ${src} not found in apps/site/public; showing initials instead`);
+    return null;
+  }
+  return { src, alt: site.photoAlt || site.name, position: site.photoPosition || '50% 25%' };
+})();
+export const initials = site.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
 export const shop = parse(shopSchema, shopRaw, 'content/shop.json').items;
 export const rewards = site.game.rewards as Record<string, number>;
 export const shopItem = (id: string) => shop.find((i) => i.id === id);
@@ -75,15 +92,24 @@ export function getCourses() {
     .sort((a, b) => a.order - b.order);
 }
 
-/** URL of a page in a theme. */
-export function pageUrl(theme: string, slug: string) {
-  return `/${theme}/${slug ? `${slug}/` : ''}`;
+/**
+ * URL of a page. URLs carry no theme: the visitor's theme lives in the pf_theme
+ * cookie and Caddy serves the matching build (see deploy/Caddyfile.tmpl).
+ * The theme argument is kept so call sites read naturally.
+ */
+export function pageUrl(_theme: string, slug: string) {
+  return `/${slug ? `${slug}/` : ''}`;
 }
 
-/** Resolve a link written in content. Relative links stay inside the current theme. */
-export function resolveHref(theme: string, href: string) {
-  if (/^([a-z]+:|\/|#)/i.test(href)) return href;
-  return `/${theme}/${href}`;
+/** Link that switches to a theme and comes back to the same page. */
+export function themeUrl(theme: string) {
+  return `?theme=${theme}`;
+}
+
+/** Resolve a link written in content ("projects/" → "/projects/"). */
+export function resolveHref(_theme: string, href: string) {
+  if (/^([a-z]+:|\/|#|\?)/i.test(href)) return href;
+  return `/${href}`;
 }
 
 export function md(src = '') {
@@ -113,6 +139,7 @@ export async function gameConfig(currentPageId: string | null) {
     cookieDomain: site.cookieDomain,
     rewards: site.game.rewards,
     levels: site.game.levels,
+    clickCap: site.game.clickCap,
     achievements,
     pageIds: pages.map((p) => pageId(p.slug)),
     pageId: currentPageId,

@@ -1,7 +1,7 @@
 ---
 // Sign-in / account dialog and the coin shop. Shared by both sites; themes style them.
 interface Props { ownerName?: string; privacyUrl?: string }
-const { ownerName = 'the site owner', privacyUrl = '/studio/privacy/' } = Astro.props;
+const { ownerName = 'the site owner', privacyUrl = '/privacy/' } = Astro.props;
 ---
 <dialog id="login-dialog" class="ach-dialog acct-dialog" aria-labelledby="login-title">
   <div class="ach-head">

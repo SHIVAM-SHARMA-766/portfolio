@@ -15,6 +15,9 @@
 - Coin economy: Quest theme and extra palettes are bought with coins
 - Terminal CTF: virtual filesystem and five missions
 - Custom admin panel replacing Sveltia: dashboard, visitors (CSV), editors for all content, media
+- Clean URLs (theme in a cookie), Studio default with Terminal and Quest for sale, theme-before-palette rule
+- Refined shop (grouped, confirm step, previews), click ripple with +1 points, welcome card
+- Portrait in every theme (crop, duotone + ASCII, pixel art)
 
 ## Next
 

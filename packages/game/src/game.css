@@ -97,13 +97,14 @@
 .g-theme-lock__actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin: 1rem 0 .5rem; }
 .g-theme-lock__hint { font-size: .8rem; margin: .5rem 0 0; }
 /* Toasts sit above the preview bar */
-.g-toasts:has(~ .g-preview-bar:not([hidden])) { bottom: 5rem; }
+.g-has-bar .g-toasts { bottom: 5.5rem; }
+.g-has-bar .g-welcome { bottom: 5.5rem; }
 
 /* ---- first-visit card ---- */
 .g-welcome { position: fixed; left: 16px; bottom: 16px; z-index: 860; width: min(360px, calc(100vw - 32px)); padding: 1rem 1.1rem; background: var(--surface); color: var(--fg); border: 2px solid var(--accent); border-radius: var(--g-radius, 8px); box-shadow: 0 12px 40px rgb(0 0 0 / .3); animation: g-in .3s ease-out; font-size: .9rem; }
 .g-welcome p { margin: .4rem 0 .8rem; color: var(--muted); }
 .g-welcome__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
-.g-toast small { display: inline; }
+.g-toast__meta { font-style: normal; font-size: .75rem; color: var(--muted); }
 .g-toast--notice { border-color: var(--accent-2); }
 
 @media (max-width: 600px) {
@@ -113,3 +114,17 @@
   .g-preview-bar { bottom: 8px; font-size: .82rem; }
 }
 @media (prefers-reduced-motion: reduce) { .g-btn--confirm { animation: none; } .g-welcome { animation: none; } }
+
+/* ---- click feedback ---- */
+.g-ripple { position: fixed; z-index: 1001; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid var(--accent); pointer-events: none; animation: g-ripple .6s ease-out forwards; }
+@keyframes g-ripple { from { transform: scale(.4); opacity: .9; } to { transform: scale(5); opacity: 0; } }
+.g-plus { position: fixed; z-index: 1002; pointer-events: none; transform: translate(-50%, -120%); font-weight: 800; font-size: .85rem; color: var(--accent); text-shadow: 0 1px 2px rgb(0 0 0 / .35); animation: g-plus .85s ease-out forwards; }
+.g-plus--still { animation: g-plus-fade .85s ease-out forwards; }
+@keyframes g-plus { to { transform: translate(-50%, -260%); opacity: 0; } }
+@keyframes g-plus-fade { to { opacity: 0; } }
+/* Theme flavours */
+[data-theme="terminal"] .g-ripple { border-radius: 0; border-style: dashed; }
+[data-theme="terminal"] .g-plus { font-family: inherit; }
+[data-theme="quest"] .g-ripple { border-radius: 0; border-width: 3px; animation-timing-function: steps(5); }
+[data-theme="quest"] .g-plus { font-family: 'Press Start 2P', monospace; font-size: .6rem; animation-timing-function: steps(6); }
+[data-theme="studio"] .g-ripple { border-width: 1.5px; background: color-mix(in srgb, var(--accent) 12%, transparent); }

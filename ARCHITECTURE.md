@@ -41,9 +41,22 @@ lacks one. The build fails on invalid content (Zod), and optional fields accept 
 ## Themes
 
 Each theme has `Layout.astro`, a CSS file, `blocks/`, and its own route files
-(`src/pages/<theme>/…`) so a page only loads that theme's CSS. URLs are
-`/<theme>/<slug>/`; `/` redirects to the visitor's last theme. Palettes are CSS custom
+(`src/pages/<theme>/…`) so a page only loads that theme's CSS. Palettes are CSS custom
 properties from `packages/tokens/palettes.json`, applied before first paint.
+
+**Clean URLs.** Public URLs carry no theme (`/about/`). Each theme is built to
+`dist/<theme>/…`; the visitor's theme lives in the `pf_theme` cookie and Caddy serves
+`/<theme>/<path>` internally (`deploy/Caddyfile.tmpl`). `?theme=<name>` sets the cookie
+and redirects back to the clean URL (works without JavaScript); old `/<theme>/…` links
+301 to the clean path. The same rules live in `scripts/theme-routing.mjs` for the Astro
+dev server and the e2e tests. Studio is the default. After the build,
+`scripts/copy-default-theme.mjs` also copies the default theme to the site root, so clean
+URLs work on a host without the routing.
+
+**Portrait.** `site.json` `photo` (+ `photoAlt`, `photoPosition` as an `object-position`
+crop focus). Studio shows a 4:5 rounded crop; Terminal a duotone in the palette's accent
+with scanlines, plus `cat portrait.jpg` renders it as ASCII art; Quest pixelates it on a
+canvas (hero and HUD avatar). A missing file falls back to initials at build time.
 
 ## The game
 
@@ -54,7 +67,16 @@ sync safe. Event ids are built with `packages/game/src/ids.js` everywhere.
 
 **Coins.** Coins = XP − price of owned items. Buying never lowers XP or level. Shop items
 (`content/shop.json`) are `theme:<id>` or `palette:<theme>-<id>`; anything not in the
-shop is free. Terminal and Studio are free; Quest and some palettes cost coins.
+shop is free. Studio is free; Terminal and Quest and some palettes cost coins. A palette
+of a paid theme **requires that theme** first (`packages/game/src/shop.js` derives it; the
+API enforces it with 409). Buying is a two-step confirm. Locked controls open the shop at
+that item; a locked theme gets a 90-second preview per session, then an unlock screen.
+
+**Clicks.** Every click ripples (theme-styled); the first `clickCap` clicks (100) earn a
+point each as `click:1…click:100` catalog events, throttled to one per 300 ms. Points are
+awarded on `click`, not `pointerdown`: markup only re-renders when it changed, but the
+new coin total changes buy-button text, and re-creating a button between pointerdown and
+click would swallow the click.
 
 **Accounts (`account.js`).** Guests play with progress in `localStorage`. Signing in
 (GitHub / Google / LinkedIn) sends every guest event to the API, which merges and

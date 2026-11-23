@@ -12,6 +12,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { extname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import assert from 'node:assert/strict';
+import { routeTheme, themeCookie } from '../scripts/theme-routing.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const site = JSON.parse(await readFile(join(root, 'content/site.json'), 'utf8'));
@@ -45,7 +46,13 @@ function serve(dir, port) {
         req.pipe(p);
         return;
       }
-      let pathname = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+      let reqUrl = req.url;
+      if (port === 4501) { // same clean-URL theme routing as Caddy
+        const r = routeTheme(req.url, req.headers.cookie ?? '', site.defaultTheme);
+        if (r.redirect) { res.writeHead(r.status, { Location: r.redirect, 'Set-Cookie': themeCookie(r.setCookie) }); return res.end(); }
+        if (r.rewrite) reqUrl = r.rewrite;
+      }
+      let pathname = decodeURIComponent(new URL(reqUrl, 'http://x').pathname);
       let base = dir;
       if (port === 4501 && pathname.startsWith('/admin')) {
         base = join(root, 'apps/admin/dist');
@@ -95,18 +102,42 @@ const blockFonts = (ctx) => ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) =>
 try {
   const ctx = await browser.newContext();
   await blockFonts(ctx);
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('pf.preview.theme:terminal', String(Date.now())); } catch {} });
   const page = await ctx.newPage();
   const errors = [];
+  // XP gained from an action, ignoring the point every click earns
+  const gainedWithoutClicks = (before, after) => Object.entries(after.events).filter(([id]) => !(id in before.events) && !id.startsWith('click:')).reduce((a, [, p]) => a + p, 0);
   page.on('pageerror', (e) => errors.push(e.message));
   const snap = () => page.evaluate(() => window.game.snapshot());
   const term = async (cmd) => { await page.fill('#shell-in', cmd); await page.press('#shell-in', 'Enter'); await page.waitForTimeout(60); };
   const lastOut = () => page.locator('#shell-out > div').last().innerText();
 
-  await step('root redirects to the default theme', async () => {
+  await step('the home page is Studio, at a clean URL', async () => {
     await page.goto(`${S}/`);
-    await page.waitForURL(/\/terminal\/$/);
     await page.waitForFunction(() => window.game?.account?.ready);
+    assert.equal(new URL(page.url()).pathname, '/');
+    assert.equal(await page.getAttribute('html', 'data-theme'), 'studio');
     assert.equal((await snap()).xp, 15);
+    const hrefs = await page.locator('a[href^="/"]').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+    assert.ok(hrefs.every((h) => !/^\/(terminal|quest|studio)\//.test(h)), 'no theme in any link');
+  });
+
+  await step('the portrait renders in every theme', async () => {
+    assert.ok(await page.locator('.s-portrait img').evaluate((i) => i.complete && i.naturalWidth > 0), 'studio photo');
+    const p = await browser.newPage();
+    await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+    await p.addInitScript(() => { try { sessionStorage.setItem('pf.preview.theme:terminal', String(Date.now())); sessionStorage.setItem('pf.preview.theme:quest', String(Date.now())); localStorage.setItem('pf.prefs.v1', '{"welcomed":true}'); } catch {} });
+    await p.goto(`${S}/?theme=terminal`);
+    assert.ok(await p.locator('.t-portrait img').evaluate((i) => i.complete && i.naturalWidth > 0), 'terminal photo');
+    await p.fill('#shell-in', 'cat portrait.jpg');
+    await p.press('#shell-in', 'Enter');
+    await p.waitForSelector('.t-ascii');
+    assert.ok((await p.locator('.t-ascii').innerText()).length > 500, 'ASCII portrait');
+    await shot(p, 'terminal-photo');
+    await p.goto(`${S}/?theme=quest`);
+    await p.waitForFunction(() => { const c = document.querySelector('canvas.q-pixel'); if (!c) return false; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; return d.some((v, i) => i % 4 !== 3 && v > 0); });
+    await shot(p, 'quest-photo');
+    await p.close();
   });
 
   await step('first visit shows a welcome card, once', async () => {
@@ -118,13 +149,36 @@ try {
     assert.equal(await page.locator('.g-welcome').count(), 0);
   });
 
+  await step('clicking earns a point with a ripple', async () => {
+    const before = await page.evaluate(() => window.game.countPrefix('click:'));
+    await page.mouse.click(300, 400);
+    await page.waitForSelector('.g-ripple', { state: 'attached', timeout: 2000 });
+    await page.waitForSelector('.g-plus', { state: 'attached', timeout: 2000 });
+    assert.equal(await page.evaluate(() => window.game.countPrefix('click:')), before + 1);
+  });
+
+  await step('?theme= switches theme, remembers it, keeps the URL clean', async () => {
+    await page.goto(`${S}/about/?theme=terminal`);
+    assert.equal(new URL(page.url()).pathname + new URL(page.url()).search, '/about/');
+    assert.equal(await page.getAttribute('html', 'data-theme'), 'terminal');
+    await page.goto(`${S}/projects/`);
+    assert.equal(await page.getAttribute('html', 'data-theme'), 'terminal', 'cookie remembered');
+    await page.goto(`${S}/quest/contact/`);
+    assert.equal(new URL(page.url()).pathname, '/contact/', 'old theme URLs redirect');
+    assert.equal(await page.getAttribute('html', 'data-theme'), 'quest');
+  });
+
+  await step('terminal is locked by default (free preview)', async () => {
+    await page.goto(`${S}/projects/?theme=terminal`);
+    await page.waitForFunction(() => window.game?.account?.ready);
+    assert.equal(await page.locator('[data-preview-bar="theme:terminal"]').isVisible(), true);
+  });
+
   await step('opening a project awards XP once', async () => {
-    await page.goto(`${S}/terminal/projects/`);
-    await page.waitForFunction(() => window.game);
-    const before = (await snap()).xp;
+    const before = await snap();
     const summary = page.locator('.t-project summary').first();
     await summary.click(); await summary.click(); await summary.click();
-    assert.equal((await snap()).xp, before + site.game.rewards.project);
+    assert.equal(gainedWithoutClicks(before, await snap()), site.game.rewards.project);
   });
 
   await step('terminal: filesystem, hidden files and a flag', async () => {
@@ -168,7 +222,7 @@ try {
   });
 
   await step('page-source flag and terminal commands unlock achievements', async () => {
-    const html = await (await page.request.get(`${S}/terminal/`)).text();
+    const html = await (await page.request.get(`${S}/`)).text();
     await term(`submit ${html.match(/FLAG\{[^}]+\}/)[0]}`);
     for (const c of ['whoami', 'pwd', 'tree', 'status', 'neofetch']) await term(c);
     const s = await snap();
@@ -190,7 +244,7 @@ try {
   });
 
   await step('a locked theme gets a free preview, then the unlock screen', async () => {
-    await page.goto(`${S}/quest/`);
+    await page.goto(`${S}/?theme=quest`);
     await page.waitForFunction(() => window.game?.account?.ready);
     assert.equal(await page.locator('[data-preview-bar]').isVisible(), true);
     assert.equal(await page.locator('[data-theme-lock]').isVisible(), false);
@@ -207,7 +261,7 @@ try {
     const guestXp = (await snap()).xp;
     const r = await page.request.post(`${S}/api/dev/login`, { headers: { Origin: S } });
     assert.ok(r.ok());
-    await page.goto(`${S}/terminal/`);
+    await page.goto(`${S}/?theme=terminal`);
     await page.waitForFunction(() => window.game?.account?.user);
     await page.waitForTimeout(1500);
     const me = await (await page.request.get(`${S}/api/me`)).json();
@@ -216,7 +270,7 @@ try {
   });
 
   await step('a theme\'s palettes cannot be bought before the theme', async () => {
-    await page.goto(`${S}/terminal/`);
+    await page.goto(`${S}/?theme=terminal`);
     await page.waitForFunction(() => window.game?.account?.user);
     await page.evaluate(() => window.game.openShop('palette:quest-dungeon'));
     const entry = page.locator('#shop-dialog [data-shop-entry="palette:quest-dungeon"]');
@@ -231,7 +285,7 @@ try {
   });
 
   await step('buying the quest theme with coins unlocks it (with confirmation)', async () => {
-    await page.goto(`${S}/quest/`);
+    await page.goto(`${S}/?theme=quest`);
     await page.waitForFunction(() => window.game?.account?.ready);
     const coins = await page.evaluate(() => window.game.account.coins());
     const slot = page.locator('[data-theme-lock]:not([hidden]) [data-buy], [data-preview-bar]:not([hidden]) [data-buy]').first();
@@ -244,7 +298,9 @@ try {
     await page.waitForFunction(() => window.game.account.owns('theme:quest'));
     assert.equal(await page.locator('[data-theme-lock]').isVisible(), false);
     const after = await page.evaluate(() => window.game.account.coins());
-    assert.equal(coins - after, 120);
+    const price = JSON.parse(await readFile(join(root, 'content/shop.json'), 'utf8')).items.find((i) => i.id === 'theme:quest').price;
+    // The two button clicks may each earn a click point (throttled), so 0–2 coins come back.
+    assert.ok(coins - after <= price && coins - after >= price - 2, `spent ${coins - after}, price ${price}`);
     const me = await (await page.request.get(`${S}/api/me`)).json();
     assert.ok('theme:quest' in me.state.purchases, 'purchase stored on the server');
   });
@@ -263,8 +319,8 @@ try {
     const other = await browser.newContext();
     await blockFonts(other);
     const p2 = await other.newPage();
-    await page.goto(`${S}/studio/`);
-    await p2.goto(`${S}/studio/`);
+    await page.goto(`${S}/?theme=studio`);
+    await p2.goto(`${S}/`);
     await page.waitForFunction(() => /2 online · 2 here/.test(document.querySelector('[data-live]')?.textContent ?? ''), null, { timeout: 8000 });
     for (let i = 0; i < 5; i++) { await p2.mouse.move(400 + i * 20, 300); await p2.waitForTimeout(80); }
     await page.waitForSelector('.g-cursor', { timeout: 5000 });
@@ -313,7 +369,7 @@ try {
   await step('pages fit a 375px phone without horizontal scroll', async () => {
     const m = await browser.newPage({ viewport: { width: 375, height: 800 } });
     await m.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
-    for (const url of ['/terminal/', '/quest/', '/studio/', '/terminal/experience/', '/quest/projects/', '/studio/blog/hello-world/']) {
+    for (const url of ['/?theme=terminal', '/?theme=quest', '/?theme=studio', '/experience/?theme=terminal', '/projects/?theme=quest', '/blog/hello-world/?theme=studio']) {
       await m.goto(`${S}${url}`);
       const over = await m.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       assert.ok(over <= 0, `${url} overflows by ${over}px`);

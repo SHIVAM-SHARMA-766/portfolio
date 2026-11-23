@@ -58,8 +58,40 @@ __SITE_HOST__ {
 		header @assets Cache-Control "public, max-age=31536000, immutable"
 	}
 
+	# Clean URLs: the theme lives in the pf_theme cookie, not the URL. Each theme's
+	# build sits in /srv/portfolio/site/<theme>/ and is served under the plain path.
+	# Mirrored for dev and tests in scripts/theme-routing.mjs.
 	handle {
 		root * /srv/portfolio/site
+		route {
+			# ?theme=<name> picks a theme, remembers it, and returns to the clean URL
+			@pick query theme=terminal theme=quest theme=studio
+			header @pick Set-Cookie "pf_theme={query.theme}; Path=/; Max-Age=31536000; SameSite=Lax; Secure"
+			redir @pick {path} 302
+			# Old /<theme>/... links keep working
+			@legacy path_regexp legacy ^/(terminal|quest|studio)(/.*)$
+			header @legacy Set-Cookie "pf_theme={re.legacy.1}; Path=/; Max-Age=31536000; SameSite=Lax; Secure"
+			redir @legacy {re.legacy.2} 301
+			@legacyBare path /terminal /quest /studio
+			redir @legacyBare {path}/ 301
+			# Serve the visitor's theme; Studio unless they picked another
+			@quest {
+				not path /_astro/* /pagefind/* /uploads/* /images/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
+				header_regexp Cookie (?:^|;\s*)pf_theme=quest(?:;|$)
+			}
+			@terminal {
+				not path /_astro/* /pagefind/* /uploads/* /images/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
+				header_regexp Cookie (?:^|;\s*)pf_theme=terminal(?:;|$)
+			}
+			@studio {
+				not path /_astro/* /pagefind/* /uploads/* /images/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
+				not header_regexp Cookie (?:^|;\s*)pf_theme=(?:quest|terminal)(?:;|$)
+			}
+			rewrite @quest /quest{uri}
+			rewrite @terminal /terminal{uri}
+			rewrite @studio /studio{uri}
+		}
+		header Vary Cookie
 		import static
 		header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' wss://__SITE_HOST__; frame-ancestors 'none'"
 	}

@@ -192,6 +192,19 @@
       }
     },
     {
+      "id": "click-happy",
+      "title": "Click happy",
+      "description": "Click 100 times while exploring.",
+      "icon": "🖱️",
+      "bonus": 10,
+      "hidden": false,
+      "rule": {
+        "type": "events",
+        "prefix": "click:",
+        "min": 100
+      }
+    },
+    {
       "id": "legend",
       "title": "Legend",
       "description": "Reach 550 XP.",

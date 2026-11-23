@@ -179,3 +179,9 @@ a { color: var(--accent); }
   .q-panel { padding: 1.1rem 1rem; }
   .q-chest { flex-direction: column; align-items: start; }
 }
+
+/* Pixel-art portrait */
+.q-pixel { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; image-rendering: pixelated; image-rendering: crisp-edges; }
+.q-portrait:has(.q-pixel) { aspect-ratio: 4 / 5; padding: 6px; background: var(--surface); place-items: stretch; }
+.q-avatar:has(.q-pixel--avatar) { padding: 3px; }
+.q-pixel--avatar { aspect-ratio: 1; width: 100%; height: 100%; }

@@ -11,7 +11,7 @@ if (block.limit) posts = posts.slice(0, block.limit);
   {posts.length === 0 && <p class="t-dim">(empty — first post coming soon)</p>}
   <ul class="t-list t-posts">
     {posts.map((p) => (
-      <li><span class="t-dim">{p.data.date.toISOString().slice(0, 10)}</span> <a href={`/${theme}/blog/${p.id}/`}>{p.id}.md</a><br /><span class="t-dim">{p.data.description}</span></li>
+      <li><span class="t-dim">{p.data.date.toISOString().slice(0, 10)}</span> <a href={`/blog/${p.id}/`}>{p.id}.md</a><br /><span class="t-dim">{p.data.description}</span></li>
     ))}
   </ul>
 </Cmd>

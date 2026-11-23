@@ -1,7 +1,7 @@
 // Builds the terminal's virtual filesystem from content at build time, and
 // plants each mission's flag where its `kind` says it belongs.
 import { createHash } from 'node:crypto';
-import { profile, site, getPosts, getNav, getCourses, slugify, formatMonth } from '../../lib/content';
+import { profile, site, getPosts, getNav, getCourses, slugify, formatMonth, photo } from '../../lib/content';
 import missionsRaw from '../../../../../content/missions.json';
 
 export type FsNode =
@@ -52,12 +52,12 @@ export async function buildFs(theme: string) {
     if (p.tags.length) lines.push('', `tags: ${p.tags.join(', ')}`);
     for (const l of p.links) lines.push(`${l.label.toLowerCase()}: ${l.url}`);
     if (p === decoderHost && flagOf('base64')) lines.push('', `build-note: ${Buffer.from(flagOf('base64')!).toString('base64')}`);
-    projects[p.slug] = dir({ 'README.md': file(lines.join('\n'), { href: `/${theme}/projects/` }) });
+    projects[p.slug] = dir({ 'README.md': file(lines.join('\n'), { href: '/projects/' }) });
   }
 
   const blog: Record<string, FsNode> = {};
   for (const p of posts) {
-    blog[`${p.id}.md`] = file(`# ${p.data.title}\n${p.data.date.toISOString().slice(0, 10)}\n\n${p.data.description ?? ''}\n\nRead it: open blog/${p.id}.md`, { href: `/${theme}/blog/${p.id}/` });
+    blog[`${p.id}.md`] = file(`# ${p.data.title}\n${p.data.date.toISOString().slice(0, 10)}\n\n${p.data.description ?? ''}\n\nRead it: open blog/${p.id}.md`, { href: `/blog/${p.id}/` });
   }
 
   const learn: Record<string, FsNode> = {};
@@ -73,7 +73,7 @@ export async function buildFs(theme: string) {
   if (flagOf('hidden-file')) secrets['recon.txt'] = file(`Nice recon. Hidden files start with a dot.\n${flagOf('hidden-file')}\n\nSubmit it with: submit <flag>`);
 
   const root = dir({
-    'about.md': file(`# ${site.name}\n${site.role} · ${site.location ?? ''}\n\n${profile.summary}`, { href: `/${theme}/about/` }),
+    'about.md': file(`# ${site.name}\n${site.role} · ${site.location ?? ''}\n\n${profile.summary}`, { href: '/about/' }),
     'skills.txt': file(profile.skills.map((g) => `${g.group}: ${g.items.join(', ')}`).join('\n')),
     'education.txt': file([...profile.education.map((e) => `${e.degree} — ${e.institution} (${formatMonth(e.end ?? undefined)})`), ...profile.certifications.map((c) => `${c.name}${c.status ? ` — ${c.status}` : ''}`)].join('\n')),
     'contact.sh': file(contactLines.join('\n'), { exec: true }),
@@ -81,13 +81,14 @@ export async function buildFs(theme: string) {
     projects: dir(projects),
     blog: dir(blog),
     learn: dir(learn),
+    ...(photo ? { 'portrait.jpg': file('', { href: photo.src }) } : {}),
     '.secrets': dir(secrets),
     '.bash_history': file(['ls -a', 'cat .secrets/todo.txt', 'grep -r incident experience', 'hack', 'shop', 'sudo hire shivam'].join('\n')),
   });
 
   return {
     fs: root,
-    pages: nav.map((p) => ({ name: p.slug || 'home', title: p.title, url: `/${theme}/${p.slug ? `${p.slug}/` : ''}` })),
+    pages: nav.map((p) => ({ name: p.slug || 'home', title: p.title, url: `/${p.slug ? `${p.slug}/` : ''}` })),
     // Flags are checked by hash, so the answers are not sitting in the page.
     missions: missions.map(({ flag, ...m }) => ({ ...m, hash: sha256(flag) })),
     portscanFlag: flagOf('port-scan') ? Buffer.from(flagOf('port-scan')!).toString('base64') : '',

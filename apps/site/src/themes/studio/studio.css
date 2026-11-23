@@ -135,3 +135,14 @@ h1, h2, h3, .s-display, .s-logo { font-family: Fraunces, Georgia, serif; font-we
   .s-posts a { grid-template-columns: 1fr; gap: .2rem; }
   .post { padding-inline: 16px; }
 }
+
+/* Portrait */
+.s-hero--photo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 360px); gap: 3rem; align-items: center; }
+.s-portrait { margin: 0; position: relative; }
+.s-portrait::before { content: ''; position: absolute; inset: 14px -14px -14px 14px; border-radius: 28px; border: 1px solid var(--accent); opacity: .5; }
+.s-portrait img { position: relative; display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 28px; box-shadow: 0 30px 60px -30px rgb(0 0 0 / .45); }
+@media (max-width: 760px) {
+  .s-hero--photo { grid-template-columns: 1fr; gap: 2rem; }
+  .s-portrait { order: -1; width: min(220px, 60%); }
+  .s-portrait::before { inset: 10px -10px -10px 10px; }
+}

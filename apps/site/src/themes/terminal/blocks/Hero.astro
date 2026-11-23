@@ -1,14 +1,24 @@
 ---
 import Cmd from '../Cmd.astro';
-import { resolveHref, mdInline } from '../../../lib/content';
+import { resolveHref, mdInline, photo } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string };
 ---
 <Cmd cmd="whoami">
-  <h1 class="t-hero-name">{block.heading}<span class="t-cursor" aria-hidden="true">█</span></h1>
-  {block.subheading && <p class="t-hero-role"># {block.subheading}</p>}
-  {block.body && <p class="t-hero-body" set:html={mdInline(block.body)} />}
-  {block.ctas.length > 0 && (
-    <p class="t-actions">{block.ctas.map((c) => <a class="t-link-btn" href={resolveHref(theme, c.href)}>[ {c.label} ]</a>)}</p>
-  )}
+  <div class={photo ? 't-hero t-hero--photo' : 't-hero'}>
+    <div>
+      <h1 class="t-hero-name">{block.heading}<span class="t-cursor" aria-hidden="true">█</span></h1>
+      {block.subheading && <p class="t-hero-role"># {block.subheading}</p>}
+      {block.body && <p class="t-hero-body" set:html={mdInline(block.body)} />}
+      {block.ctas.length > 0 && (
+        <p class="t-actions">{block.ctas.map((c) => <a class="t-link-btn" href={resolveHref(theme, c.href)}>[ {c.label} ]</a>)}</p>
+      )}
+    </div>
+    {photo && (
+      <figure class="t-portrait">
+        <span class="t-portrait__frame"><img src={photo.src} alt={photo.alt} width="480" height="600" style={`object-position:${photo.position}`} /></span>
+        <figcaption>~/portrait.jpg <span class="t-dim">· try: cat portrait.jpg</span></figcaption>
+      </figure>
+    )}
+  </div>
 </Cmd>

@@ -140,3 +140,13 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; back
   .t-bar { padding: .5rem 16px; justify-content: space-between; }
   .t-meter { width: 50px; }
 }
+
+/* Portrait: a duotone in the palette's accent, with scanlines */
+.t-hero--photo { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 2rem; align-items: start; }
+.t-portrait { margin: 0; }
+.t-portrait__frame { position: relative; display: block; aspect-ratio: 4 / 5; background: var(--accent); border: 1px solid var(--accent); overflow: hidden; box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent); }
+.t-portrait__frame img { display: block; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.25) brightness(.95); mix-blend-mode: multiply; }
+.t-portrait__frame::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgb(0 0 0 / .28) 0 1px, transparent 1px 3px); pointer-events: none; }
+.t-portrait figcaption { font-size: .78rem; margin-top: .4rem; color: var(--accent); }
+@media (max-width: 760px) { .t-hero--photo { grid-template-columns: 1fr; } .t-portrait { width: 160px; order: -1; } }
+.t-ascii { font-size: 9px; line-height: 1; letter-spacing: 0; color: var(--accent); overflow-x: auto; }

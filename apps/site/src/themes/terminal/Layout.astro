@@ -5,6 +5,7 @@ import GameBoot from '../../components/GameBoot.astro';
 import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
 import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
 import AccountChip from '../../components/AccountChip.astro';
+import ThemeLock from '../../components/ThemeLock.astro';
 import Shell from './Shell.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
@@ -53,6 +54,7 @@ const cwd = slug ? `~/${slug}` : '~';
     </div>
     <AchievementsDialog />
     <AccountDialogs ownerName={site.name} />
+    <ThemeLock item={`theme:${theme}`} slug={slug} />
     <GameBoot />
   </body>
 </html>

@@ -1,11 +1,11 @@
 ---
 // Theme and palette switcher. Markup is shared; each theme styles .sw-*.
 import { palettesFor } from '@portfolio/tokens';
-import { THEMES, pageUrl, shopItem } from '../lib/content';
+import { THEMES, themeUrl, shopItem } from '../lib/content';
 interface Props { theme: string; slug: string; path?: string }
 const { theme, slug, path } = Astro.props;
 const palettes = palettesFor(theme);
-const target = (t: string) => (path ? `/${t}/${path}` : pageUrl(t, slug));
+const target = (t: string) => themeUrl(t);
 ---
 <div class="sw">
   <div class="sw-group" role="group" aria-label="Theme">

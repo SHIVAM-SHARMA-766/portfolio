@@ -15,7 +15,7 @@
       "url": "https://github.com/SHIVAM-SHARMA-766"
     }
   ],
-  "defaultTheme": "terminal",
+  "defaultTheme": "studio",
   "defaultPalettes": {
     "terminal": "matrix",
     "quest": "forest",
@@ -36,7 +36,8 @@
       "contact": 5,
       "contactEmail": 10,
       "course": 50,
-      "flag": 25
+      "flag": 25,
+      "click": 1
     },
     "levels": [
       {
@@ -63,7 +64,11 @@
         "xp": 550,
         "name": "Legend"
       }
-    ]
+    ],
+    "clickCap": 100
   },
-  "apiUrl": "https://shivamsharma.duckdns.org/api"
+  "apiUrl": "https://shivamsharma.duckdns.org/api",
+  "photo": "/images/profile.jpg",
+  "photoAlt": "Portrait of Shivam Sharma",
+  "photoPosition": "50% 25%"
 }
