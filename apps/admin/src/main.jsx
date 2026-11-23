@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { useEffect, useMemo, useState, useCallback } from 'preact/hooks';
 import { api, parseFrontmatter, stringifyFrontmatter, toJSON, slugify } from './api.js';
-import { Form, MarkdownEditor } from './fields.jsx';
+import { Form, MarkdownEditor, uploadFile, publicUrl } from './fields.jsx';
 import * as S from './schemas.js';
 import './style.css';
 
@@ -42,6 +42,18 @@ const navigate = (hash) => {
 let toastSet = () => {};
 const toast = (msg, kind = 'ok') => toastSet({ msg, kind, id: Date.now() });
 let savedAt = 0; // last save, to watch the deploy
+addEventListener('admin-toast', (e) => toast(e.detail.msg, e.detail.kind));
+addEventListener('admin-saved', () => { savedAt = Date.now(); });
+
+const Logo = ({ size = 28 }) => (
+  <svg class="logo" viewBox="0 0 32 32" width={size} height={size} aria-hidden="true">
+    <rect width="32" height="32" rx="9" fill="#18181b" />
+    <path d="M20.6 10.4c-.9-1.6-2.6-2.4-4.9-2.4-2.9 0-4.8 1.5-4.8 3.6 0 5 10.2 2.5 10.2 7.9 0 2.3-2.1 4-5.2 4-2.6 0-4.5-1-5.5-2.8" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" />
+    <circle cx="24.6" cy="23.6" r="2.1" fill="#f97316" />
+  </svg>
+);
+const go = (e) => { e.preventDefault(); navigate(e.currentTarget.getAttribute('href')); };
+const View = ({ url }) => url ? <a class="button" href={url} target="_blank" rel="noopener">View on site ↗</a> : null;
 
 function Toast() {
   const [t, setT] = useState(null);
@@ -96,7 +108,7 @@ function Login({ onDone }) {
   return (
     <main class="login">
       <form onSubmit={submit} class="card">
-        <h1>Admin</h1>
+        <div class="login-brand"><Logo size={36} /><h1>Admin</h1></div>
         <label class="field"><span class="field-label">Username</span><input autocomplete="username" value={u} onInput={(e) => setU(e.currentTarget.value)} required autofocus /></label>
         <label class="field"><span class="field-label">Password</span><input type="password" autocomplete="current-password" value={p} onInput={(e) => setP(e.currentTarget.value)} required /></label>
         {err && <p class="error">{err}</p>}
@@ -121,7 +133,13 @@ function Dashboard() {
   const pages = Object.entries(d.livePages ?? {}).sort((a, b) => b[1] - a[1]);
   return (
     <>
-      <h1>Dashboard</h1>
+      <div class="head-row"><h1>Dashboard</h1><a class="button" href="/" target="_blank" rel="noopener">View site ↗</a></div>
+      <div class="quick">
+        <a class="card card--link" href="#/blog?new=1" onClick={go}><b>✍️ Write a post</b><small>New blog post</small></a>
+        <a class="card card--link" href="#/projects?new=1" onClick={go}><b>🚀 Add a project</b><small>Gets its own page</small></a>
+        <a class="card card--link" href="#/experience" onClick={go}><b>💼 Update experience</b><small>Roles and clients</small></a>
+        <a class="card card--link" href="#/media" onClick={go}><b>🖼️ Upload media</b><small>Images and PDFs</small></a>
+      </div>
       <div class="tiles">
         <div class="tile tile--live"><span>Online now</span><b>{d.live}</b></div>
         <div class="tile"><span>Signed-up visitors</span><b>{d.stats.users}</b><small>+{d.stats.usersToday} today</small></div>
@@ -200,7 +218,7 @@ function Visitors() {
 // ---- file editors ----------------------------------------------------------
 
 /** Loads a content file, edits it with a form, and commits on save. */
-function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, onDeleted, back }) {
+function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, onDeleted, back, viewUrl }) {
   const [state, setState] = useState(null); // { data, body, sha }
   const [busy, setBusy] = useState(false);
   const [changed, setChanged] = useState(false);
@@ -256,6 +274,7 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
           <code class="path">{path}</code>
         </div>
         <div class="actions">
+          {!isNew && <View url={viewUrl?.(state.data)} />}
           {onDeleted && !isNew && <button class="danger" onClick={del}>Delete</button>}
           <button class="primary" onClick={save} disabled={busy || !changed}>{busy ? 'Saving…' : changed ? (isNew ? 'Create' : 'Save') : 'Saved'}</button>
         </div>
@@ -288,7 +307,7 @@ function ListPage({ title, intro, items, onNew, newLabel }) {
       {!items ? <p class="muted">Loading…</p> : (
         <ul class="list">
           {items.map((it) => (
-            <li><a href={it.href} onClick={(e) => { e.preventDefault(); navigate(it.href); }}><b>{it.label}</b>{it.sub && <small>{it.sub}</small>}</a></li>
+            <li class="row"><a href={it.href} onClick={(e) => { e.preventDefault(); navigate(it.href); }}><b>{it.label}</b>{it.sub && <small>{it.sub}</small>}</a>{it.view && <a class="row-view" href={it.view} target="_blank" rel="noopener" title="View on site">↗</a>}</li>
           ))}
           {!items.length && <li class="muted">Nothing here yet.</li>}
         </ul>
@@ -299,32 +318,53 @@ function ListPage({ title, intro, items, onNew, newLabel }) {
 
 const editHref = (path, extra = '') => `#/edit?path=${encodeURIComponent(path)}${extra}`;
 
+/** Reads several content files (for list screens that show titles). */
+function useContents(paths, parse) {
+  const [out, setOut] = useState(null);
+  const key = (paths ?? []).join('|');
+  useEffect(() => {
+    if (!paths) return;
+    Promise.all(paths.map((p) => api.file(p).then((f) => ({ path: p, ...parse(f.content) })).catch(() => ({ path: p }))))
+      .then(setOut);
+  }, [key]);
+  return out;
+}
+
 function Pages() {
   const [files] = useFiles();
-  const items = files?.filter((p) => /^content\/pages\/[^/]+\.json$/.test(p)).map((p) => {
-    const name = p.split('/').pop().replace('.json', '');
-    return { label: name === 'index' ? 'Home' : name, sub: p, href: editHref(p) };
-  });
+  const paths = files?.filter((p) => /^content\/pages\/[^/]+\.json$/.test(p));
+  const pages = useContents(paths, (c) => JSON.parse(c));
+  const items = pages && [...pages].sort((x, y) => (x.order ?? 100) - (y.order ?? 100)).map((pg) => ({
+    label: pg.title ?? pg.path, href: editHref(pg.path),
+    sub: <>{`/${pg.slug ? `${pg.slug}/` : ''}`} · {pg.blocks?.length ?? 0} blocks{pg.draft && <span class="pill pill--warn">Draft</span>}{pg.inNav === false && <span class="pill">Not in menu</span>}</>,
+    view: pg.draft ? null : `/${pg.slug ? `${pg.slug}/` : ''}`,
+  }));
   const create = () => {
     const title = prompt('Page title');
     if (!title) return;
     const slug = slugify(title);
-    sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, slug, navLabel: title, order: 10, inNav: true, draft: true, blocks: [{ type: 'text', heading: title, body: 'Write something here.' }] } }));
+    sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, slug, navLabel: title, order: 10, inNav: true, draft: true, blocks: [{ type: 'banner', heading: title, body: '' }, { type: 'text', heading: title, body: 'Write something here.' }] } }));
     navigate(editHref(`content/pages/${slug}.json`, '&new=1'));
   };
-  return <ListPage title="Pages" intro="Each page is a list of blocks. All three themes render the same blocks in their own style." items={items} onNew={create} newLabel="+ New page" />;
+  return <ListPage title="Pages" intro="Each page is a list of blocks. All three themes render the same blocks in their own style. Start inner pages with a Banner." items={items} onNew={create} newLabel="+ New page" />;
 }
 
-function Blog() {
+function Blog({ params = {} }) {
   const [files] = useFiles();
-  const items = files?.filter((p) => /^content\/blog\/[^/]+\.md$/.test(p)).map((p) => ({ label: p.split('/').pop().replace('.md', ''), sub: p, href: editHref(p) }));
+  const paths = files?.filter((p) => /^content\/blog\/[^/]+\.md$/.test(p));
+  const posts = useContents(paths, (c) => parseFrontmatter(c).data);
+  const items = posts && [...posts].sort((x, y) => String(y.date ?? '').localeCompare(String(x.date ?? ''))).map((p) => {
+    const slug = p.path.split('/').pop().replace('.md', '');
+    return { label: p.title ?? slug, href: editHref(p.path), sub: <>{String(p.date ?? '').slice(0, 10)} · /blog/{slug}/{p.draft && <span class="pill pill--warn">Draft</span>}</>, view: p.draft ? null : `/blog/${slug}/` };
+  });
   const create = () => {
     const title = prompt('Post title');
     if (!title) return;
     sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, description: '', date: new Date().toISOString().slice(0, 10), tags: [], draft: true }, body: 'Start writing…' }));
     navigate(editHref(`content/blog/${slugify(title)}.md`, '&new=1'));
   };
-  return <ListPage title="Blog" items={items} onNew={create} newLabel="+ New post" />;
+  useEffect(() => { if (params.new) { history.replaceState(null, '', '#/blog'); create(); } }, []);
+  return <ListPage title="Blog" intro="Posts start as drafts; switch off “Draft” to publish." items={items} onNew={create} newLabel="+ New post" />;
 }
 
 function Courses() {
@@ -384,13 +424,13 @@ function Course({ slug }) {
 
 /** Chooses the right schema for a content path. */
 function editorFor(path) {
-  if (/^content\/pages\/.+\.json$/.test(path)) return { kind: 'json', fields: S.pageFields, title: 'Page', back: ['#/pages', 'Pages'], deletable: true };
-  if (/^content\/blog\/.+\.md$/.test(path)) return { kind: 'md', fields: S.postFields, title: 'Blog post', back: ['#/blog', 'Blog'], deletable: true };
+  if (/^content\/pages\/.+\.json$/.test(path)) return { kind: 'json', fields: S.pageFields, title: 'Page', back: ['#/pages', 'Pages'], deletable: true, viewUrl: (d) => (d.draft ? null : `/${d.slug ? `${d.slug}/` : ''}`) };
+  if (/^content\/blog\/.+\.md$/.test(path)) return { kind: 'md', fields: S.postFields, title: 'Blog post', back: ['#/blog', 'Blog'], deletable: true, viewUrl: (d) => (d.draft ? null : `/blog/${path.split('/').pop().replace('.md', '')}/`) };
   if (/^content\/courses\/[^/]+\/course\.json$/.test(path)) return { kind: 'json', fields: S.courseFields, title: 'Course details' };
   if (/^content\/courses\/[^/]+\/index\.md$/.test(path)) return { kind: 'md', fields: S.overviewFields, title: 'Course overview', bodyLabel: 'Overview' };
   if (/^content\/courses\/[^/]+\/[^/]+\/.+\.mdx?$/.test(path)) return { kind: 'md', fields: S.lessonFields, title: 'Lesson', bodyLabel: 'Lesson', deletable: true };
   const single = {
-    'content/profile.json': ['Profile', S.profileFields],
+    'content/profile.json': ['About & skills', S.profileFields],
     'content/site.json': ['Site & game settings', S.siteFields],
     'content/shop.json': ['Shop', S.shopFields],
     'content/missions.json': ['Terminal missions', S.missionFields],
@@ -410,50 +450,216 @@ function Edit({ params }) {
   if (!ed) return <p class="error">This file can't be edited here.</p>;
   const back = params.course ? [`#/course?slug=${params.course}`, 'Course'] : ed.back;
   return (
-    <FileEditor key={path} path={path} kind={ed.kind} fields={ed.fields} title={ed.title} bodyLabel={ed.bodyLabel} initial={initial} back={back}
+    <FileEditor key={path} path={path} kind={ed.kind} fields={ed.fields} title={ed.title} bodyLabel={ed.bodyLabel} initial={initial} back={back} viewUrl={ed.viewUrl}
       onSaved={() => { if (params.new) { sessionStorage.removeItem('admin.new'); history.replaceState(null, '', editHref(path, params.course ? `&course=${params.course}` : '')); } }}
       onDeleted={ed.deletable ? () => navigate(back?.[0] ?? '#/dashboard') : null} />
+  );
+}
+
+// ---- projects & experience (both live in content/profile.json) ---------------
+
+const PROFILE = 'content/profile.json';
+const KINDS = {
+  project: { coll: 'projects', fields: () => S.projectFields, title: 'Project', list: '#/projects', back: 'Projects', label: (x) => x.name, url: (x) => (x.slug ? `/projects/${x.slug}/` : null) },
+  job: { coll: 'experience', fields: () => S.jobFields, title: 'Role', list: '#/experience', back: 'Experience', label: (x) => `${x.role ?? ''} at ${x.company ?? ''}`, url: (x) => (x.company ? `/experience/${x.slug || slugify(x.company)}/` : null) },
+};
+
+function useProfile() {
+  const [p, setP] = useState(null); // { data, sha }
+  const load = useCallback(() => api.file(PROFILE).then((f) => setP({ data: JSON.parse(f.content), sha: f.sha })).catch((e) => toast(e.message, 'err')), []);
+  useEffect(load, []);
+  const save = async (data, message) => {
+    const r = await api.save(PROFILE, toJSON(data), p.sha, message);
+    savedAt = Date.now();
+    setP({ data, sha: r.sha });
+  };
+  return [p, save, load];
+}
+
+function ProfileList({ kind, intro, newLabel, render, onNew }) {
+  const k = KINDS[kind];
+  const [p, save] = useProfile();
+  const items = p?.data[k.coll] ?? null;
+  const move = async (i, d) => {
+    const a = [...items]; const j = i + d;
+    if (j < 0 || j >= a.length) return;
+    [a[i], a[j]] = [a[j], a[i]];
+    try { await save({ ...p.data, [k.coll]: a }, `Reorder ${k.coll} (admin)`); toast('Order saved.'); } catch (e) { toast(e.message, 'err'); }
+  };
+  return (
+    <>
+      <div class="head-row"><h1>{k.back} <span class="count">{items?.length ?? ''}</span></h1><button class="primary" onClick={onNew}>{newLabel}</button></div>
+      <p class="muted">{intro}</p>
+      {!items ? <p class="muted">Loading…</p> : (
+        <div class="plist">
+          {items.map((x, i) => (
+            <div class="pcard">
+              <a class="pcard-main" href={`#/${kind}?i=${i}`} onClick={go}>{render(x)}</a>
+              <div class="pcard-tools">
+                <button title="Move up" disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
+                <button title="Move down" disabled={i === items.length - 1} onClick={() => move(i, 1)}>↓</button>
+                {k.url(x) && <a class="button" href={k.url(x)} target="_blank" rel="noopener" title="View on site">↗</a>}
+              </div>
+            </div>
+          ))}
+          {!items.length && <p class="muted">Nothing here yet.</p>}
+        </div>
+      )}
+    </>
+  );
+}
+
+function ProjectsList({ params = {} }) {
+  const create = () => {
+    const name = prompt('Project name');
+    if (!name) return;
+    sessionStorage.setItem('admin.newItem', JSON.stringify({ name, slug: slugify(name), year: String(new Date().getFullYear()), summary: '' }));
+    navigate('#/project?new=1');
+  };
+  useEffect(() => { if (params.new) { history.replaceState(null, '', '#/projects'); create(); } }, []);
+  return (
+    <ProfileList kind="project" newLabel="+ New project" onNew={create}
+      intro="Each project gets its own page with a banner, highlights, the full story and optional extra pages. The order here is the order on the site."
+      render={(x) => (
+        <>
+          <span class="pcard-cover">{x.cover ? <img src={x.cover} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.display = 'none')} /> : <b>{(x.name ?? '?').slice(0, 2).toUpperCase()}</b>}</span>
+          <span class="pcard-text"><b>{x.name}</b><small>{[x.year, x.role].filter(Boolean).join(' · ')}{x.featured && <span class="pill pill--ok">Featured</span>}{!x.cover && <span class="pill">No cover</span>}{!x.body && <span class="pill">No full story</span>}</small><small class="clip">{x.summary}</small></span>
+        </>
+      )} />
+  );
+}
+
+function JobsList() {
+  const create = () => {
+    const company = prompt('Company');
+    if (!company) return;
+    const role = prompt('Your role') ?? '';
+    sessionStorage.setItem('admin.newItem', JSON.stringify({ company, role, start: new Date().toISOString().slice(0, 7), engagements: [] }));
+    navigate('#/job?new=1');
+  };
+  return (
+    <ProfileList kind="job" newLabel="+ New role" onNew={create}
+      intro="Each role gets a page, and each client / engagement inside it gets its own page too. Newest first."
+      render={(x) => (
+        <>
+          <span class="pcard-cover">{x.logo ? <img src={x.logo} alt="" loading="lazy" /> : <b>{(x.company ?? '?').slice(0, 2).toUpperCase()}</b>}</span>
+          <span class="pcard-text"><b>{x.role} · {x.company}</b><small>{x.start} → {x.end || 'present'}{x.location && ` · ${x.location}`}</small><small>{(x.engagements ?? []).length} clients / engagements: {(x.engagements ?? []).map((e) => e.title?.split(/\s[—–-]\s/)[0]).join(', ') || '—'}</small></span>
+        </>
+      )} />
+  );
+}
+
+/** Edits one project or role inside profile.json. */
+function ProfileItem({ kind, params }) {
+  const k = KINDS[kind];
+  const isNew = !!params.new;
+  const [p, save] = useProfile();
+  const [item, setItem] = useState(null);
+  const [changed, setChanged] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!p || item) return;
+    if (isNew) { try { setItem(JSON.parse(sessionStorage.getItem('admin.newItem')) ?? {}); } catch { setItem({}); } setChanged(true); setDirty(true); }
+    else setItem(p.data[k.coll]?.[Number(params.i)] ?? null);
+  }, [p]);
+  useEffect(() => () => setDirty(false), []);
+  const edit = (v) => { setItem(v); setChanged(true); setDirty(true); };
+  const doSave = useCallback(async () => {
+    if (!item || busy) return;
+    if (kind === 'project' && (p.data.projects ?? []).some((x, i) => x.slug === item.slug && (isNew || i !== Number(params.i)))) return toast(`Another project already uses the slug “${item.slug}”.`, 'err');
+    setBusy(true);
+    try {
+      const list = [...(p.data[k.coll] ?? [])];
+      if (isNew) list.push(item); else list[Number(params.i)] = item;
+      await save({ ...p.data, [k.coll]: list }, `${isNew ? 'Add' : 'Update'} ${k.title.toLowerCase()} ${k.label(item)} (admin)`);
+      setChanged(false); setDirty(false);
+      toast('Saved. The site will update in about a minute.');
+      if (isNew) { sessionStorage.removeItem('admin.newItem'); history.replaceState(null, '', `#/${kind}?i=${list.length - 1}`); }
+    } catch (e) { toast(e.message, 'err'); }
+    setBusy(false);
+  }, [item, busy, p]);
+  useEffect(() => {
+    const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); } };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, [doSave]);
+  const del = async () => {
+    if (!confirm(`Delete “${k.label(item)}”? Its page disappears after the next deploy.`)) return;
+    try {
+      await save({ ...p.data, [k.coll]: p.data[k.coll].filter((_, i) => i !== Number(params.i)) }, `Delete ${k.title.toLowerCase()} ${k.label(item)} (admin)`);
+      setDirty(false); toast('Deleted.'); navigate(k.list);
+    } catch (e) { toast(e.message, 'err'); }
+  };
+  if (!p || item === null) return p && !isNew ? <p class="error">Not found. <a href={k.list} onClick={go}>Back</a></p> : <p class="muted">Loading…</p>;
+  return (
+    <div class="editor">
+      <div class="head-row sticky">
+        <div>
+          <a class="back" href={k.list} onClick={go}>← {k.back}</a>
+          <h1>{k.label(item) || `New ${k.title.toLowerCase()}`}</h1>
+          <code class="path">{PROFILE}</code>
+        </div>
+        <div class="actions">
+          {!isNew && <View url={k.url(item)} />}
+          {!isNew && <button class="danger" onClick={del}>Delete</button>}
+          <button class="primary" onClick={doSave} disabled={busy || !changed}>{busy ? 'Saving…' : changed ? (isNew ? 'Create' : 'Save') : 'Saved'}</button>
+        </div>
+      </div>
+      <Form fields={k.fields()} value={item} onChange={edit} />
+    </div>
   );
 }
 
 // ---- media -----------------------------------------------------------------
 
 function Media() {
-  const [files, reload] = useFiles();
+  const [all, setAll] = useState(null);
   const [busy, setBusy] = useState(false);
-  const uploads = files?.filter((p) => p.startsWith('apps/site/public/uploads/')) ?? null;
-  const upload = async (e) => {
-    const file = e.currentTarget.files?.[0];
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) return toast('Files must be under 8 MB.', 'err');
-    const ext = file.name.split('.').pop().toLowerCase();
-    const name = `${slugify(file.name.replace(/\.[^.]+$/, ''))}-${Date.now().toString(36)}.${ext}`;
+  const [over, setOver] = useState(false);
+  const load = useCallback(() => api.files().then((d) => setAll(d.files.filter((f) => f.path.startsWith('apps/site/public/uploads/') && !f.path.split('/').pop().startsWith('.')).reverse())).catch((e) => toast(e.message, 'err')), []);
+  useEffect(load, []);
+  const send = async (list) => {
+    if (!list?.length) return;
     setBusy(true);
-    const b64 = await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(',')[1]); fr.readAsDataURL(file); });
-    try { await api.upload(`apps/site/public/uploads/${name}`, b64); savedAt = Date.now(); toast('Uploaded. Available after the next deploy.'); reload(); } catch (x) { toast(x.message, 'err'); }
-    setBusy(false);
-    e.currentTarget.value = '';
+    let n = 0;
+    for (const file of list) { try { await uploadFile(file); n++; } catch (x) { toast(x.message, 'err'); } }
+    if (n) toast(`Uploaded ${n} file${n > 1 ? 's' : ''}. Live after the next deploy (about a minute).`);
+    setBusy(false); load();
   };
-  const copy = (p) => { const url = p.replace('apps/site/public', ''); navigator.clipboard?.writeText(`![](${url})`); toast(`Copied ![](${url})`); };
+  const copy = (text, what) => { navigator.clipboard?.writeText(text); toast(`Copied ${what}`); };
+  const del = async (f) => {
+    if (!confirm(`Delete ${f.path.split('/').pop()}? Pages that use it will show a broken image.`)) return;
+    try { await api.remove(f.path, f.sha); savedAt = Date.now(); toast('Deleted.'); load(); } catch (e) { toast(e.message, 'err'); }
+  };
   return (
-    <>
+    <div onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); send([...e.dataTransfer.files]); }}>
       <div class="head-row">
-        <h1>Media</h1>
-        <label class="button primary">{busy ? 'Uploading…' : '+ Upload image'}<input type="file" accept="image/*,application/pdf" hidden onChange={upload} disabled={busy} /></label>
+        <h1>Media <span class="count">{all?.length ?? ''}</span></h1>
+        <label class="button primary">{busy ? 'Uploading…' : '+ Upload'}<input type="file" multiple accept="image/*,application/pdf" hidden onChange={(e) => { send([...e.currentTarget.files]); e.currentTarget.value = ''; }} disabled={busy} /></label>
       </div>
-      <p class="muted">Images for pages, posts and lessons. Click one to copy its Markdown.</p>
-      {!uploads ? <p class="muted">Loading…</p> : (
+      <p class="muted">Images and PDFs for pages, projects, posts and lessons (max 8 MB each). Drop files anywhere here. Image fields in the editors can also upload directly.</p>
+      <div class={`dropzone ${over ? 'is-over' : ''}`}>Drop files to upload</div>
+      {!all ? <p class="muted">Loading…</p> : (
         <div class="media">
-          {uploads.map((p) => (
-            <button class="media-item" onClick={() => copy(p)} title="Copy Markdown">
-              {/\.pdf$/.test(p) ? <span class="pdf">PDF</span> : <img src={p.replace('apps/site/public', '')} alt="" loading="lazy" />}
-              <small>{p.split('/').pop()}</small>
-            </button>
-          ))}
-          {!uploads.length && <p class="muted">No uploads yet.</p>}
+          {all.map((f) => {
+            const url = publicUrl(f.path);
+            const image = /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(f.path);
+            return (
+              <div class="media-item">
+                <a href={url} target="_blank" rel="noopener">{image ? <img src={url} alt="" loading="lazy" /> : <span class="pdf">{f.path.split('.').pop().toUpperCase()}</span>}</a>
+                <small title={f.path}>{f.path.split('/').pop()}</small>
+                <div class="media-tools">
+                  <button onClick={() => copy(url, 'the path')}>Copy path</button>
+                  {image && <button onClick={() => copy(`![](${url})`, 'the Markdown')}>Markdown</button>}
+                  <button class="danger" onClick={() => del(f)} title="Delete">✕</button>
+                </div>
+              </div>
+            );
+          })}
+          {!all.length && <p class="muted">No uploads yet.</p>}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -461,7 +667,8 @@ function Media() {
 
 const NAV = [
   ['Overview', [['#/dashboard', 'Dashboard'], ['#/visitors', 'Visitors']]],
-  ['Content', [['#/pages', 'Pages'], ['#/blog', 'Blog'], ['#/courses', 'Courses'], [editHref('content/profile.json'), 'Profile'], ['#/media', 'Media']]],
+  ['Content', [['#/pages', 'Pages'], ['#/projects', 'Projects'], ['#/experience', 'Experience'], ['#/blog', 'Blog'], ['#/courses', 'Courses'], ['#/media', 'Media']]],
+  ['Profile', [[editHref('content/profile.json'), 'About & skills']]],
   ['Game', [[editHref('content/shop.json'), 'Shop'], [editHref('content/missions.json'), 'Terminal missions'], [editHref('content/achievements.json'), 'Achievements']]],
   ['Settings', [[editHref('content/site.json'), 'Site & game']]],
 ];
@@ -482,7 +689,11 @@ function App() {
   switch (route.path) {
     case '/visitors': page = <Visitors />; break;
     case '/pages': page = <Pages />; break;
-    case '/blog': page = <Blog />; break;
+    case '/blog': page = <Blog params={route.params} />; break;
+    case '/projects': page = <ProjectsList params={route.params} />; break;
+    case '/project': page = <ProfileItem key={route.params.i ?? 'new'} kind="project" params={route.params} />; break;
+    case '/experience': page = <JobsList />; break;
+    case '/job': page = <ProfileItem key={route.params.i ?? 'new'} kind="job" params={route.params} />; break;
     case '/courses': page = <Courses />; break;
     case '/course': page = <Course slug={route.params.slug} />; break;
     case '/edit': page = <Edit params={route.params} />; break;
@@ -492,12 +703,12 @@ function App() {
   return (
     <div class={`shell ${menu ? 'menu-open' : ''}`}>
       <aside class="side">
-        <a class="brand" href="#/dashboard">Portfolio admin</a>
+        <a class="brand" href="#/dashboard"><Logo size={26} /> Admin</a>
         {NAV.map(([group, links]) => (
           <nav>
             <h3>{group}</h3>
             {links.map(([href, label]) => (
-              <a href={href} class={current === href || (!href.includes('?') && current.split('?')[0] === href) ? 'on' : ''}
+              <a href={href} class={current === href || (!href.includes('?') && (current.split('?')[0] === href || (href === '#/projects' && current.startsWith('#/project')) || (href === '#/experience' && current.startsWith('#/job')))) ? 'on' : ''}
                 onClick={(e) => { e.preventDefault(); navigate(href); }}>{label}</a>
             ))}
           </nav>

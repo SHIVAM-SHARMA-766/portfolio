@@ -1,7 +1,25 @@
 // A small schema-driven form engine. Every editor in the admin is a list of
 // field definitions (schemas.js) rendered by <Form>.
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { marked } from 'marked';
+import { api, slugify } from './api.js';
+
+// The shell listens for these (toasts, deploy watching) so fields stay standalone.
+export const notify = (msg, kind = 'ok') => dispatchEvent(new CustomEvent('admin-toast', { detail: { msg, kind } }));
+const markSaved = () => dispatchEvent(new CustomEvent('admin-saved'));
+const UPLOADS = 'apps/site/public/uploads/';
+export const publicUrl = (repoPath) => repoPath.replace('apps/site/public', '');
+
+/** Uploads a File to the media folder and returns its public URL (/uploads/…). */
+export async function uploadFile(file) {
+  if (file.size > 8 * 1024 * 1024) throw new Error(`${file.name} is over 8 MB.`);
+  const ext = file.name.split('.').pop().toLowerCase();
+  const path = `${UPLOADS}${slugify(file.name.replace(/\.[^.]+$/, '')) || 'file'}-${Date.now().toString(36)}.${ext}`;
+  const b64 = await new Promise((ok, fail) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(',')[1]); fr.onerror = fail; fr.readAsDataURL(file); });
+  await api.upload(path, b64);
+  markSaved();
+  return publicUrl(path);
+}
 
 const update = (obj, key, val) => ({ ...(obj ?? {}), [key]: val });
 
@@ -33,6 +51,9 @@ export function Field({ field, value, onChange }) {
           <input type="text" value={value ?? ''} pattern={field.pattern} required={field.required} onInput={(e) => onChange(e.currentTarget.value)} />
         </Label>
       );
+    case 'image':
+    case 'file':
+      return <MediaField field={field} value={value} onChange={onChange} />;
     case 'text':
       return (
         <Label field={field}>
@@ -195,6 +216,78 @@ export function MarkdownEditor({ value, onChange, tall }) {
       <div class="md-panes">
         {view !== 'preview' && <textarea ref={ref} value={value} onInput={(e) => onChange(e.currentTarget.value)} spellcheck />}
         {view !== 'write' && <div class="md-preview prose" dangerouslySetInnerHTML={{ __html: marked.parse(value || '*Nothing yet.*') }} />}
+      </div>
+    </div>
+  );
+}
+
+// ---- images and files ------------------------------------------------------
+
+const isImage = (u) => /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(u ?? '');
+
+/** Pick an image/file: upload a new one, choose an uploaded one, or type a path/URL. */
+function MediaField({ field, value, onChange }) {
+  const [busy, setBusy] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [local, setLocal] = useState(null); // preview of a fresh upload (not deployed yet)
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [value]);
+  const accept = field.type === 'file' ? (field.accept ?? 'application/pdf') : 'image/*';
+  const upload = async (e) => {
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = '';
+    if (!file) return;
+    setBusy(true);
+    try {
+      const url = await uploadFile(file);
+      if (isImage(file.name)) setLocal({ url, src: URL.createObjectURL(file) });
+      onChange(url);
+      notify('Uploaded. It goes live with your next save.');
+    } catch (x) { notify(x.message, 'err'); }
+    setBusy(false);
+  };
+  const src = local && local.url === value ? local.src : value;
+  return (
+    <div class="field">
+      <span class="field-label">{field.label}</span>
+      <div class="mf">
+        <div class="mf-thumb">
+          {!value ? <span class="muted">{field.type === 'file' ? 'No file' : 'No image'}</span>
+            : isImage(value) && !broken ? <img src={src} alt="" onError={() => setBroken(true)} />
+            : <span class="mf-name">{isImage(value) ? '🖼️' : '📄'} {value.split('/').pop()}<small>{broken ? 'live after the next deploy' : ''}</small></span>}
+        </div>
+        <div class="mf-tools">
+          <label class={`button ${busy ? 'is-busy' : ''}`}>{busy ? 'Uploading…' : '⬆ Upload'}<input type="file" accept={accept} hidden disabled={busy} onChange={upload} /></label>
+          <button type="button" onClick={() => setPicking(true)}>Choose from media</button>
+          {value && <button type="button" class="danger" onClick={() => onChange(undefined)}>Remove</button>}
+          <input type="text" class="mf-path" placeholder="/uploads/… or https://…" value={value ?? ''} onInput={(e) => onChange(e.currentTarget.value || undefined)} />
+        </div>
+      </div>
+      {field.help && <small class="field-help">{field.help}</small>}
+      {picking && <MediaPicker images={field.type !== 'file'} onPick={(u) => { onChange(u); setPicking(false); }} onClose={() => setPicking(false)} />}
+    </div>
+  );
+}
+
+export function MediaPicker({ images, onPick, onClose }) {
+  const [files, setFiles] = useState(null);
+  useEffect(() => { api.files().then((d) => setFiles(d.files.map((f) => f.path).filter((p) => p.startsWith(UPLOADS) && !p.split('/').pop().startsWith('.')).reverse())).catch((e) => notify(e.message, 'err')); }, []);
+  useEffect(() => { const k = (e) => e.key === 'Escape' && onClose(); addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
+  const shown = (files ?? []).filter((p) => !images || isImage(p));
+  return (
+    <div class="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div class="modal-box" role="dialog" aria-label="Choose a file">
+        <div class="head-row"><h2>Choose from media</h2><button type="button" onClick={onClose}>✕</button></div>
+        {!files ? <p class="muted">Loading…</p> : !shown.length ? <p class="muted">Nothing uploaded yet. Use “Upload” instead.</p> : (
+          <div class="media">
+            {shown.map((p) => (
+              <button type="button" class="media-item" onClick={() => onPick(publicUrl(p))}>
+                {isImage(p) ? <img src={publicUrl(p)} alt="" loading="lazy" /> : <span class="pdf">{p.split('.').pop().toUpperCase()}</span>}
+                <small>{p.split('/').pop()}</small>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

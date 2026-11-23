@@ -192,11 +192,16 @@ page-view counter for the admin dashboard. Touch devices see counts but no curso
 
 A schema-driven SPA: `schemas.js` describes every content file as fields, and
 `fields.jsx` renders them (text, markdown with preview, lists, nested objects, page
-blocks with add/reorder/remove). Screens: dashboard (online now, where people are,
-views), visitors (search, CSV export, delete), pages, blog, courses → chapters → lessons
-(with quiz editor), profile, media uploads, shop, missions, achievements, site & game
-settings. A deploy badge polls GitHub Actions after saves. Unsaved changes are guarded
-on navigation, Back and reload.
+blocks with add/reorder/remove, and **image / file fields** that upload straight to
+`apps/site/public/uploads/`, pick from what's uploaded, or take a path/URL). Screens:
+dashboard (quick actions, online now, where people are, views), visitors (search, CSV
+export, delete), pages and blog (titles, URLs, draft badges, view-on-site links),
+**projects** and **experience** (one card per project / role with cover, badges for
+missing cover or story, reorder; each opens its own editor, all saved into
+`profile.json`), courses → chapters → lessons (with quiz editor), about & skills, media
+(multi-upload, drag and drop, copy path or Markdown, delete), shop, missions,
+achievements, site & game settings. Every editor has "View on site". A deploy badge polls
+GitHub Actions after saves. Unsaved changes are guarded on navigation, Back and reload.
 
 ## Learn site
 
