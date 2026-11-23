@@ -51,6 +51,51 @@
   ],
   "projects": [
     {
+      "slug": "vault",
+      "name": "Vault — zero-knowledge password manager",
+      "year": "2026",
+      "featured": true,
+      "role": "Solo — design, build and operate",
+      "cover": "/uploads/proj-vault-vault.webp",
+      "summary": "A password manager you run on your own server. Everything is encrypted in the browser; the server stores ciphertext it holds no key for. Live on an always-free OCI instance for $0 a month.",
+      "highlights": [
+        "AES-256-GCM in the browser; the master password is never sent — the server gets a separate HKDF branch, stored only as an scrypt verifier",
+        "Names, websites, notes, folders and tags are encrypted too, so a database dump doesn't even reveal which sites you use",
+        "Organizations, groups and collections, each with its own key, sealed to members confirmed by fingerprint",
+        "Pull-based releases: the host verifies a SHA-256 manifest, health-checks the new build and rolls back on failure; SSH stays closed",
+        "350 unit and 20 browser tests in CI; encrypted backups restore onto SQLite or PostgreSQL"
+      ],
+      "tags": [
+        "React",
+        "Node.js",
+        "Web Crypto",
+        "OCI",
+        "Caddy",
+        "PostgreSQL"
+      ],
+      "links": [
+        {
+          "label": "Live instance",
+          "url": "https://vault-shivam.duckdns.org"
+        }
+      ],
+      "body": "## What it is\n\nVault is a zero-knowledge password manager. The master password never leaves the browser; keys are derived there, every field is encrypted there, and the server only ever sees ciphertext. A complete compromise of the server should yield nothing more.\n\n![The Vault web app: folders and types, items, and a login with a live one-time code](/uploads/proj-vault-vault.webp)\n\n## What it does\n\n- **Fifteen item types** — logins, notes, cards, identities, bank accounts, passports, SSH keys, API credentials, Wi-Fi and more — with custom fields, folders four levels deep and live one-time codes.\n- **Password health** — weak, reused, year-old and `http://`-only passwords, scored out of 100 with advice on each item, computed in the browser.\n- **History you can restore** — every edit keeps the previous version, encrypted like the item.\n- **Import from nine formats** — Chrome, Firefox, Safari, Bitwarden, 1Password, LastPass, KeePass, Zoho Vault and more, previewed before anything is saved.\n- **A browser extension** for Chrome and Firefox that fills only where the site truly matches, so a look-alike page gets nothing.\n\n![Password health: a score with advice on what to fix](/uploads/proj-vault-health.webp)\n\n## Built for teams too\n\nOrganizations, groups and collections, each with its own key, sealed to every member you confirm by fingerprint. Permissions, policies, an audit log, key rotation and emergency access — plus an admin console and a built-in service desk for access requests and support tickets. None of it can read a vault.\n\n![Members of an organization, confirmed by fingerprint](/uploads/proj-vault-organizations.webp)\n\n## Runs on your own server\n\nOne command on a Linux machine with Docker asks for the address, generates the secrets, starts Vault and prints the link that creates the owner account. Two editions from one codebase: **Personal** (one account, SQLite) and **Business** (people, groups and policies, PostgreSQL).\n\n![The public website](/uploads/proj-vault-website.webp)",
+      "pages": [
+        {
+          "slug": "security-design",
+          "title": "Security design",
+          "summary": "The key hierarchy, where trust ends, and the one risk accepted knowingly.",
+          "body": "## Where trust ends\n\nEverything below the browser is assumed hostile. That assumption drives three choices that would otherwise look excessive:\n\n- **The master password is never transmitted.** The server receives an *Auth Key*, a separate HKDF branch of the Master Key, and stores only an scrypt verifier of it.\n- **All entry content is encrypted client-side**, including names, tags and folder names. The server cannot read, search or index any of it.\n- **Email addresses are stored as HMAC digests** under a pepper kept outside the database, so a dump does not identify account holders.\n\n## Key hierarchy\n\n```\nMaster password + per-user salt\n        │ PBKDF2-SHA256, 600,000 rounds\n        ▼\n   Master Key ──┬── HKDF \"vault.kek.v1\"  ──► KEK ──► wraps the Vault Key\n                └── HKDF \"vault.auth.v1\" ──► Auth Key ──► server (scrypt verifier)\n\n   Vault Key (random, generated once)\n        ├── wrapped by the KEK            (master password)\n        ├── wrapped by the Recovery KEK   (recovery key)\n        └── encrypts every field, AES-256-GCM, fresh 96-bit IV\n```\n\nBecause a random Vault Key encrypts everything and the master password only wraps it, **changing the password is a single write**: nothing is re-encrypted and history survives. A recovery key, shown once at sign-up, is the only way back from a forgotten password — there is no reset, because the server cannot perform one.\n\nEach account also has an ECDH P-256 identity key pair, which is how a collection key reaches a colleague without the server learning it.\n\n![Every previous version, encrypted like the item](/uploads/proj-vault-history.webp)\n\n## The risk accepted on purpose\n\nThe hostname is a free dynamic-DNS name, and it is the whole user-facing trust path: whoever controls that name could serve their own JavaScript, which would see the master password. Unlike a server compromise, that is not bounded by the key hierarchy. It is written down in the threat model and accepted knowingly for a $0 deployment, rather than hidden."
+        },
+        {
+          "slug": "shipping-and-running",
+          "title": "Shipping and running it",
+          "summary": "Pull-based releases with automatic rollback, monitoring, backups and a service desk — on one always-free instance.",
+          "body": "## Releases the host pulls\n\nCode reaches the server by the server pulling it. Every merge to `main` runs CI (crypto, core, API, web, site, end-to-end, audit) and GitHub Actions uploads a tarball with a SHA-256 manifest to a releases bucket, using a cloud user that can write that bucket and nothing else.\n\nOn the host, a timer checks every five minutes, verifies the hash and the manifest, validates the Caddyfile, installs, checks the service through Caddy, and **reinstalls the previous release if anything fails**. Nothing inbound is involved; SSH stays closed.\n\n```\npull request ──CI──▶ merge to main ──▶ releases bucket (tarball + SHA-256 manifest)\n                                              │ every 5 min\n                                              ▼\n                              host: verify → install → health check\n                                              │ fails\n                                              ▼\n                                   reinstall the previous release\n```\n\n## One always-free instance\n\nCaddy terminates TLS and serves the public website at `/`, the vault client at `/app/` and the Node API at `/api/` (localhost only). A probe reports metrics every five minutes, and cloud monitoring alarms reach me by email and push.\n\n## Backups that restore anywhere\n\nOne encrypted file holds everything and restores onto SQLite or PostgreSQL, from disk or any S3-compatible store — tested in CI on every change.\n\n## Support built in\n\nA service desk handles access requests, lost authenticators and support tickets, without any of it being able to read a vault.\n\n![A service desk ticket](/uploads/proj-vault-desk-ticket.webp)"
+        }
+      ]
+    },
+    {
       "slug": "multi-cloud-iac",
       "name": "Multi-cloud Infrastructure as Code",
       "year": "2026",
