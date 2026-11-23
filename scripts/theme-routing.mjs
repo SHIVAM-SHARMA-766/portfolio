@@ -8,7 +8,7 @@
 //   assets, /api, /admin  → untouched
 
 export const THEMES = ['terminal', 'quest', 'studio'];
-const PASSTHROUGH = /^\/(_astro|pagefind|uploads|api|admin|images)(\/|$)|^\/(favicon\.svg|apple-touch-icon\.png|rss\.xml|404\.html|robots\.txt|sitemap[^/]*)$/;
+const PASSTHROUGH = /^\/(_astro|pagefind|uploads|api|admin|images)(\/|$)|^\/(favicon\.svg|rss\.xml|404\.html|robots\.txt|sitemap[^/]*)$/;
 
 export function themeCookie(theme, secure = false) {
   return `pf_theme=${theme}; Path=/; Max-Age=31536000; SameSite=Lax${secure ? '; Secure' : ''}`;

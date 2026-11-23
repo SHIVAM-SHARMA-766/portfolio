@@ -68,7 +68,7 @@ All animation stops under `prefers-reduced-motion`.
 
 **Logo.** `components/Logo.astro`: a shell prompt, an "S" and a cursor (`>S_`), coloured
 by `--logo-bg/-a/-b/-c` so each theme and palette recolours it; `pixel` draws it on a
-12×12 grid for Quest. Static copies: `public/favicon.svg`, `public/apple-touch-icon.png`,
+12×12 grid for Quest. Static copies: `public/favicon.svg`, `public/images/apple-touch-icon.png`,
 `public/images/logo-512.png`.
 
 ## The game
