@@ -274,6 +274,9 @@ function renderAccount(xp) {
   $$('[data-account-name]').forEach((el) => (el.textContent = u?.name || u?.email || ''));
   $$('[data-account-email]').forEach((el) => (el.textContent = u?.email || ''));
   $$('[data-account-avatar]').forEach((el) => { if (u?.avatar) { el.src = u.avatar; el.hidden = false; } else el.hidden = true; });
+  // The header chip shows only the avatar (or an initial); the name is its label
+  $$('[data-account-initial]').forEach((el) => { el.textContent = (u?.name || u?.email || '?').trim().charAt(0).toUpperCase(); el.hidden = !!u?.avatar; });
+  $$('[data-account-user]').forEach((el) => { const who = u?.name || u?.email || ''; el.title = who ? `Your account · ${who}` : ''; el.setAttribute('aria-label', who ? `Your account (${who})` : 'Your account'); });
   $$('[data-login-providers]').forEach((el) => {
     setHTML(el, a.providers.length
       ? a.providers.map((p) => `<a class="g-login g-login--${p}" href="${esc(a.loginUrl(p))}">Continue with ${PROVIDER_LABEL[p] ?? p}</a>`).join('')

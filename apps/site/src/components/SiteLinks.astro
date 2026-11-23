@@ -1,0 +1,18 @@
+---
+// Ways to reach / follow, shared by every theme's footer: email, socials,
+// CV (when site.resume is set), privacy and RSS. Themes style `.sl`.
+import { site } from '../lib/content';
+interface Props { class?: string; meta?: boolean }
+const { class: cls = '', meta = true } = Astro.props;
+const links = [
+  ...(site.email ? [{ label: 'Email', href: `mailto:${site.email}` }] : []),
+  ...site.socials.map((s) => ({ label: s.label, href: s.url, external: true })),
+  ...(site.resume ? [{ label: 'CV', href: site.resume, external: true }] : []),
+  ...(meta ? [{ label: 'Privacy', href: '/privacy/' }, { label: 'RSS', href: '/rss.xml' }] : []),
+];
+---
+<ul class={`sl ${cls}`}>
+  {links.map((l) => (
+    <li><a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}>{l.label}</a></li>
+  ))}
+</ul>

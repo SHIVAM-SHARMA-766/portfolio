@@ -66,3 +66,9 @@
 .learn-tools [data-account-user] span { max-width: 9ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acct-dialog .g-login { color: var(--sl-color-white); }
 @media (max-width: 72rem) { .learn-tools .g-live { display: none; } }
+
+/* Live count: hidden until connected (no "…" or "offline" placeholder) */
+.learn-tools .g-live[data-offline] { display: none; }
+/* Signed-in chip shows only the avatar or an initial */
+.acct-initial { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--sl-color-accent); color: var(--sl-color-black); font-size: .7rem; font-weight: 700; line-height: 1; }
+.acct-initial[hidden] { display: none; }

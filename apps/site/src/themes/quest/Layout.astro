@@ -7,6 +7,7 @@ import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
 import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
 import Logo from '../../components/Logo.astro';
+import SiteLinks from '../../components/SiteLinks.astro';
 import { site, pageUrl, photo, initials as siteInitials } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './quest.css';
@@ -24,8 +25,8 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
         {photo ? <img class="q-avatar-img" src={photo.cutout ?? photo.src} alt="" width="48" height="48" /> : siteInitials}
       </a>
       <div class="q-who">
-        <strong class="q-brand"><Logo size={18} />{site.name}</strong>
-        <span class="g-only">LV <b data-game-level>1</b> · <span data-game-level-name>Visitor</span></span>
+        <strong class="q-brand"><Logo size={18} label={site.name} /><span class="g-only">Level <b data-game-level>1</b></span></strong>
+        <span class="g-only" data-game-level-name>Visitor</span>
       </div>
       <div class="q-xp g-only">
         <div class="q-xpbar" data-game-progress role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100"><span></span></div>
@@ -59,6 +60,7 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
         <Switcher theme={theme} slug={slug} />
       </details>
       <p class="q-tip g-only">Tip: legends speak of a secret code… ↑ ↑ ↓ ↓</p>
+      <SiteLinks class="q-footer-links" />
       <p>© {new Date().getFullYear()} {site.name}</p>
     </footer>
     <AchievementsDialog />

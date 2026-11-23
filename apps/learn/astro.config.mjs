@@ -51,6 +51,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: `${site.shortName} / learn`,
+      logo: { src: './src/assets/logo.svg', alt: '' },
       description: `Free courses by ${site.name}.`,
       social: [
         ...site.socials.filter((s) => /github/i.test(s.label)).map((s) => ({ icon: 'github', label: s.label, href: s.url })),

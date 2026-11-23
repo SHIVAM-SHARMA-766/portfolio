@@ -164,4 +164,13 @@ h1, h2, h3, .s-display, .s-logo { font-family: Fraunces, Georgia, serif; font-we
   .s-tools .s-pill { display: none; } /* XP lives in the footer and the shop on phones */
   .s-tools { gap: .4rem; }
 }
-@media (max-width: 380px) { .s-logo span { display: none; } }
+
+/* Footer stays at the bottom on short pages; links row */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+.s-main { flex: 1; }
+.sl { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; }
+.s-footer-links a { color: var(--muted); text-decoration: none; }
+.s-footer-links a:hover { color: var(--accent); }
+.s-email-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin: 0 0 1rem; }
+.s-email-row .s-email { margin: 0; }
+.s-btn--sm { padding: .35rem .8rem; font-size: .82rem; }

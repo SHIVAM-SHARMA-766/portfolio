@@ -35,14 +35,16 @@
 .acct button:hover { border-color: var(--accent); }
 .acct-login { border-color: var(--accent) !important; color: var(--accent) !important; }
 .acct-user img, .acct-who img { border-radius: 50%; object-fit: cover; }
-.acct-user span { max-width: 10ch; overflow: hidden; text-overflow: ellipsis; }
+.acct-user { padding: 3px !important; border-radius: 50% !important; line-height: 0; }
+.acct-initial { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--bg); font-size: .75rem; font-weight: 700; line-height: 1; }
+.acct-initial[hidden] { display: none; }
 .acct-who { display: flex; gap: .8rem; align-items: center; }
 .acct-who small { display: block; color: var(--muted); }
 .acct-privacy { font-size: .8rem; margin-top: 1rem; }
 .acct-cta { font: inherit; cursor: pointer; padding: .5rem 1rem; border-radius: var(--g-radius, 8px); border: 1px solid var(--accent); background: var(--accent); color: var(--bg); }
 .sw-price { font-size: .75em; color: var(--accent-2); }
 .sw-price:empty { display: none; }
-@media (max-width: 760px) { .acct .g-live { display: none; } .acct-user span { display: none; } }
+@media (max-width: 760px) { .acct .g-live { display: none; } }
 
 /* ---- buttons & chips (shared by shop, unlock screen, preview bar, welcome) ---- */
 .g-btn { font: inherit; font-size: .85rem; line-height: 1.2; cursor: pointer; display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .85rem; border-radius: var(--g-radius, 8px); border: 1px solid var(--border); background: var(--surface); color: var(--fg); text-decoration: none; white-space: nowrap; }
@@ -97,6 +99,7 @@
 .g-theme-lock__actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin: 1rem 0 .5rem; }
 .g-theme-lock__hint { font-size: .8rem; margin: .5rem 0 0; }
 /* Toasts sit above the preview bar */
+body.g-has-bar { padding-bottom: 6.5rem; } /* the preview bar never covers the footer */
 .g-has-bar .g-toasts { bottom: 5.5rem; }
 .g-has-bar .g-welcome { bottom: 5.5rem; }
 

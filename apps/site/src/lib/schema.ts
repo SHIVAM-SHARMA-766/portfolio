@@ -55,6 +55,7 @@ export const siteSchema = z.object({
   siteUrl: z.string().url(),
   learnUrl: z.string().url().nullish(),
   apiUrl: z.string().url().nullish(),
+  resume: z.string().nullish(),
   photo: z.string().nullish(),
   photoCutout: z.string().nullish(),
   photoAlt: z.string().nullish(),

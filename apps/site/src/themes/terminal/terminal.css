@@ -174,3 +174,11 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; back
   .t-prefs > summary::after { content: ' [+]'; color: var(--accent); }
   .t-prefs[open] > summary::after { content: ' [-]'; }
 }
+
+/* Footer line */
+.t-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem 1.2rem; padding: .8rem 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .8rem; }
+.sl { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem 1rem; }
+.t-footer-links a { color: var(--muted); }
+.t-footer-links a:hover { color: var(--accent); }
+.t-footer-links a::before { content: './'; color: var(--accent); }
+@media (max-width: 760px) { .t-footer { padding-inline: 16px; } }

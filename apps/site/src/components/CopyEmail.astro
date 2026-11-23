@@ -1,0 +1,26 @@
+---
+// "Copy" button next to the email address: one click instead of selecting
+// text, and it still works when no mail app is set up.
+import { site } from '../lib/content';
+interface Props { class?: string; label?: string; done?: string }
+const { class: cls = '', label = 'Copy', done = 'Copied ✓' } = Astro.props;
+---
+{site.email && (
+  <button type="button" class={cls} data-copy-email={site.email} data-done={done} aria-label={`Copy ${site.email}`}>{label}</button>
+)}
+
+<script>
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as Element).closest?.<HTMLButtonElement>('[data-copy-email]');
+    if (!btn) return;
+    const text = btn.dataset.copyEmail!;
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const t = Object.assign(document.createElement('textarea'), { value: text });
+      document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+    }
+    const old = btn.textContent;
+    btn.textContent = btn.dataset.done ?? 'Copied';
+    setTimeout(() => (btn.textContent = old), 1600);
+  });
+</script>

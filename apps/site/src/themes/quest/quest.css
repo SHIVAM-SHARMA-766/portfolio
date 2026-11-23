@@ -201,3 +201,11 @@ a { color: var(--accent); }
   .q-xp { flex-basis: 100%; order: 3; }
   .q-hud-actions { flex-wrap: wrap; gap: 0; }
 }
+
+/* Footer stays at the bottom on short pages; links row */
+body { display: flex; flex-direction: column; }
+.q-main { flex: 1 0 auto; }
+.q-main, .q-map, .q-footer { width: 100%; }
+.sl { list-style: none; margin: .6rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem 1rem; }
+.q-footer-links a { color: var(--fg); }
+.q-footer-links a:hover { color: var(--accent); }

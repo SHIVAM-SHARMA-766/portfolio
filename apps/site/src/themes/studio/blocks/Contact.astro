@@ -1,12 +1,13 @@
 ---
 import { site, mdInline, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
+import CopyEmail from '../../../components/CopyEmail.astro';
 const { block } = Astro.props as { block: BlockOf<'contact'> };
 ---
 <section class="s-wrap s-section s-contact">
   {block.heading && <h2 class="s-display">{block.heading}</h2>}
   {block.body && <p class="s-lead" set:html={mdInline(block.body)} />}
-  {site.email && <a class="s-email" href={`mailto:${site.email}`}>{site.email} →</a>}
-  <p class="s-ctas">{site.socials.map((s) => <a class="s-btn s-btn--ghost" href={s.url} target="_blank" rel="noopener" data-xp={rewards.contact} data-xp-id={ids.contact(s.label)} data-xp-label="Following along">{s.label} ↗</a>)}</p>
+  {site.email && <p class="s-email-row"><a class="s-email" href={`mailto:${site.email}`}>{site.email} →</a><CopyEmail class="s-btn s-btn--ghost s-btn--sm" /></p>}
+  <p class="s-ctas">{site.resume && <a class="s-btn" href={site.resume} target="_blank" rel="noopener">Download CV</a>}{site.socials.map((s) => <a class="s-btn s-btn--ghost" href={s.url} target="_blank" rel="noopener" data-xp={rewards.contact} data-xp-id={ids.contact(s.label)} data-xp-label="Following along">{s.label} ↗</a>)}</p>
   {site.location && <p class="s-muted">Based in {site.location}</p>}
 </section>

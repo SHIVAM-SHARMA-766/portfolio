@@ -8,6 +8,7 @@ import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
 import Shell from './Shell.astro';
 import Logo from '../../components/Logo.astro';
+import SiteLinks from '../../components/SiteLinks.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './terminal.css';
@@ -60,6 +61,7 @@ const cwd = slug ? `~/${slug}` : '~';
           <Shell theme={theme} nav={nav} />
         </main>
       </div>
+      <footer class="t-footer"><span>© {new Date().getFullYear()} {site.name}</span><SiteLinks class="t-footer-links" /></footer>
     </div>
     <AchievementsDialog />
     <AccountDialogs ownerName={site.name} />

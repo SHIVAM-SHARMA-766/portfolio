@@ -67,6 +67,13 @@ coloured by `--logo-bg/--logo-fg/--logo-dot` per theme. Brand files (SVG, PNG,
 wordmarks) live in `brand/`; `public/favicon.svg` and `public/images/apple-touch-icon.png`
 are copies.
 
+**Shared bits.** `components/SiteLinks.astro` (email, socials, CV when `site.resume` is
+set, privacy, RSS) in every footer; `components/CopyEmail.astro` next to the address on
+the contact page. Headers show only the logo, and the signed-in chip only the avatar (or
+an initial), with the name as its label. `src/pages/404.astro` is one neutral page for
+all themes (light/dark by system). `sitemap.xml` and `robots.txt` are endpoints listing
+clean URLs only.
+
 ## The game
 
 **Engine (`packages/game/src/core.js`).** State is `events: {id: points}` plus

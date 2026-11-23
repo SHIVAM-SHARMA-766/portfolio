@@ -33,6 +33,7 @@ const config = { ...(await gameConfig(pageIdent)), theme };
   <meta property="og:type" content="website" />
   <meta property="og:url" content={canonical} />
   {photo && <meta property="og:image" content={new URL(photo.src, site.siteUrl).href} />}
+  <meta name="twitter:card" content="summary" />
   <meta name="theme-color" content="#111111" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />

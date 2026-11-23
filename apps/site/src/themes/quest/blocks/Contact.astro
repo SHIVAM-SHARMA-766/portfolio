@@ -2,12 +2,15 @@
 import Panel from '../Panel.astro';
 import { site, mdInline, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
+import CopyEmail from '../../../components/CopyEmail.astro';
 const { block } = Astro.props as { block: BlockOf<'contact'> };
 ---
 <Panel title={block.heading ?? 'Post office'} icon="✉️">
   {block.body && <p set:html={mdInline(block.body)} />}
   <div class="q-actions">
     {site.email && <a class="q-btn q-btn--big" href={`mailto:${site.email}`}>🕊️ Send a raven — {site.email}</a>}
+    <CopyEmail class="q-btn q-btn--ghost" label="📋 Copy address" done="✓ Copied" />
+    {site.resume && <a class="q-btn" href={site.resume} target="_blank" rel="noopener">📜 Download CV</a>}
     {site.socials.map((s) => <a class="q-btn" href={s.url} target="_blank" rel="noopener" data-xp={rewards.contact} data-xp-id={ids.contact(s.label)} data-xp-label="Following along">{s.label} ↗</a>)}
   </div>
   {site.location && <p class="q-muted">📍 Based in {site.location}</p>}

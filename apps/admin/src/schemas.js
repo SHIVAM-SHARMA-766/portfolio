@@ -83,6 +83,7 @@ export const profileFields = [
 
 export const siteFields = [
   s('name', 'Name'), s('shortName', 'Short name'), s('role', 'Role'), s('tagline', 'Tagline'), text('description', 'Description (search engines)'),
+  s('resume', 'CV / resume link', { help: 'Optional. Upload a PDF under Media and paste its path (e.g. /uploads/shivam-cv.pdf), or link to one. Shows a "Download CV" button on the contact page and a CV link in the footer.' }),
   s('photo', 'Photo', { help: 'Upload it under Media, then paste its path here, e.g. /uploads/me-abc.jpg. A 4:5 portrait works best.' }),
   s('photoCutout', 'Photo without background', { help: 'Optional. The same portrait as a transparent PNG/WebP (background removed). Themes use it for the animated hero and the Quest pixel sprite; without it they fall back to the photo.' }),
   s('photoAlt', 'Photo description (for screen readers)'),
