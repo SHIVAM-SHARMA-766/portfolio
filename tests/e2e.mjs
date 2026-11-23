@@ -129,19 +129,13 @@ try {
     await p.addInitScript(() => { try { sessionStorage.setItem('pf.preview.theme:terminal', String(Date.now())); sessionStorage.setItem('pf.preview.theme:quest', String(Date.now())); localStorage.setItem('pf.prefs.v1', '{"welcomed":true}'); } catch {} });
     await p.goto(`${S}/?theme=terminal`);
     assert.ok(await p.locator('.t-portrait img').evaluate((i) => i.complete && i.naturalWidth > 0), 'terminal photo');
-    assert.ok(await p.locator('canvas.t-rain').evaluate((c) => c.width > 0 && c.height > 0), 'terminal digital rain behind the cut-out');
     await p.fill('#shell-in', 'cat portrait.jpg');
     await p.press('#shell-in', 'Enter');
     await p.waitForSelector('.t-ascii');
     assert.ok((await p.locator('.t-ascii').innerText()).length > 500, 'ASCII portrait');
     await shot(p, 'terminal-photo');
     await p.goto(`${S}/?theme=quest`);
-    // The sprite is drawn from the cut-out: coloured pixels, and a transparent background
-    await p.waitForFunction(() => {
-      const c = document.querySelector('canvas.q-sprite.is-ready'); if (!c) return false;
-      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-      return d.some((v, i) => i % 4 !== 3 && v > 0) && d[3] === 0;
-    });
+    assert.ok(await p.locator('.q-photo').evaluate((i) => i.complete && i.naturalWidth > 0), 'quest photo');
     await shot(p, 'quest-photo');
     await p.close();
   });

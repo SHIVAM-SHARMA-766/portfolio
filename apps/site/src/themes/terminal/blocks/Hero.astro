@@ -17,11 +17,7 @@ const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string 
     {photo && (
       <figure class={photo.cutout ? 't-portrait t-portrait--cut' : 't-portrait'}>
         {photo.cutout ? (
-          <span class="t-portrait__frame">
-            <canvas class="t-rain" aria-hidden="true"></canvas>
-            <span class="t-portrait__img"><img src={photo.cutout} alt={photo.alt} width="480" height="600" /></span>
-            <span class="t-scan" aria-hidden="true"></span>
-          </span>
+          <span class="t-portrait__frame"><img src={photo.cutout} alt={photo.alt} width="480" height="600" /></span>
         ) : (
           <span class="t-portrait__frame"><img src={photo.src} alt={photo.alt} width="480" height="600" style={`object-position:${photo.position}`} /></span>
         )}
@@ -31,46 +27,3 @@ const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string 
   </div>
 </Cmd>
 
-<script>
-  // Digital rain behind the cut-out portrait, in the palette's accent. Runs at
-  // ~20 fps only while visible; a single still frame for reduced motion.
-  const GLYPHS = '01アイウエオカキクケコサシスセソ<>{}[]$#*+=/kubectl'.split('');
-  document.querySelectorAll<HTMLCanvasElement>('canvas.t-rain').forEach((cv) => {
-    const ctx = cv.getContext('2d')!;
-    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const FS = 12;
-    let drops: number[] = [], colors = { fg: '#3dff74', bg: '#070b08' }, frame = 0, visible = true, timer = 0;
-    const readColors = () => {
-      const cs = getComputedStyle(document.documentElement);
-      colors = { fg: cs.getPropertyValue('--accent').trim() || colors.fg, bg: cs.getPropertyValue('--bg').trim() || colors.bg };
-    };
-    const resize = () => {
-      const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
-      cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drops = Array.from({ length: Math.ceil(r.width / FS) }, () => Math.random() * -(r.height / FS));
-      ctx.fillStyle = colors.bg; ctx.fillRect(0, 0, r.width, r.height);
-    };
-    const step = () => {
-      const w = cv.width / Math.min(devicePixelRatio || 1, 2), h = cv.height / Math.min(devicePixelRatio || 1, 2);
-      if (frame++ % 40 === 0) readColors();
-      ctx.globalAlpha = 0.14; ctx.fillStyle = colors.bg; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1;
-      ctx.font = `${FS}px 'JetBrains Mono', monospace`;
-      drops.forEach((y, i) => {
-        const ch = GLYPHS[(Math.random() * GLYPHS.length) | 0];
-        ctx.fillStyle = Math.random() < 0.06 ? '#ffffff' : colors.fg;
-        ctx.globalAlpha = 0.55;
-        ctx.fillText(ch, i * FS, y * FS);
-        ctx.globalAlpha = 1;
-        drops[i] = y * FS > h && Math.random() > 0.97 ? 0 : y + 1;
-      });
-    };
-    const loop = () => { if (visible && !document.hidden) step(); timer = window.setTimeout(loop, 50); };
-    readColors(); resize();
-    if (still) { for (let i = 0; i < 60; i++) step(); return; }
-    new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(cv);
-    new ResizeObserver(() => resize()).observe(cv);
-    loop();
-    void timer;
-  });
-</script>

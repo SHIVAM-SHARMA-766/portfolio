@@ -180,40 +180,15 @@ a { color: var(--accent); }
   .q-chest { flex-direction: column; align-items: start; }
 }
 
-/* Pixel-art portrait */
-.q-pixel { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; image-rendering: pixelated; image-rendering: crisp-edges; --sprite-outline: #140f24; }
-.q-portrait:has(.q-pixel) { aspect-ratio: 4 / 5; padding: 6px; background: var(--surface); place-items: stretch; }
-.q-avatar:has(.q-pixel--avatar) { padding: 3px; }
-.q-pixel--avatar { aspect-ratio: 1; width: 100%; height: 100%; }
-
-/* Hero scene: the sprite idles on a pixel hill under a twinkling night sky */
-.q-portrait.q-scene { position: relative; overflow: hidden; padding: 0; animation: none; display: block;
-  background: linear-gradient(to bottom, #141433 0 22%, #1c1d47 22% 42%, #26285c 42% 60%, #333472 60% 78%, #45417f 78% 100%); }
-.q-scene .q-sprite { position: absolute; inset: auto 7% 9% 7%; width: 86%; z-index: 2; opacity: 0; transform: translateY(8px); }
-.q-scene .q-sprite.is-ready { opacity: 1; animation: q-spawn .6s steps(4) both, q-idle 1.6s steps(2) .6s infinite; }
-.q-ground { position: absolute; inset: auto 0 0 0; height: 12%; z-index: 3;
-  background: linear-gradient(#5fbf4a 0 var(--px), #3f8f3a var(--px) calc(var(--px) * 3), #6b4528 calc(var(--px) * 3));
-  box-shadow: 0 calc(var(--px) * -1) 0 0 #8fe36b; }
-.q-stars, .q-stars::after { position: absolute; top: 0; left: 0; width: var(--px); height: var(--px); background: transparent; z-index: 1; }
-.q-stars { box-shadow: 18px 22px #fff, 70px 14px #fff9, 120px 40px #fff, 160px 18px #fffa, 210px 30px #fff, 40px 70px #fff8, 190px 76px #fff, 240px 60px #fff9, 96px 92px #fff7, 260px 110px #fff; animation: q-twinkle 3s steps(1) infinite; }
-.q-stars::after { content: ''; box-shadow: 34px 46px #fff, 140px 64px #fff, 226px 8px #fff, 280px 36px #fff8, 60px 120px #fff9, 8px 140px #fff; animation: q-twinkle 3s steps(1) 1.5s infinite; }
-.q-sparkle { position: absolute; z-index: 4; width: calc(var(--px) * 3); height: calc(var(--px) * 3); opacity: 0;
-  background: linear-gradient(var(--accent) 0 0) center / var(--px) 100% no-repeat, linear-gradient(var(--accent) 0 0) center / 100% var(--px) no-repeat;
-  animation: q-sparkle 2.4s steps(3) infinite; }
-.q-sparkle--1 { top: 26%; left: 14%; }
-.q-sparkle--2 { top: 16%; right: 16%; animation-delay: .8s; }
-.q-sparkle--3 { top: 48%; right: 8%; animation-delay: 1.6s; }
-@keyframes q-idle { 50% { transform: translateY(calc(var(--px) * -1)); } }
-@keyframes q-spawn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-@keyframes q-twinkle { 50% { opacity: .35; } }
-@keyframes q-sparkle { 0%, 100% { opacity: 0; transform: scale(.4); } 40% { opacity: 1; transform: scale(1); } 70% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .q-scene .q-sprite.is-ready, .q-stars, .q-stars::after { animation: none; }
-  .q-sparkle { display: none; }
-}
-
-.q-hero:has(.q-scene) { grid-template-columns: 240px 1fr; }
-@media (max-width: 720px) { .q-hero:has(.q-scene) { grid-template-columns: 1fr; } .q-portrait.q-scene { width: 180px; } }
+/* Portrait: the cut-out on a plain accent tile inside the pixel frame */
+.q-portrait.q-scene { position: relative; overflow: hidden; padding: 0; aspect-ratio: 4 / 5; display: block; animation: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--accent-2) 70%, var(--bg)), color-mix(in srgb, var(--accent-2) 35%, var(--bg))); }
+.q-photo { display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; }
+.q-photo--crop { object-fit: cover; }
+.q-hero:has(.q-scene) { grid-template-columns: 220px 1fr; }
+@media (max-width: 720px) { .q-hero:has(.q-scene) { grid-template-columns: 1fr; } .q-portrait.q-scene { width: 160px; } }
+.q-avatar:has(.q-avatar-img) { padding: 0; overflow: hidden; }
+.q-avatar-img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; transform: scale(1.6); transform-origin: 50% 20%; }
 
 /* Brand */
-.q-brand { display: inline-flex; align-items: center; gap: .5rem; --logo-bg: var(--bg); --logo-a: var(--accent-2); --logo-b: var(--fg); --logo-c: var(--accent); }
+.q-brand { display: inline-flex; align-items: center; gap: .5rem; --logo-bg: var(--accent); --logo-fg: var(--bg); --logo-dot: var(--fg); }

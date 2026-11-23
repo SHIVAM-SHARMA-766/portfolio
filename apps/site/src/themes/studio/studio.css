@@ -147,34 +147,13 @@ h1, h2, h3, .s-display, .s-logo { font-family: Fraunces, Georgia, serif; font-we
   .s-portrait::before { inset: 10px -10px -10px 10px; }
 }
 
-/* Cut-out portrait: the person stands in front of a slowly morphing blob and
-   pops out over its top edge; headline skills float around. */
-.s-portrait--cut { aspect-ratio: 4 / 5; isolation: isolate; }
+/* Cut-out portrait on a soft tile */
+.s-portrait--cut { aspect-ratio: 4 / 5; overflow: hidden; border-radius: 28px; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), color-mix(in srgb, var(--accent-2) 14%, var(--surface))); border: 1px solid var(--border); }
 .s-portrait--cut::before { display: none; }
-.s-portrait__blob { position: absolute; inset: 20% -7% 0; z-index: -1; background: radial-gradient(120% 90% at 30% 20%, color-mix(in srgb, var(--accent) 85%, white) 0%, var(--accent) 45%, var(--accent-2) 100%); border-radius: 46% 54% 0 0 / 52% 48% 0 0; animation: s-blob 14s ease-in-out infinite alternate; box-shadow: 0 30px 60px -30px rgb(0 0 0 / .45); }
-.s-portrait__ring { position: absolute; inset: 12% -6% auto auto; width: 34%; aspect-ratio: 1; z-index: -2; border-radius: 50%; border: 2px dashed color-mix(in srgb, var(--accent-2) 60%, transparent); animation: s-spin 30s linear infinite; }
-.s-portrait--cut img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; border-radius: 0; box-shadow: none; filter: drop-shadow(0 -6px 18px rgb(0 0 0 / .18)); animation: s-rise .9s cubic-bezier(.2, .8, .2, 1) both; }
-.s-chip { position: absolute; z-index: 2; font: 600 .78rem/1 Inter, system-ui, sans-serif; padding: .5rem .75rem; border-radius: 999px; background: var(--surface); color: var(--fg); border: 1px solid var(--border); box-shadow: 0 10px 24px -12px rgb(0 0 0 / .35); white-space: nowrap; animation: s-float 6s ease-in-out infinite; }
-.s-chip::before { content: ''; display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: var(--accent); margin-right: .45rem; vertical-align: .05rem; }
-.s-chip--1 { top: 30%; left: -12%; }
-.s-chip--2 { top: 52%; right: -10%; animation-delay: -2s; }
-.s-chip--2::before { background: var(--accent-2); }
-.s-chip--3 { bottom: 9%; left: -6%; animation-delay: -4s; }
-@keyframes s-blob {
-  0% { border-radius: 46% 54% 0 0 / 52% 48% 0 0; }
-  50% { border-radius: 60% 40% 0 0 / 40% 60% 0 0; }
-  100% { border-radius: 38% 62% 0 0 / 58% 42% 0 0; }
-}
-@keyframes s-spin { to { transform: rotate(360deg); } }
-@keyframes s-float { 50% { transform: translateY(-8px); } }
-@keyframes s-rise { from { opacity: 0; transform: translateY(24px); } }
-@media (max-width: 760px) {
-  .s-portrait--cut { margin-inline: auto; width: min(240px, 64%); }
-  .s-chip { font-size: .68rem; padding: .4rem .6rem; }
-  .s-chip--1 { left: -22%; } .s-chip--2 { right: -24%; } .s-chip--3 { display: none; }
-}
-@media (prefers-reduced-motion: reduce) { .s-portrait__blob, .s-portrait__ring, .s-chip, .s-portrait--cut img { animation: none; } }
+.s-portrait--cut img { width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; border-radius: 0; box-shadow: none; animation: s-fade .6s ease-out both; }
+@keyframes s-fade { from { opacity: 0; transform: translateY(10px); } }
+@media (max-width: 760px) { .s-portrait--cut { margin-inline: auto; width: min(240px, 64%); } }
+@media (prefers-reduced-motion: reduce) { .s-portrait--cut img { animation: none; } }
 
 /* Logo */
-.s-logo { display: inline-flex; align-items: center; gap: .55rem; --logo-bg: var(--fg); --logo-a: var(--accent-2); --logo-b: var(--bg); --logo-c: var(--accent); }
-.s-logo:hover .logo-cursor { animation: logo-blink 1.1s steps(1) infinite; }
+.s-logo { display: inline-flex; align-items: center; gap: .55rem; --logo-bg: var(--fg); --logo-fg: var(--bg); --logo-dot: var(--accent); }
