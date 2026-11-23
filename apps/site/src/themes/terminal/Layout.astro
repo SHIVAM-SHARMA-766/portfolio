@@ -7,6 +7,7 @@ import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
 import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
 import Shell from './Shell.astro';
+import Logo from '../../components/Logo.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './terminal.css';
@@ -23,6 +24,7 @@ const cwd = slug ? `~/${slug}` : '~';
     <div class="t-window">
       <header class="t-bar">
         <span class="t-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <a class="t-logo" href={pageUrl(theme, '')} aria-label="Home"><Logo size={22} class="logo-blink" /></a>
         <span class="t-title">{site.shortName}@portfolio: {cwd}</span>
         <button type="button" class="t-hud g-only" data-open-ach aria-label="Open achievements">
           <span>LVL <b data-game-level>1</b></span>

@@ -6,6 +6,7 @@ import AchievementsDialog from '@portfolio/game/AchievementsDialog.astro';
 import AccountDialogs from '@portfolio/game/AccountDialogs.astro';
 import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
+import Logo from '../../components/Logo.astro';
 import { site, pageUrl, photo, initials as siteInitials } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './quest.css';
@@ -20,10 +21,10 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
     <a class="skip" href="#main">Skip to content</a>
     <header class="q-hud">
       <a class="q-avatar" href={pageUrl(theme, '')} aria-label="Home">
-        {photo ? <canvas class="q-pixel q-pixel--avatar" width="16" height="16" data-pixel-src={photo.src} data-pixel-pos="50% 22%" aria-hidden="true"></canvas> : siteInitials}
+        {photo ? <canvas class="q-pixel q-pixel--avatar" width="20" height="20" data-pixel-src={photo.cutout ?? photo.src} data-pixel-crop={photo.cutout ? '0.2 0.1 0.6 0.48' : undefined} data-pixel-pos="50% 22%" aria-hidden="true"></canvas> : siteInitials}
       </a>
       <div class="q-who">
-        <strong>{site.name}</strong>
+        <strong class="q-brand"><Logo pixel size={18} class="logo-blink" />{site.name}</strong>
         <span class="g-only">LV <b data-game-level>1</b> · <span data-game-level-name>Visitor</span></span>
       </div>
       <div class="q-xp g-only">
@@ -65,25 +66,84 @@ const { theme, title, description, slug, nav, pageIdent, current = slug } = Astr
     <ThemeLock item={`theme:${theme}`} slug={slug} />
     <GameBoot />
     <script>
-  // Turn the portrait into pixel art: draw it tiny (cropped to the canvas's
-  // aspect around the focus point), and let CSS scale it up without smoothing.
+  // Turn the portrait into pixel art. With a cut-out (transparent background)
+  // it becomes a proper sprite: shrunk to the canvas, reduced to a 16-colour
+  // palette (median cut), hard alpha, and a 1px dark outline. CSS scales it up
+  // without smoothing. Without a cut-out the photo is cropped around its focus.
+  type RGB = [number, number, number];
+  function palette(pixels: RGB[], n: number): RGB[] {
+    let boxes: RGB[][] = [pixels];
+    while (boxes.length < n) {
+      let bi = -1, bc = 0, best = 0;
+      boxes.forEach((box, i) => {
+        if (box.length < 2) return;
+        for (let c = 0; c < 3; c++) {
+          let lo = 255, hi = 0;
+          for (const p of box) { if (p[c] < lo) lo = p[c]; if (p[c] > hi) hi = p[c]; }
+          if (hi - lo > best) { best = hi - lo; bi = i; bc = c; }
+        }
+      });
+      if (bi < 0) break;
+      const box = boxes[bi].sort((p, q) => p[bc] - q[bc]);
+      boxes.splice(bi, 1, box.slice(0, box.length >> 1), box.slice(box.length >> 1));
+    }
+    return boxes.map((box) => [0, 1, 2].map((c) => Math.round(box.reduce((s, p) => s + p[c], 0) / box.length)) as RGB);
+  }
+
+  function sprite(cv: HTMLCanvasElement, img: HTMLImageElement) {
+    const W = cv.width, H = cv.height, ctx = cv.getContext('2d', { willReadFrequently: true })!;
+    let sx: number, sy: number, sw: number, sh: number;
+    const crop = cv.dataset.pixelCrop?.split(/\s+/).map(Number);
+    if (crop?.length === 4) {
+      [sx, sy, sw, sh] = [crop[0] * img.width, crop[1] * img.height, crop[2] * img.width, crop[3] * img.height];
+    } else {
+      const [fx, fy] = (cv.dataset.pixelPos ?? '50% 25%').split(/\s+/).map((v) => parseFloat(v) / 100);
+      sw = img.width; sh = img.height;
+      if (sw / sh > W / H) sw = sh * (W / H); else sh = sw / (W / H);
+      sx = (img.width - sw) * (isNaN(fx) ? 0.5 : fx);
+      sy = (img.height - sh) * (isNaN(fy) ? 0.25 : fy);
+    }
+    // Shrink in two steps (cleaner than one big jump), punching up colour a bit
+    const mid = document.createElement('canvas');
+    mid.width = W * 2; mid.height = H * 2;
+    const m = mid.getContext('2d')!;
+    m.imageSmoothingQuality = 'high';
+    m.filter = 'saturate(1.25) contrast(1.15)';
+    m.drawImage(img, sx, sy, sw, sh, 0, 0, mid.width, mid.height);
+    ctx.clearRect(0, 0, W, H);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(mid, 0, 0, W, H);
+
+    const d = ctx.getImageData(0, 0, W, H), px = d.data;
+    const cutout = 'pixelCutout' in cv.dataset;
+    const solid = (i: number) => !cutout || px[i * 4 + 3] > 110;
+    const opaque: RGB[] = [];
+    for (let i = 0; i < W * H; i++) if (solid(i)) opaque.push([px[i * 4], px[i * 4 + 1], px[i * 4 + 2]]);
+    const pal = palette(opaque, 16);
+    const near = (r: number, g: number, b: number) => {
+      let best = pal[0], bd = Infinity;
+      for (const p of pal) { const dd = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2; if (dd < bd) { bd = dd; best = p; } }
+      return best;
+    };
+    const mask = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      if (solid(i)) { const [r, g, b] = near(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]); px.set([r, g, b, 255], i * 4); mask[i] = 1; }
+      else px[i * 4 + 3] = 0;
+    }
+    ctx.putImageData(d, 0, 0);
+    if (cutout && cv.dataset.pixelOutline !== '0') {
+      ctx.fillStyle = getComputedStyle(cv).getPropertyValue('--sprite-outline').trim() || '#140f24';
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        if (mask[y * W + x]) continue;
+        if ((x > 0 && mask[y * W + x - 1]) || (x < W - 1 && mask[y * W + x + 1]) || (y > 0 && mask[(y - 1) * W + x]) || (y < H - 1 && mask[(y + 1) * W + x])) ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    cv.classList.add('is-ready');
+  }
+
   document.querySelectorAll<HTMLCanvasElement>('canvas[data-pixel-src]').forEach((cv) => {
     const img = new Image();
-    img.onload = () => {
-      const ctx = cv.getContext('2d')!;
-      const [fx, fy] = (cv.dataset.pixelPos ?? '50% 25%').split(/\s+/).map((v) => parseFloat(v) / 100);
-      const target = cv.width / cv.height;
-      let sw = img.width, sh = img.height;
-      if (sw / sh > target) sw = sh * target; else sh = sw / target;
-      const sx = (img.width - sw) * (isNaN(fx) ? 0.5 : fx);
-      const sy = (img.height - sh) * (isNaN(fy) ? 0.25 : fy);
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
-      // Limit the palette a little for a retro look
-      const d = ctx.getImageData(0, 0, cv.width, cv.height);
-      for (let i = 0; i < d.data.length; i += 4) for (let c = 0; c < 3; c++) d.data[i + c] = Math.round(d.data[i + c] / 32) * 32;
-      ctx.putImageData(d, 0, 0);
-    };
+    img.onload = () => sprite(cv, img);
     img.src = cv.dataset.pixelSrc!;
   });
 </script>

@@ -54,9 +54,22 @@ dev server and the e2e tests. Studio is the default. After the build,
 URLs work on a host without the routing.
 
 **Portrait.** `site.json` `photo` (+ `photoAlt`, `photoPosition` as an `object-position`
-crop focus). Studio shows a 4:5 rounded crop; Terminal a duotone in the palette's accent
-with scanlines, plus `cat portrait.jpg` renders it as ASCII art; Quest pixelates it on a
-canvas (hero and HUD avatar). A missing file falls back to initials at build time.
+crop focus) and optional `photoCutout`: the same portrait with the background removed
+(transparent WebP/PNG). With a cut-out, Studio stands it in front of a slowly morphing
+accent blob with three headline skills (first item of the first three `profile.skills`
+groups) floating around; Terminal shows it in real colour in front of a digital-rain
+canvas in the palette's accent, rendered in with a scan sweep and an occasional RGB-split
+glitch; Quest turns it into a 64×80 sprite in the browser (16-colour median-cut palette,
+hard alpha, 1px dark outline) idling on a pixel hill under a night sky, and a 20×20 face
+for the HUD avatar. `cat portrait.jpg` renders the cut-out as ASCII (transparent pixels
+blank). Without a cut-out each theme falls back to the plain photo treatment (rounded
+crop, duotone, pixelated crop). A missing file falls back to initials at build time.
+All animation stops under `prefers-reduced-motion`.
+
+**Logo.** `components/Logo.astro`: a shell prompt, an "S" and a cursor (`>S_`), coloured
+by `--logo-bg/-a/-b/-c` so each theme and palette recolours it; `pixel` draws it on a
+12×12 grid for Quest. Static copies: `public/favicon.svg`, `public/apple-touch-icon.png`,
+`public/images/logo-512.png`.
 
 ## The game
 

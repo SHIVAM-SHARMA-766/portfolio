@@ -27,13 +27,22 @@ export const achievements = parse(z.array(achievementSchema), achievementsRaw.ac
  * missing upload falls back to initials instead of a broken image).
  */
 export const photo = (() => {
-  const src = site.photo;
-  if (!src) return null;
-  if (src.startsWith('/') && !existsSync(resolvePath(process.cwd(), 'public', src.slice(1)))) {
-    console.warn(`[content] photo ${src} not found in apps/site/public; showing initials instead`);
-    return null;
-  }
-  return { src, alt: site.photoAlt || site.name, position: site.photoPosition || '50% 25%' };
+  const exists = (src: string | null | undefined, field: string) => {
+    if (!src) return false;
+    if (src.startsWith('/') && !existsSync(resolvePath(process.cwd(), 'public', src.slice(1)))) {
+      console.warn(`[content] ${field} ${src} not found in apps/site/public; ignoring it`);
+      return false;
+    }
+    return true;
+  };
+  if (!exists(site.photo, 'photo')) return null;
+  return {
+    src: site.photo!,
+    /** Same portrait with the background removed (transparent), if provided */
+    cutout: exists(site.photoCutout, 'photoCutout') ? site.photoCutout! : null,
+    alt: site.photoAlt || site.name,
+    position: site.photoPosition || '50% 25%',
+  };
 })();
 export const initials = site.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 

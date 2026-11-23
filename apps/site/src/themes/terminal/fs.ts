@@ -81,7 +81,7 @@ export async function buildFs(theme: string) {
     projects: dir(projects),
     blog: dir(blog),
     learn: dir(learn),
-    ...(photo ? { 'portrait.jpg': file('', { href: photo.src }) } : {}),
+    ...(photo ? { 'portrait.jpg': file('', { href: photo.cutout ?? photo.src }) } : {}),
     '.secrets': dir(secrets),
     '.bash_history': file(['ls -a', 'cat .secrets/todo.txt', 'grep -r incident experience', 'hack', 'shop', 'sudo hire shivam'].join('\n')),
   });

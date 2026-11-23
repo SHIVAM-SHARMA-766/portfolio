@@ -1,7 +1,9 @@
 ---
-import { resolveHref, mdInline, photo } from '../../../lib/content';
+import { resolveHref, mdInline, photo, profile } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string };
+// A few headline skills float around the cut-out portrait
+const chips = profile.skills.slice(0, 3).map((g) => g.items[0]).filter(Boolean);
 ---
 <section class={`s-wrap s-hero ${photo ? 's-hero--photo' : ''}`}>
   <div class="s-hero__text">
@@ -12,9 +14,16 @@ const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string 
       <div class="s-ctas">{block.ctas.map((c, i) => <a class={i === 0 ? 's-btn' : 's-btn s-btn--ghost'} href={resolveHref(theme, c.href)}>{c.label}</a>)}</div>
     )}
   </div>
-  {photo && (
+  {photo && (photo.cutout ? (
+    <figure class="s-portrait s-portrait--cut">
+      <span class="s-portrait__blob" aria-hidden="true"></span>
+      <span class="s-portrait__ring" aria-hidden="true"></span>
+      <img src={photo.cutout} alt={photo.alt} width="480" height="600" fetchpriority="high" />
+      {chips.map((c, i) => <span class={`s-chip s-chip--${i + 1}`} aria-hidden="true">{c}</span>)}
+    </figure>
+  ) : (
     <figure class="s-portrait">
       <img src={photo.src} alt={photo.alt} width="480" height="600" fetchpriority="high" style={`object-position:${photo.position}`} />
     </figure>
-  )}
+  ))}
 </section>

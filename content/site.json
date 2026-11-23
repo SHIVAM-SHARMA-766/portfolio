@@ -69,6 +69,7 @@
   },
   "apiUrl": "https://shivamsharma.duckdns.org/api",
   "photo": "/images/profile.jpg",
+  "photoCutout": "/images/profile-cutout.webp",
   "photoAlt": "Portrait of Shivam Sharma",
   "photoPosition": "50% 25%"
 }

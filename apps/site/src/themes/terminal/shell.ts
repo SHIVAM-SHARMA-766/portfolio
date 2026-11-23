@@ -32,7 +32,11 @@ async function asciiArt(src: string) {
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const i = (y * cols + x) * 4;
-      const lum = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
+      // Transparent pixels (a cut-out's background) are blank; opaque dark
+      // ones get a faint floor so the silhouette (hair, suit) still shows.
+      const a = px[i + 3] / 255;
+      const raw = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
+      const lum = a < 0.5 ? 0 : 0.14 + 0.86 * raw;
       out += ramp[Math.min(ramp.length - 1, Math.floor(lum * ramp.length))];
     }
     out += '\n';

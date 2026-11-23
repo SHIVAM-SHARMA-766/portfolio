@@ -150,3 +150,30 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; back
 .t-portrait figcaption { font-size: .78rem; margin-top: .4rem; color: var(--accent); }
 @media (max-width: 760px) { .t-hero--photo { grid-template-columns: 1fr; } .t-portrait { width: 160px; order: -1; } }
 .t-ascii { font-size: 9px; line-height: 1; letter-spacing: 0; color: var(--accent); overflow-x: auto; }
+
+/* Cut-out portrait: real colours in front of digital rain, rendered in with a
+   scan sweep, and an occasional RGB-split glitch. */
+.t-portrait--cut .t-portrait__frame { background: var(--bg); }
+.t-rain { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: .85; }
+.t-portrait__img { position: absolute; inset: 0; display: block; animation: t-render 1.6s steps(20) .2s both; }
+.t-portrait--cut .t-portrait__frame img { position: absolute; inset: auto 0 0 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; mix-blend-mode: normal;
+  filter: saturate(.95) contrast(1.05) drop-shadow(0 0 1px var(--accent)) drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 45%, transparent));
+  animation: t-glitch 7s steps(1) 2s infinite; }
+.t-scan { position: absolute; left: 0; right: 0; top: 0; height: 18%; pointer-events: none; z-index: 2;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 22%, transparent) 85%, color-mix(in srgb, var(--accent) 70%, transparent) 100%);
+  animation: t-sweep 4.5s linear infinite; }
+.t-portrait--cut .t-portrait__frame::after { z-index: 3; background: repeating-linear-gradient(0deg, rgb(0 0 0 / .18) 0 1px, transparent 1px 3px); }
+@keyframes t-render { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes t-sweep { from { transform: translateY(-100%); } to { transform: translateY(560%); } }
+@keyframes t-glitch {
+  0%, 93%, 100% { transform: none; clip-path: none; }
+  94% { transform: translateX(-4px); clip-path: inset(18% 0 58% 0); filter: drop-shadow(-3px 0 #ff2bd6) drop-shadow(3px 0 #22d3ee); }
+  95% { transform: translateX(5px); clip-path: inset(52% 0 20% 0); filter: drop-shadow(3px 0 #ff2bd6) drop-shadow(-3px 0 #22d3ee); }
+  96% { transform: translateX(-2px); clip-path: inset(70% 0 6% 0); }
+  97% { transform: none; clip-path: none; }
+}
+@media (prefers-reduced-motion: reduce) { .t-portrait__img, .t-portrait--cut .t-portrait__frame img, .t-scan { animation: none; } .t-scan { display: none; } }
+
+/* Logo in the title bar */
+.t-logo { display: inline-flex; --logo-bg: var(--bg); --logo-a: var(--accent-2); --logo-b: var(--accent); --logo-c: var(--accent); }
+.t-logo .logo-bg { stroke: var(--border); stroke-width: 1; }

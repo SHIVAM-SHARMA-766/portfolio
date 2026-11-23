@@ -4,9 +4,18 @@ import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string };
 ---
 <section class="q-hero">
-  <div class="q-portrait" aria-hidden={photo ? undefined : 'true'}>
+  <div class={photo ? 'q-portrait q-scene' : 'q-portrait'} aria-hidden={photo ? undefined : 'true'}>
     {photo ? (
-      <canvas class="q-pixel" width="40" height="50" data-pixel-src={photo.src} data-pixel-pos={photo.position} role="img" aria-label={photo.alt}></canvas>
+      <>
+        <span class="q-stars" aria-hidden="true"></span>
+        <span class="q-sparkle q-sparkle--1" aria-hidden="true"></span>
+        <span class="q-sparkle q-sparkle--2" aria-hidden="true"></span>
+        <span class="q-sparkle q-sparkle--3" aria-hidden="true"></span>
+        <canvas class="q-pixel q-sprite" width="64" height="80" role="img" aria-label={photo.alt}
+          data-pixel-src={photo.cutout ?? photo.src} data-pixel-cutout={photo.cutout ? '' : undefined}
+          data-pixel-crop={photo.cutout ? '0.083 0.067 0.833 0.833' : undefined} data-pixel-pos={photo.position}></canvas>
+        <span class="q-ground" aria-hidden="true"></span>
+      </>
     ) : <span>{initials}</span>}
   </div>
   <div class="q-dialog">

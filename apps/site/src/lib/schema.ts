@@ -56,6 +56,7 @@ export const siteSchema = z.object({
   learnUrl: z.string().url().nullish(),
   apiUrl: z.string().url().nullish(),
   photo: z.string().nullish(),
+  photoCutout: z.string().nullish(),
   photoAlt: z.string().nullish(),
   photoPosition: z.string().nullish(),
   cookieDomain: z.string().default(''),
