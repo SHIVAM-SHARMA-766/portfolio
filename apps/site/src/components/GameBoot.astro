@@ -2,7 +2,7 @@
 // Boots the game engine and wires the switcher and achievements dialog.
 ---
 <script>
-  import { mountGame, readPrefs, writePrefs } from '@portfolio/game';
+  import { mountGame } from '@portfolio/game';
 
   const root = document.documentElement;
   const theme = root.dataset.theme!;
@@ -10,30 +10,8 @@
 
   if (game) game.award(`theme:${theme}`, game.rewards.theme ?? 10, { label: 'New theme discovered' });
 
-  const markPalette = () =>
-    document.querySelectorAll<HTMLElement>('[data-palette-btn]').forEach((b) =>
-      b.setAttribute('aria-pressed', String(b.dataset.paletteBtn === root.dataset.palette)));
-  markPalette();
-
   document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const btn = target.closest<HTMLElement>('[data-palette-btn]');
-    if (btn) {
-      const apply = () => {
-        const id = btn.dataset.paletteBtn!;
-        root.dataset.palette = id;
-        const prefs = readPrefs();
-        writePrefs({ palettes: { ...(prefs.palettes ?? {}), [theme]: id } });
-        markPalette();
-        game?.award(`palette:${theme}-${id}`, game.rewards.palette ?? 5, { label: 'New palette' });
-      };
-      if (btn.hasAttribute('data-locked')) {
-        game?.buy(btn.dataset.shopItem!).then(() => { if (!btn.hasAttribute('data-locked')) apply(); });
-        return;
-      }
-      apply();
-    }
-    if (target.closest('[data-open-ach]')) {
+    if ((e.target as HTMLElement).closest('[data-open-ach]')) {
       (document.getElementById('ach-dialog') as HTMLDialogElement | null)?.showModal();
     }
   });

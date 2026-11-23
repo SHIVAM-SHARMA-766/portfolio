@@ -10,6 +10,7 @@
     "./game.css": "./src/game.css",
     "./AchievementsDialog.astro": "./AchievementsDialog.astro",
     "./ids": "./src/ids.js",
-    "./AccountDialogs.astro": "./AccountDialogs.astro"
+    "./AccountDialogs.astro": "./AccountDialogs.astro",
+    "./shop": "./src/shop.js"
   }
 }

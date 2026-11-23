@@ -194,6 +194,11 @@ func (s *server) buy(w http.ResponseWriter, r *http.Request) {
 		httpx.JSON(w, http.StatusOK, map[string]any{"state": game.Snap(st)})
 		return
 	}
+	if item.Requires != "" && !game.Owns(st, item.Requires) {
+		req, _ := game.FindItem(item.Requires)
+		httpx.JSON(w, http.StatusConflict, map[string]any{"error": "unlock " + req.Label + " first", "requires": item.Requires, "state": game.Snap(st)})
+		return
+	}
 	if snap := game.Snap(st); snap.Coins < item.Price {
 		httpx.JSON(w, http.StatusPaymentRequired, map[string]any{"error": "not enough coins", "state": snap})
 		return

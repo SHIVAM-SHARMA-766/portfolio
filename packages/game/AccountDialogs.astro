@@ -24,12 +24,10 @@ const { ownerName = 'the site owner', privacyUrl = '/studio/privacy/' } = Astro.
   </div>
 </dialog>
 
-<dialog id="shop-dialog" class="ach-dialog acct-dialog" aria-labelledby="shop-title">
+<dialog id="shop-dialog" class="ach-dialog acct-dialog shop-dialog" aria-labelledby="shop-title">
   <div class="ach-head">
-    <h2 id="shop-title">Shop · 🪙 <span data-game-coins>0</span></h2>
+    <h2 id="shop-title">Shop</h2>
     <form method="dialog"><button class="ach-close" aria-label="Close">✕</button></form>
   </div>
-  <p class="g-muted">Earn coins by exploring: every XP point is a coin. Spending coins never lowers your level.</p>
-  <p data-account-guest><button type="button" class="acct-cta" data-open-login>Sign in to buy</button></p>
-  <ul class="g-shop" data-shop-list></ul>
+  <div data-shop></div>
 </dialog>

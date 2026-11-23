@@ -43,6 +43,7 @@ type Item struct {
 	Label       string `json:"label"`
 	Description string `json:"description,omitempty"`
 	Price       int    `json:"price"`
+	Requires    string `json:"requires,omitempty"` // item that must be owned first, e.g. the palette's theme
 }
 
 type Data struct {
@@ -200,6 +201,16 @@ func levelFor(xp int) LevelInfo {
 		li.Progress = float64(xp-cur.XP) / float64(next.XP-cur.XP)
 	}
 	return li
+}
+
+// Owns reports whether a state owns an item. Items not in the shop, or free, are always owned.
+func Owns(s *State, id string) bool {
+	it, ok := FindItem(id)
+	if !ok || it.Price <= 0 {
+		return true
+	}
+	_, bought := s.Purchases[id]
+	return bought
 }
 
 // Spent is the total price of owned items.

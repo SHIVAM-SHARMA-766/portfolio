@@ -6,6 +6,7 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { ids, slugify, TERMINAL_COMMANDS, SECRETS } from '../packages/game/src/ids.js';
+import { normalizeShop } from '../packages/game/src/shop.js';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (p) => JSON.parse(readFileSync(join(root, p), 'utf8'));
@@ -78,7 +79,7 @@ const data = {
   levels: site.game.levels,
   pageIds: navPages,
   achievements,
-  shop: shop.items,
+  shop: normalizeShop(shop.items).map(({ id, label, description, price, requires }) => ({ id, label, description, price, requires })),
   events,
 };
 mkdirSync(dirname(out), { recursive: true });

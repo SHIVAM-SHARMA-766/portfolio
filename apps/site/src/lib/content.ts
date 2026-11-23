@@ -2,6 +2,7 @@
 // validated here; pages and blog posts come from content collections.
 import { getCollection } from 'astro:content';
 import { marked } from 'marked';
+import { palettes } from '@portfolio/tokens';
 import { z } from 'astro/zod';
 import { siteSchema, profileSchema, achievementSchema, courseSchema, shopSchema, type Page } from './schema';
 import siteRaw from '../../../../content/site.json';
@@ -29,6 +30,11 @@ export const THEMES = [
   { id: 'studio', label: 'Studio', blurb: 'Clean and editorial.' },
 ] as const;
 export type ThemeId = (typeof THEMES)[number]['id'];
+
+/** Palette names and colours for the shop window. */
+function shopPalettes() {
+  return Object.fromEntries(Object.entries(palettes).map(([t, list]) => [t, list.map((p) => ({ id: p.id, label: p.label, colors: p.colors }))]));
+}
 
 export async function getPages(): Promise<Page[]> {
   const all = await getCollection('pages');
@@ -111,6 +117,9 @@ export async function gameConfig(currentPageId: string | null) {
     pageIds: pages.map((p) => pageId(p.slug)),
     pageId: currentPageId,
     apiUrl: site.apiUrl ?? null,
+    siteUrl: site.siteUrl,
     shop,
+    themes: THEMES,
+    palettes: shopPalettes(),
   };
 }

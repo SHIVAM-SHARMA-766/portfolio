@@ -19,7 +19,7 @@ const fullTitle = slug === '' && title === 'Home' ? `${site.name} — ${site.rol
 const canonical = new URL(pageUrl(site.defaultTheme, slug), site.siteUrl).href;
 const palettes = palettesFor(theme).map((p) => p.id);
 const defaultPalette = site.defaultPalettes[theme] ?? palettes[0];
-const config = await gameConfig(pageIdent);
+const config = { ...(await gameConfig(pageIdent)), theme };
 ---
 <head>
   {sourceFlag && <Fragment set:html={`<!-- psst. you found the source. ${sourceFlag} — submit it in the terminal. -->`} />}

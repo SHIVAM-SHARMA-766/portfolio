@@ -102,8 +102,10 @@ export function startShell() {
 
   const shopLine = (it: any) => {
     const a = g()?.account;
-    const owned = a?.owns(it.id);
-    return `${owned ? '<span class="t-acc">✓ owned </span>' : `<span class="t-acc-2">🪙 ${String(it.price).padStart(4)}</span>`}  ${esc(it.id.padEnd(28))} ${esc(it.label)}`;
+    const can = a?.canBuy(it.id) ?? { reason: 'login' };
+    const tag = a?.owns(it.id) ? '<span class="t-acc">✓ owned </span>' : can.reason === 'requires' ? '<span class="t-dim">🔒 locked</span>' : `<span class="t-acc-2">🪙 ${String(it.price).padStart(4)}</span>`;
+    const note = can.reason === 'requires' ? ` <span class="t-dim">(needs ${esc(it.requires)})</span>` : '';
+    return `${tag}  ${esc(it.id.padEnd(28))} ${esc(it.label)}${note}`;
   };
 
   type Cmd = { help: string; run: (args: string[], raw: string) => void | Promise<void>; hidden?: boolean };
@@ -191,10 +193,17 @@ export function startShell() {
     buy: { help: 'buy <item> — unlock a theme or palette', run: async ([id]) => {
       if (!id) return print('usage: buy <item>   (see: shop)');
       const a = g()?.account;
-      if (!a?.item(id)) return print(`buy: no item "${esc(id)}"`, 't-err');
-      if (a.owns(id)) return print(`you already own ${esc(id)}`);
-      await g()?.buy(id);
-      print(a.owns(id) ? `✓ unlocked ${esc(id)}` : `<span class="t-dim">not bought (${a.user ? 'not enough coins' : 'sign in first'})</span>`);
+      const it = a?.item(id);
+      if (!it) return print(`buy: no item "${esc(id)}". see: shop`, 't-err');
+      const can = a.canBuy(id);
+      if (can.reason === 'owned') return print(`you already own ${esc(it.label)}`);
+      if (can.reason === 'requires') return print(`🔒 unlock ${esc(can.requires?.label ?? 'its theme')} first: buy ${esc(it.requires)}`, 't-err');
+      if (can.reason === 'login') return print('sign in first: <span class="t-acc">login</span>');
+      if (can.reason === 'coins') return print(`not enough coins: need ${can.short} more. explore, run missions, capture flags.`, 't-err');
+      const r = await a.buy(id);
+      if (!r.ok) return print(`buy: ${esc(r.message ?? 'failed')}`, 't-err');
+      print(`✓ unlocked <b>${esc(it.label)}</b> · 🪙 ${a.coins()} left`, 't-acc');
+      if (it.kind === 'palette' && it.theme === data.theme) { g()?.applyPalette(it.palette); print(`<span class="t-dim">applied.</span>`); }
     } },
     inventory: { help: 'what you own', run: () => {
       const a = g()?.account;

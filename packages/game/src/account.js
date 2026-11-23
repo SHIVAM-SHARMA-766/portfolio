@@ -8,8 +8,10 @@
 //
 // Coins = XP − price of owned items. Spending coins never lowers XP or level.
 
+import { normalizeShop } from './shop.js';
+
 export function createAccount({ apiUrl, shop = [], engine, onChange = () => {} }) {
-  const items = new Map(shop.map((i) => [i.id, i]));
+  let items = new Map(normalizeShop(shop).map((i) => [i.id, i]));
   let user = null;
   let providers = [];
   let purchases = {};
@@ -57,7 +59,7 @@ export function createAccount({ apiUrl, shop = [], engine, onChange = () => {} }
       try {
         const r = await api('/me');
         providers = r.body.providers ?? [];
-        for (const i of r.body.shop ?? []) items.set(i.id, i);
+        if (r.body.shop?.length) items = new Map(normalizeShop(r.body.shop).map((i) => [i.id, i]));
         user = r.body.user ?? null;
         if (user) {
           applyServer(r.body.state);
@@ -88,6 +90,19 @@ export function createAccount({ apiUrl, shop = [], engine, onChange = () => {} }
       return !it || it.price <= 0 || id in purchases;
     },
     coins() { return engine.snapshot().xp - spent(); },
+    /**
+     * Whether an item can be bought right now, and if not, why:
+     * 'owned' | 'requires' (needs another item first) | 'login' | 'coins'.
+     */
+    canBuy(id) {
+      const it = items.get(id);
+      if (!it || this.owns(id)) return { ok: false, reason: 'owned' };
+      if (it.requires && !this.owns(it.requires)) return { ok: false, reason: 'requires', requires: items.get(it.requires) };
+      if (!user) return { ok: false, reason: 'login' };
+      const short = it.price - this.coins();
+      if (short > 0) return { ok: false, reason: 'coins', short };
+      return { ok: true, left: this.coins() - it.price };
+    },
     loginUrl(provider) {
       const back = new URL(location.href);
       back.searchParams.delete('login');
@@ -99,7 +114,8 @@ export function createAccount({ apiUrl, shop = [], engine, onChange = () => {} }
       if (r.body.state) applyServer(r.body.state);
       onChange();
       if (r.ok) return { ok: true };
-      return { ok: false, reason: r.status === 402 ? 'coins' : 'error', message: r.body.error };
+      const reason = r.status === 402 ? 'coins' : r.status === 409 ? 'requires' : 'error';
+      return { ok: false, reason, message: r.body.error };
     },
     async logout() {
       await api('/auth/logout', { method: 'POST' }).catch(() => {});

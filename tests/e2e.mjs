@@ -84,6 +84,8 @@ const S = siteSrv.local;
 const L = learnSrv.local;
 
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/chromium', args: ['--no-sandbox'] });
+const SHOTS = process.env.E2E_SHOTS; // optional folder for screenshots
+const shot = async (pg, name) => { if (SHOTS) await pg.screenshot({ path: join(SHOTS, `${name}.png`) }); };
 const results = [];
 const step = async (name, fn) => {
   try { await fn(); results.push(['✓', name]); } catch (e) { results.push(['✗', name, e.message.split('\n')[0]]); }
@@ -105,6 +107,15 @@ try {
     await page.waitForURL(/\/terminal\/$/);
     await page.waitForFunction(() => window.game?.account?.ready);
     assert.equal((await snap()).xp, 15);
+  });
+
+  await step('first visit shows a welcome card, once', async () => {
+    await page.waitForSelector('.g-welcome', { timeout: 5000 });
+    await shot(page, 'welcome');
+    await page.click('[data-welcome="play"]');
+    await page.reload();
+    await page.waitForTimeout(1800);
+    assert.equal(await page.locator('.g-welcome').count(), 0);
   });
 
   await step('opening a project awards XP once', async () => {
@@ -165,19 +176,31 @@ try {
     assert.ok(has('hacker') && has('first-blood') && has('ctf-champion'));
   });
 
-  await step('guests see shop prices and are asked to sign in to buy', async () => {
+  await step('a locked palette opens the shop at that palette', async () => {
     const btn = page.locator('[data-palette-btn="solarized"]');
     assert.equal(await btn.getAttribute('data-locked'), '');
     await btn.click();
-    await page.waitForSelector('#login-dialog[open]');
+    await page.waitForSelector('#shop-dialog[open]');
+    const entry = page.locator('#shop-dialog [data-shop-entry="palette:terminal-solarized"]');
+    assert.match(await entry.getAttribute('class'), /is-focus/);
+    assert.equal(await page.locator('#shop-dialog .g-shop-note').isVisible(), true, 'guest is told to sign in');
     assert.notEqual(await page.getAttribute('html', 'data-palette'), 'solarized');
+    await shot(page, 'shop-guest');
     await page.keyboard.press('Escape');
   });
 
-  await step('quest theme is locked for guests', async () => {
+  await step('a locked theme gets a free preview, then the unlock screen', async () => {
     await page.goto(`${S}/quest/`);
     await page.waitForFunction(() => window.game?.account?.ready);
+    assert.equal(await page.locator('[data-preview-bar]').isVisible(), true);
+    assert.equal(await page.locator('[data-theme-lock]').isVisible(), false);
+    await shot(page, 'quest-preview');
+    await page.evaluate(() => sessionStorage.setItem('pf.preview.theme:quest', String(Date.now() - 600000)));
+    await page.reload();
+    await page.waitForFunction(() => window.game?.account?.ready);
     assert.equal(await page.locator('[data-theme-lock]').isVisible(), true);
+    assert.equal(await page.locator('[data-preview-bar]').isVisible(), false);
+    await shot(page, 'quest-locked');
   });
 
   await step('sign-in merges guest progress into the account', async () => {
@@ -192,17 +215,48 @@ try {
     assert.equal(await page.locator('.acct-user').isVisible(), true);
   });
 
-  await step('buying the quest theme with coins unlocks it', async () => {
+  await step('a theme\'s palettes cannot be bought before the theme', async () => {
+    await page.goto(`${S}/terminal/`);
+    await page.waitForFunction(() => window.game?.account?.user);
+    await page.evaluate(() => window.game.openShop('palette:quest-dungeon'));
+    const entry = page.locator('#shop-dialog [data-shop-entry="palette:quest-dungeon"]');
+    assert.match(await entry.innerText(), /needs Quest/);
+    assert.equal(await entry.locator('[data-buy]').count(), 0, 'no buy button before the theme');
+    await shot(page, 'shop-signed-in');
+    await page.keyboard.press('Escape');
+    await term('buy palette:quest-dungeon');
+    assert.match(await lastOut(), /unlock .*Quest.* first/i);
+    const r = await page.request.post(`${S}/api/shop/buy`, { headers: { Origin: S }, data: { item: 'palette:quest-dungeon' } });
+    assert.equal(r.status(), 409, 'API refuses too');
+  });
+
+  await step('buying the quest theme with coins unlocks it (with confirmation)', async () => {
     await page.goto(`${S}/quest/`);
     await page.waitForFunction(() => window.game?.account?.ready);
     const coins = await page.evaluate(() => window.game.account.coins());
-    await page.click('[data-theme-lock] [data-buy]');
+    const slot = page.locator('[data-theme-lock]:not([hidden]) [data-buy], [data-preview-bar]:not([hidden]) [data-buy]').first();
+    await slot.click();
+    await page.waitForTimeout(300);
+    const confirmBtn = page.locator('.g-btn--confirm:visible').first();
+    await confirmBtn.waitFor();
+    assert.equal(await page.evaluate(() => window.game.account.owns('theme:quest')), false, 'first click only asks to confirm');
+    await confirmBtn.click();
     await page.waitForFunction(() => window.game.account.owns('theme:quest'));
     assert.equal(await page.locator('[data-theme-lock]').isVisible(), false);
     const after = await page.evaluate(() => window.game.account.coins());
     assert.equal(coins - after, 120);
     const me = await (await page.request.get(`${S}/api/me`)).json();
     assert.ok('theme:quest' in me.state.purchases, 'purchase stored on the server');
+  });
+
+  await step('after the theme, its palette can be bought and is applied', async () => {
+    await page.evaluate(() => window.game.openShop('palette:quest-dungeon'));
+    const entry = page.locator('#shop-dialog [data-shop-entry="palette:quest-dungeon"]');
+    await entry.locator('[data-buy]').click();
+    await entry.locator('.g-btn--confirm').click();
+    await page.waitForFunction(() => document.documentElement.dataset.palette === 'dungeon');
+    await shot(page, 'quest-dungeon');
+    await page.keyboard.press('Escape');
   });
 
   await step('live count and anonymous cursors between two visitors', async () => {

@@ -97,6 +97,11 @@ func TestShop(t *testing.T) {
 	b, _ := json.Marshal(map[string]any{"events": all})
 	_, out = e.do("POST", "/api/events", string(b), c, true)
 	before := coins(out)
+	// A Quest palette needs the Quest theme first.
+	rec, _ = e.do("POST", "/api/shop/buy", `{"item":"palette:quest-dungeon"}`, c, true)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("palette before its theme: want 409, got %d", rec.Code)
+	}
 	item, _ := game.FindItem("theme:quest")
 	rec, out = e.do("POST", "/api/shop/buy", `{"item":"theme:quest"}`, c, true)
 	if rec.Code != 200 || coins(out) != before-item.Price {
@@ -105,6 +110,9 @@ func TestShop(t *testing.T) {
 	_, out = e.do("POST", "/api/shop/buy", `{"item":"theme:quest"}`, c, true)
 	if coins(out) != before-item.Price {
 		t.Fatal("buying twice must not charge twice")
+	}
+	if rec, _ := e.do("POST", "/api/shop/buy", `{"item":"palette:quest-dungeon"}`, c, true); rec.Code != 200 {
+		t.Fatalf("palette after its theme: want 200, got %d", rec.Code)
 	}
 }
 

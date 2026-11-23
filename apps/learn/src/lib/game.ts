@@ -3,6 +3,13 @@
 import site from '../../../../content/site.json';
 import achievementsFile from '../../../../content/achievements.json';
 import shopFile from '../../../../content/shop.json';
+import { palettes } from '@portfolio/tokens';
+
+const THEMES = [
+  { id: 'terminal', label: 'Terminal', blurb: 'A hacker shell. Type commands.' },
+  { id: 'quest', label: 'Quest', blurb: 'A pixel adventure. Explore zones.' },
+  { id: 'studio', label: 'Studio', blurb: 'Clean and editorial.' },
+];
 
 export const gameConfig = {
   enabled: site.game.enabled,
@@ -14,6 +21,10 @@ export const gameConfig = {
   pageId: null,
   apiUrl: (site as any).apiUrl ?? null,
   shop: shopFile.items,
+  siteUrl: site.siteUrl,
+  theme: null,
+  themes: THEMES,
+  palettes: Object.fromEntries(Object.entries(palettes).map(([t, l]) => [t, (l as any[]).map((p) => ({ id: p.id, label: p.label, colors: p.colors }))])),
 };
 
 export const LEARN_PALETTES = [
