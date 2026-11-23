@@ -7,8 +7,8 @@ const { post, theme, Layout } = Astro.props;
 const { Content } = await render(post);
 const nav = await getNav();
 ---
-<Layout theme={theme} title={post.data.title} description={post.data.description} slug={`blog/${post.id}`} nav={nav} pageIdent={`blog/${post.id}`} current="blog">
-  <PostView theme={theme} title={post.data.title} date={post.data.date} tags={post.data.tags}>
+<Layout theme={theme} title={post.data.title} description={post.data.description} slug={`blog/${post.id}`} nav={nav} pageIdent={`blog/${post.id}`} current="blog" image={post.data.cover}>
+  <PostView theme={theme} title={post.data.title} date={post.data.date} tags={post.data.tags} cover={post.data.cover} coverAlt={post.data.coverAlt}>
     <Content />
   </PostView>
 </Layout>

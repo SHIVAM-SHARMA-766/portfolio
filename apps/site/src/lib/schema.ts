@@ -61,6 +61,8 @@ export const postSchema = z.object({
   description: z.string().nullish(),
   date: z.coerce.date(),
   tags: z.array(z.string()).default([]),
+  cover: z.string().nullish(),
+  coverAlt: z.string().nullish(),
   draft: z.boolean().default(false),
 });
 

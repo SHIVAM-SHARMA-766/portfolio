@@ -1,17 +1,17 @@
 ---
-import Cmd from '../Cmd.astro';
+import Cards from './Cards.astro';
 import { getPosts } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'posts'>; theme: string };
 let posts = await getPosts();
 if (block.limit) posts = posts.slice(0, block.limit);
+const when = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const items = posts.map((p) => ({
+  title: p.data.title, body: p.data.description ?? null, href: `/blog/${p.id}/`,
+  meta: when(p.data.date), badge: null, image: p.data.cover ?? null, icon: '✍️',
+  tags: p.data.tags.slice(0, 3), cta: 'cat post', xp: null,
+}));
 ---
-<Cmd cmd="ls -t blog/">
-  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
-  {posts.length === 0 && <p class="t-dim">(empty — first post coming soon)</p>}
-  <ul class="t-list t-posts">
-    {posts.map((p) => (
-      <li><span class="t-dim">{p.data.date.toISOString().slice(0, 10)}</span> <a href={`/blog/${p.id}/`}>{p.id}.md</a><br /><span class="t-dim">{p.data.description}</span></li>
-    ))}
-  </ul>
-</Cmd>
+{posts.length === 0 ? <p class="t-dim">No posts yet.</p> : (
+  <Cards theme={theme} block={{ type: 'cards', heading: block.heading, body: null, columns: 3, items }} />
+)}

@@ -50,6 +50,8 @@ export const postFields = [
   s('description', 'Description'),
   { name: 'date', label: 'Date', type: 'date' },
   strs('tags', 'Tags'),
+  img('cover', 'Cover image', { help: '1600×840 works best. Shown on the post, on its card, and when the link is shared.' }),
+  s('coverAlt', 'Cover description (for screen readers)'),
   bool('draft', 'Draft'),
 ];
 

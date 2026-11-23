@@ -227,3 +227,8 @@ a.s-tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, v
 .s-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; padding-top: 1.5rem; }
 .s-footer-bottom p { margin: 0; }
 @media (max-width: 760px) { .s-footer-top { grid-template-columns: 1fr; gap: 2rem; } .fc { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Images in articles (project stories, posts) */
+.prose img, .post-cover { display: block; max-width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 18px 40px -28px rgb(0 0 0 / .4); margin: 1.4rem 0; }
+.post-cover { width: 100%; margin: 0 0 2rem; }
+.prose pre { max-width: 100%; overflow-x: auto; } .prose table { display: block; max-width: 100%; overflow-x: auto; }

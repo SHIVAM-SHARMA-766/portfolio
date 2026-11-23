@@ -12,11 +12,11 @@ import { site, pageUrl, photo, initials as siteInitials } from '../../lib/conten
 import type { Page } from '../../lib/schema';
 import './quest.css';
 
-interface Props { theme: string; title: string; description?: string; slug: string; nav: Page[]; pageIdent: string | null; current?: string }
-const { theme, title, description, slug, nav, pageIdent, current = slug } = Astro.props;
+interface Props { theme: string; title: string; description?: string; slug: string; nav: Page[]; pageIdent: string | null; current?: string; image?: string | null }
+const { theme, title, description, slug, nav, pageIdent, current = slug, image } = Astro.props;
 ---
 <html lang="en" data-theme="quest">
-  <Head theme={theme} title={title} description={description} slug={slug} pageIdent={pageIdent}
+  <Head theme={theme} title={title} description={description} slug={slug} pageIdent={pageIdent} image={image}
     fonts="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;600&display=swap" />
   <body>
     <a class="skip" href="#main">Skip to content</a>

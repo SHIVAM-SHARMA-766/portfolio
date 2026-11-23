@@ -245,3 +245,8 @@ body { display: flex; flex-direction: column; }
 .q-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem 1rem; margin-top: 1rem; }
 .q-footer-bottom p { margin: 0; }
 @media (max-width: 720px) { .q-footer-card { grid-template-columns: 1fr; } .fc { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Images in articles (project stories, posts) */
+.q-prose img, .prose img, .post-cover { display: block; max-width: 100%; height: auto; margin: 1rem 0; box-shadow: 0 0 0 var(--px) var(--border); }
+.post-cover { width: 100%; }
+.prose pre { max-width: 100%; overflow-x: auto; } .prose table { display: block; max-width: 100%; overflow-x: auto; }

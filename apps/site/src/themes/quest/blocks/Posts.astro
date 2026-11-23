@@ -1,16 +1,17 @@
 ---
-import Panel from '../Panel.astro';
+import Cards from './Cards.astro';
 import { getPosts } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'posts'>; theme: string };
 let posts = await getPosts();
 if (block.limit) posts = posts.slice(0, block.limit);
+const when = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const items = posts.map((p) => ({
+  title: p.data.title, body: p.data.description ?? null, href: `/blog/${p.id}/`,
+  meta: when(p.data.date), badge: null, image: p.data.cover ?? null, icon: '✍️',
+  tags: p.data.tags.slice(0, 3), cta: 'Read the scroll', xp: null,
+}));
 ---
-<Panel title={block.heading ?? 'Library'} icon="📚">
-  {posts.length === 0 && <p class="q-muted">The shelves are empty… for now.</p>}
-  <ul class="q-books">
-    {posts.map((p) => (
-      <li><a href={`/blog/${p.id}/`}><span class="q-book" aria-hidden="true">📕</span><span><b>{p.data.title}</b><small>{p.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })} · {p.data.description}</small></span></a></li>
-    ))}
-  </ul>
-</Panel>
+{posts.length === 0 ? <p class="q-muted">No posts yet.</p> : (
+  <Cards theme={theme} block={{ type: 'cards', heading: block.heading, body: null, columns: 3, items }} />
+)}

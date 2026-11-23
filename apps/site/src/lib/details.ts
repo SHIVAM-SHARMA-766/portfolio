@@ -60,7 +60,7 @@ export async function detailPages(): Promise<Detail[]> {
       { type: 'banner', eyebrow: [p.year, p.role, p.featured ? 'Featured' : null].filter(Boolean).join(' · ') || null, heading: p.name, body: p.summary, image: p.cover ?? null, tags: p.tags, ctas: p.links.map((l) => ({ label: `${l.label} ↗`, href: l.url })), back: { label: 'All projects', href: `/${b.projects}/` } },
     ];
     if (p.highlights.length) blocks.push({ type: 'text', heading: 'Highlights', body: bullets(p.highlights) });
-    if (p.body) blocks.push({ type: 'text', heading: null, body: p.body });
+    if (p.body) blocks.push({ type: 'text', heading: 'The story', body: p.body });
     if (p.pages.length) blocks.push({ type: 'cards', heading: 'More about this project', body: null, columns: null, items: p.pages.map((sp) => subCard(sp, `${url}${sp.slug}/`)) });
     const others = profile.projects.filter((o) => o.slug !== p.slug).slice(0, 3);
     if (others.length) blocks.push({ type: 'cards', heading: 'Other projects', body: null, columns: 3, items: others.map((o) => projectCard(o, b.projects)) });
@@ -93,7 +93,7 @@ export async function detailPages(): Promise<Detail[]> {
         { type: 'banner', eyebrow: `${job.company} · ${period(job)}`, heading: e.title, body: e.summary ?? null, image: e.cover ?? null, tags: e.tags, ctas: [], back: { label: `${job.role} at ${job.company}`, href: jurl } },
       ];
       if (e.highlights.length) eb.push({ type: 'text', heading: 'What I did', body: bullets(e.highlights) });
-      if (e.body) eb.push({ type: 'text', heading: null, body: e.body });
+      if (e.body) eb.push({ type: 'text', heading: 'The story', body: e.body });
       if (e.pages.length) eb.push({ type: 'cards', heading: 'Deep dives', body: null, columns: null, items: e.pages.map((sp) => subCard(sp, `${eurl}${sp.slug}/`)) });
       const others = job.engagements.filter((o) => o !== e);
       if (others.length) eb.push({ type: 'cards', heading: `Also at ${job.company}`, body: null, columns: 2, items: others.map((o) => engagementCard(job, o, b.experience)) });

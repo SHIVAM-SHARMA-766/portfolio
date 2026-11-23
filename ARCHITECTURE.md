@@ -44,7 +44,11 @@ blocks: `/<projects page>/<project>/` (+ `/<sub-page>/` for each entry in the pr
 their parent in the menu, and appear in the sitemap. Projects and engagements take
 optional `cover`, `summary`, `body` (markdown) and `pages`. The projects and experience
 blocks render cards linking there; opening a card awards the `project:` / `exp:` event,
-so the game catalog is unchanged. Detail pages have no page id (no visit/read XP). Experience, projects, skills and education
+so the game catalog is unchanged. Detail pages have no page id (no visit/read XP).
+The banner image (project cover) is also the page's share image.
+
+**Blog covers.** Posts take optional `cover` / `coverAlt`; the posts block renders cards
+with the cover, the post page shows it on top, and it is the post's share image. Experience, projects, skills and education
 read from `profile.json`, so the resume is written once. Each theme renders each block
 type its own way. `BlockRenderer.astro` falls back to a generic renderer when a theme
 lacks one. The build fails on invalid content (Zod), and optional fields accept `null`/`""`.

@@ -9,6 +9,6 @@ interface Props { page: Page; theme: string; Layout: any; current?: string; deta
 const { page, theme, Layout, current = page.slug, detail = false } = Astro.props;
 const nav = await getNav();
 ---
-<Layout theme={theme} title={page.title} description={page.description} slug={page.slug} current={current} nav={nav} pageIdent={detail ? null : pageId(page.slug)}>
+<Layout theme={theme} title={page.title} description={page.description} slug={page.slug} current={current} nav={nav} pageIdent={detail ? null : pageId(page.slug)} image={page.blocks.find((b) => b.type === 'banner')?.image}>
   <BlockRenderer blocks={page.blocks} theme={theme} />
 </Layout>

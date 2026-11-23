@@ -3,6 +3,8 @@ title: Why my infrastructure costs $0 a month
 description: Running real services on free tiers without cutting corners on quality.
 date: 2026-11-22
 tags: [devops, oci, terraform]
+cover: /uploads/blog-zero-cost.webp
+coverAlt: "$0 a month: Oracle Cloud, Cloudflare, GitHub Actions and AWS on free tiers"
 draft: false
 ---
 

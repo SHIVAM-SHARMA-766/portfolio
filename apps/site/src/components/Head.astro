@@ -13,8 +13,9 @@ interface Props {
   slug: string;
   pageIdent: string | null;
   fonts?: string;
+  image?: string | null;
 }
-const { theme, title, description = site.description, slug, pageIdent, fonts } = Astro.props;
+const { theme, title, description = site.description, slug, pageIdent, fonts, image } = Astro.props;
 const fullTitle = slug === '' && title === 'Home' ? `${site.name} — ${site.role}` : `${title} · ${site.name}`;
 const canonical = new URL(pageUrl(site.defaultTheme, slug), site.siteUrl).href;
 const palettes = palettesFor(theme).map((p) => p.id);
@@ -32,7 +33,7 @@ const config = { ...(await gameConfig(pageIdent)), theme };
   <meta property="og:description" content={description} />
   <meta property="og:type" content="website" />
   <meta property="og:url" content={canonical} />
-  {photo && <meta property="og:image" content={new URL(photo.src, site.siteUrl).href} />}
+  {(image || photo) && <meta property="og:image" content={new URL(image || photo!.src, site.siteUrl).href} />}
   <meta name="twitter:card" content="summary" />
   <meta name="theme-color" content="#111111" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

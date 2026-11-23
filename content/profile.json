@@ -67,7 +67,18 @@
         "Cloudflare",
         "GitHub"
       ],
-      "links": []
+      "links": [],
+      "role": "Solo — design and build",
+      "cover": "/uploads/proj-infra-help.webp",
+      "body": "## Why I rebuilt it\n\nMy earlier setup kept every provider in one Terraform state, and the bucket holding that state was created by the same Terraform. Destroying one thing meant destroying the backend that held it, halfway through a run.\n\n## What I built\n\nOne repository and one command interface, but **one state file per provider**: Oracle Cloud, AWS, Cloudflare and GitHub. Any provider can be planned, applied or destroyed on its own without touching the others.\n\n![make help: one Makefile drives every stack](/uploads/proj-infra-help.webp)\n\n- **`make bootstrap` is a script, not Terraform.** Terraform cannot create the bucket that holds its own state, so one small manual step removes that cycle for good.\n- **`make verify`** checks every provider credential in a couple of seconds, because an expired token otherwise shows up as a confusing Terraform error.\n- **`make retry`** keeps applying a stack until free-tier capacity frees up, and `make retry-status` shows how far it got.\n- **No secrets in the repository.** Each provider authenticates the way its own tooling expects, and `terraform.tfvars` is never committed; examples carry the shape, not the values.\n\n## Status\n\nThe scaffolding is complete and every stack initialises. Resources are being written stack by stack; the rules below keep it from drifting into the old coupling.",
+      "pages": [
+        {
+          "slug": "rules",
+          "title": "The rules that keep it clean",
+          "summary": "Four rules that stop one provider's change from breaking another, or a free estate from starting to cost money.",
+          "body": "![The repository layout](/uploads/proj-infra-tree.webp)\n\n## Each stack owns its own state\n\nNever reference one stack's resources from another through remote state. If two stacks need the same value, it is passed as a variable. Cross-stack references would recreate exactly the coupling this layout exists to avoid.\n\n## `terraform.tfvars` is never committed\n\nCopy `terraform.tfvars.example` and fill it in. Credentials come from each provider's own config (`~/.oci/config`, `~/.aws/credentials`, `CLOUDFLARE_API_TOKEN`, `gh auth`), so nothing secret ever lands in git.\n\n## Free-tier constraints are load-bearing\n\nSeveral resources have settings that must not drift: capacity modes, absent VPC attachments, specific billing modes. Each one is commented where it applies, with the reason. Changing one of them is how a free estate starts costing money.\n\n## Nothing here creates content\n\nThis repository manages infrastructure and settings only. Application code and site content live in their own repositories, so destroying a stack never destroys work."
+        }
+      ]
     },
     {
       "slug": "dohra",
@@ -89,6 +100,21 @@
         {
           "label": "Source",
           "url": "https://github.com/SHIVAM-SHARMA-766/dohra"
+        },
+        {
+          "label": "Latest release",
+          "url": "https://github.com/SHIVAM-SHARMA-766/dohra/releases/latest"
+        }
+      ],
+      "role": "Solo — design, build and release",
+      "cover": "/uploads/proj-dohra-library.webp",
+      "body": "*Dohra* comes from the Hindi *dohrana*, \"to revise\". Live classes move faster than anyone can take notes; Dohra keeps the whole class so you can go back to it.\n\n## What it does\n\nDohra records any online class or meeting in Chrome, Edge or Brave, on your own computer, with a searchable Hinglish transcript that knows who said what.\n\n![Recording from the toolbar popup](/uploads/proj-dohra-popup.webp)\n\n- **Private by design.** Recordings and transcripts are written to your own disk. No server, no account, nothing uploaded.\n- **No bot in the meeting.** It records what the browser already plays, so nobody sees an extra attendee. Works on Google Meet, Microsoft Teams, Zoom's web client, YouTube Live or a course's own player.\n- **Hinglish transcripts.** Hindi in Roman script (\"theek hai\"), English as English, made on your computer while the class runs.\n- **Bookmarks and search.** Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> during class to mark a moment; one search box finds a word in any recording and plays from that line.\n\n![A recording with its transcript and bookmarks](/uploads/proj-dohra-session.webp)\n\n## Shipping it properly\n\nDohra is MIT licensed and released on GitHub. Every download is checked against a pinned SHA-256, updates must be signed, and Settings can check for and install a new version in one click.",
+      "pages": [
+        {
+          "slug": "how-it-works",
+          "title": "How it works",
+          "summary": "A Manifest V3 extension plus an optional Go companion that runs whisper.cpp locally. No server anywhere.",
+          "body": "Dohra is a Manifest V3 extension for Chromium browsers, plus an optional local companion program written in Go that transcribes with whisper.cpp.\n\n```\npopup ─▶ background (service worker) ─▶ offscreen document (the recorder)\n                                              │ chunks\n                                              ▼\n                                   storage worker ─▶ OPFS ─▶ Downloads/Dohra/\n\noffscreen ─16 kHz PCM─▶ background ══native messaging══▶ dohra-companion (Go) ─▶ whisper-cli\n```\n\n## Recording\n\nThe background service worker gets a tab capture stream and hands it to an offscreen document, which records in chunks. A dedicated storage worker does all file I/O into the browser's private file system (OPFS), then the finished file is copied to `Downloads/Dohra/`. Interrupted recordings are recovered on the next start.\n\n## Transcription\n\nSpeech recognition runs outside the browser: the extension sends 16 kHz audio over native messaging to the companion, which runs whisper.cpp chunk by chunk and streams lines back. The transcript is saved next to the recording and survives crashes and closed browsers.\n\n## Who said what\n\nIn Google Meet and Microsoft Teams, each line is labelled with the speaker's name, taken from the meeting's own active-speaker indicator.\n\n![Speaker names in the transcript](/uploads/proj-dohra-speakers.webp)\n\n## Search everything\n\nThe library searches every recording's title and transcript, and a result opens the recording at that line.\n\n![Searching across recordings](/uploads/proj-dohra-search.webp)"
         }
       ]
     },
@@ -105,25 +131,23 @@
       "tags": [
         "Docker",
         "Docker Compose",
-        "AWS EC2"
+        "AWS EC2",
+        "FastAPI",
+        "React",
+        "PostgreSQL"
       ],
-      "links": []
-    },
-    {
-      "slug": "approval-pipeline",
-      "name": "Secure Approval Pipeline",
-      "year": "2026",
-      "featured": false,
-      "summary": "Single-use approval links served by a Cloudflare Worker; the automation server stays off the internet and polls, so no credentials are exposed.",
-      "highlights": [
-        "The automation server never accepts inbound traffic.",
-        "Each approval link works exactly once."
-      ],
-      "tags": [
-        "n8n",
-        "Cloudflare Workers"
-      ],
-      "links": []
+      "links": [],
+      "role": "Solo — design and build",
+      "cover": "/uploads/proj-assessment-login.webp",
+      "body": "An internal hiring assessment platform: multiple-choice and short-answer questions, hands-on Linux tasks in a real browser terminal, and programming questions whose code actually runs against test cases, all scored automatically with a human override where it matters. Every component is free and open source.\n\n## For administrators\n\nBuild a reusable question bank across the DevOps syllabus, compose exams from it with sections and scheduling, assign candidates, watch the exam live, review every answer, override any score with a recorded reason, and export results.\n\n![The question bank](/uploads/proj-assessment-questions.webp)\n\n## For candidates\n\nNo account to create: they register with the exam code they were sent, sign in with email, exam code and password, acknowledge the rules, and start. Coding questions get their own workspace, with the problem on the left and an editor and console on the right, in Python, JavaScript, Java or Bash.\n\n## Question types\n\n| Type | How it is scored |\n|---|---|\n| MCQ / MSQ | One correct option, or set comparison with partial credit |\n| Short answer | Accepted answers as plain text, a regex or a number within a tolerance |\n| Practical | A per-candidate flag planted in an isolated Linux container |\n| Programming | The same test cases judge every language |\n\n![A question with its answer key](/uploads/proj-assessment-question.webp)",
+      "pages": [
+        {
+          "slug": "security-model",
+          "title": "Security model",
+          "summary": "How an exam stays fair when candidates run real commands and real code.",
+          "body": "## The clock belongs to the server\n\n`expires_at` is written once when an attempt starts. Refreshing, reopening in another browser or clearing storage changes nothing, and a sweeper closes and grades attempts whose time has run out.\n\n## Per-candidate flags\n\nA practical answer is an HMAC of the attempt and question, so two candidates solving the same task submit different strings. A leaked flag scores nothing and shows whose attempt it came from. The flag is never stored and never sent to the browser.\n\n## Candidate code never runs on the application server\n\nThe API has no Docker access at all. It writes a job row; a separate worker owns the Docker socket and runs the code in a throwaway container with no network, a read-only root filesystem, an unprivileged user, every capability dropped, and memory, CPU, PID and wall-clock limits.\n\n## Terminals are proxied, not exposed\n\nA lab container publishes no host port. The only way in is an authenticated WebSocket through the API, which checks that the attempt belongs to the person asking and is still running.\n\n## Leaving the exam blanks it\n\nSwitching tab, losing focus or leaving fullscreen covers the paper with a lockout, while the clock keeps running underneath. One alt-tab fires two browser events milliseconds apart, so they are de-duplicated, and developer-tool shortcuts are swallowed with a quiet note."
+        }
+      ]
     },
     {
       "slug": "portfolio",
@@ -139,9 +163,31 @@
         "Astro",
         "Caddy",
         "GitHub Actions",
-        "OCI"
+        "OCI",
+        "Go",
+        "SQLite"
       ],
-      "links": []
+      "links": [
+        {
+          "label": "Live site",
+          "url": "https://shivamsharma.duckdns.org/"
+        },
+        {
+          "label": "Source",
+          "url": "https://github.com/SHIVAM-SHARMA-766/portfolio"
+        }
+      ],
+      "role": "Solo — design and build",
+      "cover": "/uploads/proj-portfolio-studio.webp",
+      "body": "The site you are on. One set of content, three entirely different themes, a game layered on top, and an admin panel, served for $0 a month.\n\n## Three themes, one content model\n\nEvery page is a list of blocks (banner, cards, projects, experience…), and each theme renders each block its own way. **Studio** is clean and editorial; **Terminal** is a shell with a virtual filesystem and five CTF flags to find; **Quest** is a pixel adventure.\n\n![Terminal: a shell you can actually type into](/uploads/proj-portfolio-terminal.webp)\n\n![Quest: the same content as a pixel adventure](/uploads/proj-portfolio-quest.webp)\n\n## A game you play by reading\n\nVisiting pages, opening projects, running terminal commands and capturing flags earn XP and coins. Coins buy the Terminal and Quest themes and extra palettes. Guests play in the browser; signing in with Google or GitHub saves progress. A live count shows who else is here, with anonymous cursors on the same page.\n\n## Edited like a real product\n\nA custom admin panel edits pages, projects, experience, posts, courses and media. Every save is a Git commit, so CI tests and deploys it, and any change can be reviewed or reverted.",
+      "pages": [
+        {
+          "slug": "how-its-built",
+          "title": "How it's built",
+          "summary": "Astro static sites, a small Go API with SQLite, Caddy on an always-free VM, and CI that tests everything before it deploys.",
+          "body": "## The stack\n\n- **Astro** builds the portfolio and the learn site as static HTML, from one `content/` folder.\n- **A Go API** with SQLite handles sign-in (OAuth / OpenID Connect), saved progress, the coin shop, live presence over WebSockets and the admin endpoints.\n- **Caddy** serves everything from one always-free Oracle Cloud VM with automatic HTTPS.\n- **GitHub Actions** runs unit tests, Go tests and a browser test suite against the real API binary, then deploys over SSH with a key restricted to rsync.\n\n## Clean URLs with themes\n\nURLs never contain the theme. Each theme is built separately, the visitor's choice lives in a cookie, and Caddy serves the matching build for the same path.\n\n## Trusting points from a browser\n\nClients can send anything, so the API only accepts events listed in a game catalog generated from the content at build time. Points come from the catalog, never from the browser, and the site and API are built from the same commit so they always agree.\n\n## Content as code\n\nThe admin panel commits through the GitHub API. An invalid edit fails the build instead of breaking the live site, and every change is versioned."
+        }
+      ]
     }
   ],
   "skills": [

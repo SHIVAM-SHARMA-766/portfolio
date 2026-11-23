@@ -219,3 +219,8 @@ a.t-entry:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accen
 .t-job-title a:hover { color: var(--accent); }
 @media (max-width: 900px) { .t-cards { grid-template-columns: repeat(min(var(--cols, 3), 2), minmax(0, 1fr)); } }
 @media (max-width: 600px) { .t-cards { grid-template-columns: 1fr; } }
+
+/* Images in articles (project stories, posts) */
+.t-prose img, .prose img, .post-cover { display: block; max-width: 100%; height: auto; border: 1px solid var(--border); margin: 1rem 0; }
+.post-cover { width: 100%; }
+.prose pre { max-width: 100%; overflow-x: auto; } .prose table { display: block; max-width: 100%; overflow-x: auto; }
