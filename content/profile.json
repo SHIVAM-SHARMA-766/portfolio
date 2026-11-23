@@ -96,6 +96,39 @@
       ]
     },
     {
+      "slug": "pahredar",
+      "name": "Pahredar — self-hosted security intelligence",
+      "year": "2026",
+      "featured": true,
+      "role": "Solo — design and build",
+      "cover": "/uploads/proj-pahredar-dash.webp",
+      "summary": "A self-hosted CVE intelligence platform: a local copy of every published CVE, enriched with exploitation, exploit and detection data from free public sources, kept current hourly, plus a security news feed and an endpoint scanner.",
+      "highlights": [
+        "The full CVE corpus (430k+ records) from the official CVE List, synced hourly and enriched with NVD, CISA KEV, EPSS, Exploit-DB, Metasploit and Nuclei data",
+        "Detection guidance per CVE: version checks, Nuclei, Nmap and Metasploit checks, Suricata and Sigma rules, ATT&CK and CAPEC context",
+        "Security news from 67 vendor, CERT, research and news sources, ranked by exploited and widely covered CVEs",
+        "A modular monolith in Go: three services (intelligence, news, scanner) over a shared core, one binary, Postgres full-text search",
+        "Idempotent, cursor-based sync with per-source locks, isolated failures and backoff; every run is logged"
+      ],
+      "tags": [
+        "Go",
+        "PostgreSQL",
+        "React",
+        "Docker Compose",
+        "Threat intel"
+      ],
+      "links": [],
+      "body": "## Why I built it\n\nTracking vulnerabilities properly means stitching together a dozen free sources: the CVE List, NVD, CISA's Known Exploited Vulnerabilities, EPSS, exploit databases, detection rules and vendor advisories. Pahredar (Hindi for *watchman*) keeps all of it in one local database and answers the questions that matter for a CVE: how bad is it, is it being exploited, is there a public exploit, what does it affect, and how do I detect and fix it.\n\n![The dashboard: critical CVEs this week, publish volume by severity, trending in the news](/uploads/proj-pahredar-dash.webp)\n\n## Every CVE, enriched\n\n- **The full corpus** from the official CVE List, current within the hour, with full-text search and filters by severity, KEV, exploit availability, vendor, product, CWE, dates and EPSS.\n- **Exploitation evidence** beyond CISA KEV: ENISA EUVD and VulnCheck KEV, plus likely-exploited CVEs not yet in KEV and the biggest EPSS increases.\n- **Detection and response** on each CVE: version-check commands, Nuclei / Nmap / Metasploit checks, Suricata and Sigma rules, ATT&CK mappings, fixed versions, distro status and vendor advisories.\n\n![A CVE in detail: Log4Shell with its signals, exploitation and tabs for detection, ATT&CK and remediation](/uploads/proj-pahredar-cve.webp)\n\n![The CVE explorer: 430k+ CVEs with query syntax and filters](/uploads/proj-pahredar-search.webp)\n\n## Security news, ranked\n\nSixty-seven vendor, national CERT, research, mailing-list and news sources are synced hourly into a security brief, ranked by exploited and widely covered CVEs, with Google News, Hacker News and Bluesky coverage per CVE.\n\n![The security brief](/uploads/proj-pahredar-news.webp)\n\n## Vendors and products\n\nVendor and product pages show the severity mix and CVEs per year, so it's easy to see who is shipping the most critical bugs.\n\n![Apache Software Foundation: severity mix and CVEs per year](/uploads/proj-pahredar-vendor.webp)",
+      "pages": [
+        {
+          "slug": "under-the-hood",
+          "title": "Under the hood",
+          "summary": "A modular monolith in Go over Postgres, and a sync engine that keeps 430k+ records current without ever clobbering data.",
+          "body": "## One binary, three services\n\n```\n external sources: cvelistV5 · NVD · CISA KEV · EPSS · Exploit-DB · Metasploit · Nuclei · feeds\n                               │ scheduled HTTPS pulls\n ┌─────────────────────────────▼──────────────────────────────┐\n │ backend (Go, single binary)                                │\n │   intelligence · news · endpoint scanner   (services)      │\n │   store · config · scheduler · job queue · HTTP  (core)    │\n └───────────────▲─────────────────────────────┬──────────────┘\n                 │ JSON                         │ SQL (pgx)\n      React + Vite frontend               Postgres: source of truth\n      (nginx, proxies /api)               + full-text search\n```\n\nPahredar is a **modular monolith**: each product service owns its domain over a shared core. One deployable, because a single operator and $0 hosting rule out microservices, but clear seams so services grow independently. Cross-service reads go through named interfaces — the scanner asks intelligence \"which CVEs affect this technology?\" without touching its internals.\n\n## A sync engine you can trust\n\n- **Idempotent:** every job is an upsert, so re-running a job or replaying a window is safe.\n- **Cursor-based:** incremental jobs only advance their cursor after a successful commit.\n- **Never concurrent with itself:** a Postgres advisory lock guards each source.\n- **Failures are isolated:** a failing source doesn't block the others; it is retried with exponential backoff.\n- **Bulk loads use `COPY`** into a staging table, then one `INSERT … ON CONFLICT DO UPDATE`.\n- **No clobbering:** CVE writes are serialised and every writer derives the row from both the CVE List and NVD records, so neither job can overwrite the other's contribution with stale data.\n\nThe first start streams the ~615 MB CVE List archive without writing it all to disk, pulls NVD four pages at a time inside its rate limit, and the database ends up around 4.5 GB.\n\n![Data sync: every source, its last success and cursor, with a manual run button](/uploads/proj-pahredar-sync.webp)\n\n## Built with\n\nGo (standard library HTTP, pgx, goose migrations embedded in the binary), Postgres 17 with `tsvector` full-text search and `pg_trgm`, React + Vite + TypeScript with TanStack Query, Tailwind and Recharts, all run with Docker Compose."
+        }
+      ]
+    },
+    {
       "slug": "multi-cloud-iac",
       "name": "Multi-cloud Infrastructure as Code",
       "year": "2026",
