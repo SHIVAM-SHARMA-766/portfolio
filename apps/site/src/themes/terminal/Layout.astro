@@ -44,8 +44,15 @@ const cwd = slug ? `~/${slug}` : '~';
             ))}
             {site.learnUrl && <li><a href={site.learnUrl}>learn/ ↗</a></li>}
           </ul>
-          <Switcher theme={theme} slug={slug} />
-          <button type="button" class="t-btn g-only" data-open-ach>achievements [<span data-game-ach-count>0/0</span>]</button>
+          <details class="t-prefs" open>
+            <summary>$ theme &amp; palette</summary>
+            <Switcher theme={theme} slug={slug} />
+            <button type="button" class="t-btn g-only" data-open-ach>achievements [<span data-game-ach-count>0/0</span>]</button>
+          </details>
+          <script is:inline>
+            // Phones: start folded so the page content comes first
+            if (matchMedia('(max-width: 760px)').matches) document.querySelectorAll('.t-prefs').forEach((d) => d.removeAttribute('open'));
+          </script>
         </nav>
         <main id="main" class="t-main">
           <slot />

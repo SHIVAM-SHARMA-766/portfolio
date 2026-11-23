@@ -158,3 +158,19 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; back
 
 /* Logo in the title bar */
 .t-logo { display: inline-flex; --logo-bg: var(--accent); --logo-fg: var(--bg); --logo-dot: var(--bg); }
+
+/* Title bar on phones: one line, nothing wraps */
+@media (max-width: 760px) {
+  .t-bar { gap: .5rem; }
+  .t-hud, .t-skip { white-space: nowrap; }
+  .t-meter { display: none; }
+}
+
+/* Theme & palette block: always open on desktop, folded on phones */
+.t-prefs > summary { display: none; }
+@media (max-width: 760px) {
+  .t-prefs > summary { display: block; cursor: pointer; color: var(--muted); margin-top: .6rem; list-style: none; }
+  .t-prefs > summary::-webkit-details-marker { display: none; }
+  .t-prefs > summary::after { content: ' [+]'; color: var(--accent); }
+  .t-prefs[open] > summary::after { content: ' [-]'; }
+}

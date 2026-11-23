@@ -60,13 +60,16 @@ export function startShell() {
   let cwd: string[] = [];
   let mode: null | { kind: 'scan'; port: number; tries: number } = null;
   const started = Date.now();
+  let follow = false;
 
   const print = (html: string, cls = '') => {
     const p = document.createElement('div');
     if (cls) p.className = cls;
     p.innerHTML = html;
     out.appendChild(p);
-    p.scrollIntoView({ block: 'nearest' });
+    // Follow the output only once the visitor is using the shell; the boot
+    // lines must not drag the page away from the top on load.
+    if (follow) p.scrollIntoView({ block: 'nearest' });
   };
   const printPre = (text: string, cls = '') => print(esc(text), `t-pre ${cls}`);
   const pathStr = (parts: string[]) => (parts.length ? `~/${parts.join('/')}` : '~');
@@ -332,6 +335,7 @@ export function startShell() {
   }
 
   form.addEventListener('submit', (e) => {
+    follow = true;
     e.preventDefault();
     const line = input.value.trim();
     input.value = '';

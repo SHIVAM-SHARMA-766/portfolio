@@ -87,8 +87,18 @@ function dismissLater(t, ms) {
   t._rm = setTimeout(() => t.remove(), ms + 500);
 }
 
+// Until a first-time visitor answers the welcome card, game toasts wait: the
+// card is the one thing to read. XP toasts are dropped (the HUD shows the
+// total), achievements are shown once the card is gone.
+const heldToasts = [];
+const holdingToasts = () => document.documentElement.dataset.game !== 'off' && config.pageId != null && !readPrefs().welcomed;
+function releaseToasts() {
+  heldToasts.splice(0).slice(-2).forEach(([html, kind], i) => setTimeout(() => toast(html, kind), 300 + i * 500));
+}
+
 export function toast(html, kind = 'xp') {
   if (document.documentElement.dataset.game === 'off' && kind !== 'notice') return null;
+  if (kind !== 'notice' && holdingToasts()) { if (kind !== 'xp') heldToasts.push([html, kind]); return null; }
   const c = toastContainer();
   while (c.children.length >= MAX_TOASTS) c.firstElementChild.remove();
   const t = document.createElement('div');
@@ -375,9 +385,10 @@ function welcome() {
       if (!choice) return;
       writePrefs({ welcomed: true });
       card.remove();
-      if (choice === 'skip') document.querySelector('[data-game-toggle]')?.click();
+      if (choice === 'skip') { heldToasts.length = 0; document.querySelector('[data-game-toggle]')?.click(); }
+      else releaseToasts();
     });
-  }, 1200);
+  }, 600);
 }
 
 // ---- mount ---------------------------------------------------------------------------------

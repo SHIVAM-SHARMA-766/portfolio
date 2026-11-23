@@ -157,3 +157,11 @@ h1, h2, h3, .s-display, .s-logo { font-family: Fraunces, Georgia, serif; font-we
 
 /* Logo */
 .s-logo { display: inline-flex; align-items: center; gap: .55rem; --logo-bg: var(--fg); --logo-fg: var(--bg); --logo-dot: var(--accent); }
+
+/* Header fit: keep every nav link visible on laptops, one compact row on phones */
+@media (max-width: 1180px) { .s-top-inner { gap: 1.4rem; } .s-nav { gap: 1.1rem; } .s-top .g-live { display: none; } }
+@media (max-width: 520px) {
+  .s-tools .s-pill { display: none; } /* XP lives in the footer and the shop on phones */
+  .s-tools { gap: .4rem; }
+}
+@media (max-width: 380px) { .s-logo span { display: none; } }

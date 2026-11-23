@@ -17,7 +17,7 @@
 /* Live presence */
 .g-live { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; color: var(--muted); white-space: nowrap; }
 .g-live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgb(34 197 94 / .25); }
-.g-live[data-offline]::before { background: var(--muted); box-shadow: none; }
+.g-live[data-offline] { display: none; } /* no live connection: say nothing rather than "offline" */
 .g-cursors { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 800; }
 .g-cursor { position: absolute; width: 18px; height: 18px; margin: -2px 0 0 -2px; transition: transform .12s linear; will-change: transform; }
 .g-cursor svg { display: block; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4)); }
@@ -112,6 +112,10 @@
   .g-shop-preview { width: 56px; }
   .g-shop-actions { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
   .g-preview-bar { bottom: 8px; font-size: .82rem; }
+  /* On phones the bottom belongs to the preview bar: the welcome card and
+     toasts come in from the top instead of stacking on it */
+  .g-welcome, .g-has-bar .g-welcome { top: 12px; bottom: auto; left: 12px; width: calc(100vw - 24px); }
+  .g-toasts, .g-has-bar .g-toasts { top: 12px; bottom: auto; right: 12px; left: 12px; max-width: none; align-items: center; }
 }
 @media (prefers-reduced-motion: reduce) { .g-btn--confirm { animation: none; } .g-welcome { animation: none; } }
 

@@ -33,7 +33,7 @@ export function mountLive({ apiUrl }) {
   const setCount = (site, page) => {
     document.querySelectorAll('[data-live]').forEach((el) => {
       el.removeAttribute('data-offline');
-      el.textContent = page > 1 ? `${site} online · ${page} here` : `${site} online`;
+      el.textContent = `${site} online`;
       el.title = `${site} people on the site right now${page > 1 ? `, ${page} on this page` : ''}`;
     });
   };

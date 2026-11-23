@@ -192,3 +192,12 @@ a { color: var(--accent); }
 
 /* Brand */
 .q-brand { display: inline-flex; align-items: center; gap: .5rem; --logo-bg: var(--accent); --logo-fg: var(--bg); --logo-dot: var(--fg); }
+
+/* HUD on phones: scrolls away with the page instead of covering a quarter of
+   the screen, and drops the secondary text */
+@media (max-width: 720px) {
+  .q-hud { position: static; }
+  .q-xp small { display: none; }
+  .q-xp { flex-basis: 100%; order: 3; }
+  .q-hud-actions { flex-wrap: wrap; gap: 0; }
+}

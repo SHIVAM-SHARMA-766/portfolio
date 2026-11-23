@@ -87,6 +87,11 @@ awarded on `click`, not `pointerdown`: markup only re-renders when it changed, b
 new coin total changes buy-button text, and re-creating a button between pointerdown and
 click would swallow the click.
 
+**First visit.** A welcome card explains the game. Until it is answered, game toasts are
+held (XP toasts dropped since the HUD shows the total; achievements shown after). On
+phones the welcome card and toasts come in from the top, because the bottom belongs to
+the theme preview bar. The live count hides itself when there is no connection.
+
 **Accounts (`account.js`).** Guests play with progress in `localStorage`. Signing in
 (GitHub / Google / LinkedIn) sends every guest event to the API, which merges and
 returns the server state. Later awards sync in batches every ~1 s. Buying requires
@@ -118,7 +123,8 @@ click), `data-game-*` (HUD), `data-game-coins`, `data-shop-item` (locks and pric
 Missions (`content/missions.json`) are CTF flags placed by `kind`: `hidden-file`,
 `base64`, `grep`, `port-scan` (a binary-search mini-game, 11 probes for 1024 ports) and
 `page-source` (an HTML comment in every page). `submit FLAG{…}` checks the hash and awards
-`flag:<id>`.
+`flag:<id>`. The shell only scrolls to follow its output after the visitor's first
+command, so the boot lines never pull the page away from the top on load.
 
 ## Live presence
 

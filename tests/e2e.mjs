@@ -321,7 +321,7 @@ try {
     const p2 = await other.newPage();
     await page.goto(`${S}/?theme=studio`);
     await p2.goto(`${S}/`);
-    await page.waitForFunction(() => /2 online · 2 here/.test(document.querySelector('[data-live]')?.textContent ?? ''), null, { timeout: 8000 });
+    await page.waitForFunction(() => (() => { const el = document.querySelector('[data-live]'); return el?.textContent === '2 online' && /2 on this page/.test(el.title); })(), null, { timeout: 8000 });
     for (let i = 0; i < 5; i++) { await p2.mouse.move(400 + i * 20, 300); await p2.waitForTimeout(80); }
     await page.waitForSelector('.g-cursor', { timeout: 5000 });
     assert.equal(await page.locator('.g-cursor').count(), 1);
