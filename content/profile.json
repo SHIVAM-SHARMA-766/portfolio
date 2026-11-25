@@ -7,7 +7,6 @@
       "role": "DevOps Engineer",
       "location": "Delhi",
       "start": "2025-07",
-      "end": "",
       "engagements": [
         {
           "title": "Suzuki Digital — DevSecOps & DevOps, AWS multi-account",
@@ -49,11 +48,13 @@
       "employmentType": "Full-time",
       "positions": [
         {
-          "title": "DevOps Engineer"
+          "title": "DevOps Engineer",
+          "start": "2026-07"
         },
         {
           "title": "Junior DevOps Engineer",
-          "start": "2025-10"
+          "start": "2025-10",
+          "end": "2026-07"
         },
         {
           "title": "DevOps Trainee",
