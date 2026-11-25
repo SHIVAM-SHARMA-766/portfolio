@@ -103,6 +103,10 @@
         {
           "label": "Live instance",
           "url": "https://vault-shivam.duckdns.org"
+        },
+        {
+          "label": "Source",
+          "url": "https://github.com/SHIVAM-SHARMA-766/vault"
         }
       ],
       "body": "## What it is\n\nVault is a zero-knowledge password manager. The master password never leaves the browser; keys are derived there, every field is encrypted there, and the server only ever sees ciphertext. A complete compromise of the server should yield nothing more.\n\n![The Vault web app: folders and types, items, and a login with a live one-time code](/uploads/proj-vault-vault.webp)\n\n## What it does\n\n- **Fifteen item types** — logins, notes, cards, identities, bank accounts, passports, SSH keys, API credentials, Wi-Fi and more — with custom fields, folders four levels deep and live one-time codes.\n- **Password health** — weak, reused, year-old and `http://`-only passwords, scored out of 100 with advice on each item, computed in the browser.\n- **History you can restore** — every edit keeps the previous version, encrypted like the item.\n- **Import from nine formats** — Chrome, Firefox, Safari, Bitwarden, 1Password, LastPass, KeePass, Zoho Vault and more, previewed before anything is saved.\n- **A browser extension** for Chrome and Firefox that fills only where the site truly matches, so a look-alike page gets nothing.\n\n![Password health: a score with advice on what to fix](/uploads/proj-vault-health.webp)\n\n## Built for teams too\n\nOrganizations, groups and collections, each with its own key, sealed to every member you confirm by fingerprint. Permissions, policies, an audit log, key rotation and emergency access — plus an admin console and a built-in service desk for access requests and support tickets. None of it can read a vault.\n\n![Members of an organization, confirmed by fingerprint](/uploads/proj-vault-organizations.webp)\n\n## Runs on your own server\n\nOne command on a Linux machine with Docker asks for the address, generates the secrets, starts Vault and prints the link that creates the owner account. Two editions from one codebase: **Personal** (one account, SQLite) and **Business** (people, groups and policies, PostgreSQL).\n\n![The public website](/uploads/proj-vault-website.webp)",
@@ -145,7 +149,12 @@
         "Docker Compose",
         "Threat intel"
       ],
-      "links": [],
+      "links": [
+        {
+          "label": "Source",
+          "url": "https://github.com/SHIVAM-SHARMA-766/pahredar"
+        }
+      ],
       "body": "## Why I built it\n\nTracking vulnerabilities properly means stitching together a dozen free sources: the CVE List, NVD, CISA's Known Exploited Vulnerabilities, EPSS, exploit databases, detection rules and vendor advisories. Pahredar (Hindi for *watchman*) keeps all of it in one local database and answers the questions that matter for a CVE: how bad is it, is it being exploited, is there a public exploit, what does it affect, and how do I detect and fix it.\n\n![The dashboard: critical CVEs this week, publish volume by severity, trending in the news](/uploads/proj-pahredar-dash.webp)\n\n## Every CVE, enriched\n\n- **The full corpus** from the official CVE List, current within the hour, with full-text search and filters by severity, KEV, exploit availability, vendor, product, CWE, dates and EPSS.\n- **Exploitation evidence** beyond CISA KEV: ENISA EUVD and VulnCheck KEV, plus likely-exploited CVEs not yet in KEV and the biggest EPSS increases.\n- **Detection and response** on each CVE: version-check commands, Nuclei / Nmap / Metasploit checks, Suricata and Sigma rules, ATT&CK mappings, fixed versions, distro status and vendor advisories.\n\n![A CVE in detail: Log4Shell with its signals, exploitation and tabs for detection, ATT&CK and remediation](/uploads/proj-pahredar-cve.webp)\n\n![The CVE explorer: 430k+ CVEs with query syntax and filters](/uploads/proj-pahredar-search.webp)\n\n## Security news, ranked\n\nSixty-seven vendor, national CERT, research, mailing-list and news sources are synced hourly into a security brief, ranked by exploited and widely covered CVEs, with Google News, Hacker News and Bluesky coverage per CVE.\n\n![The security brief](/uploads/proj-pahredar-news.webp)\n\n## Vendors and products\n\nVendor and product pages show the severity mix and CVEs per year, so it's easy to see who is shipping the most critical bugs.\n\n![Apache Software Foundation: severity mix and CVEs per year](/uploads/proj-pahredar-vendor.webp)",
       "pages": [
         {
