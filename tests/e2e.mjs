@@ -359,9 +359,12 @@ try {
     assert.ok(await page.locator('#starlight__sidebar a.lesson-done').count() >= 1);
   });
 
-  await step('admin: sign in, dashboard and the visitor list', async () => {
+  await step('admin: sign in, dashboard, contacts and the CRM', async () => {
     const a = await ctx.newPage();
     a.on('pageerror', (e) => errors.push('admin: ' + e.message));
+    await a.setViewportSize({ width: 1440, height: 900 });
+    a.on('console', (m) => process.env.E2E_DEBUG && console.log('ADMIN', m.type(), m.text()));
+    a.on('response', (r) => process.env.E2E_DEBUG && r.status() >= 400 && console.log('HTTP', r.status(), r.url()));
     await a.goto(`${S}/admin/`);
     await a.fill('input[autocomplete=username]', 'admin');
     await a.fill('input[type=password]', 'wrong-password');
@@ -369,13 +372,38 @@ try {
     await a.waitForSelector('.error');
     await a.fill('input[type=password]', 'e2e-admin-password');
     await a.click('button.primary');
-    await a.waitForSelector('.tiles');
-    await a.click('.side >> text=Visitors');
-    await a.waitForSelector('h1:has-text("Visitors") >> xpath=..');
-    await a.waitForSelector('.table-wrap .table');
-    assert.match(await a.locator('.table-wrap .table').innerText(), /tester@example\.com/);
+    await a.waitForSelector('.kpis');
+    await a.waitForSelector('.chart-bars');
+    await shot(a, 'admin-dashboard');
+    // Contacts table
+    await a.click('.side >> text=Contacts');
+    await a.waitForSelector('.table--crm');
+    assert.match(await a.locator('.table--crm').innerText(), /tester@example\.com/);
+    await shot(a, 'admin-contacts');
+    // One contact: stage, tag, note — all saved on the server
+    await a.click('.table--crm tbody tr >> nth=0');
+    await a.waitForSelector('.contact-head');
+    await a.selectOption('.contact-head .stage-select', 'contacted');
+    await a.fill('.tags-edit input', 'recruiter');
+    await a.press('.tags-edit input', 'Enter');
+    await a.fill('.note-form textarea', 'Emailed about a DevOps role');
+    await a.click('.note-form button.primary');
+    await a.waitForSelector('.notes li');
+    await a.waitForSelector('.timeline');
+    await shot(a, 'admin-contact');
+    await a.reload();
+    await a.waitForSelector('.notes li');
+    assert.match(await a.locator('.notes').innerText(), /DevOps role/);
+    assert.match(await a.locator('.tags-edit').innerText(), /recruiter/);
+    assert.equal(await a.locator('.contact-head .stage-select').inputValue(), 'contacted');
+    // Command palette
+    await a.keyboard.press('Control+k');
+    await a.waitForSelector('.cmdk-box');
+    await a.keyboard.type('blog');
+    await a.waitForSelector('.cmdk-item');
+    await a.keyboard.press('Escape');
     const csv = await (await a.request.get(`${S}/api/admin/visitors.csv`)).text();
-    assert.match(csv, /tester@example\.com/);
+    assert.match(csv, /tester@example\.com.*contacted/);
     await a.close();
   });
 

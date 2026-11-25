@@ -55,6 +55,11 @@ func (a *Admin) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/admin/visitors", a.auth(a.visitors))
 	mux.HandleFunc("GET /api/admin/visitors.csv", a.auth(a.visitorsCSV))
 	mux.HandleFunc("DELETE /api/admin/visitors/{id}", a.auth(a.deleteVisitor))
+	mux.HandleFunc("GET /api/admin/visitors/{id}", a.auth(a.contact))
+	mux.HandleFunc("PATCH /api/admin/visitors/{id}", a.auth(a.updateContact))
+	mux.HandleFunc("POST /api/admin/visitors/{id}/notes", a.auth(a.addNote))
+	mux.HandleFunc("DELETE /api/admin/visitors/{id}/notes/{note}", a.auth(a.deleteNote))
+	mux.HandleFunc("GET /api/admin/insights", a.auth(a.insights))
 	mux.HandleFunc("GET /api/admin/files", a.auth(a.listFiles))
 	mux.HandleFunc("GET /api/admin/file", a.auth(a.getFile))
 	mux.HandleFunc("PUT /api/admin/file", a.auth(a.putFile))
@@ -181,7 +186,7 @@ func (a *Admin) visitorsCSV(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="visitors.csv"`)
 	cw := csv.NewWriter(w)
-	cw.Write([]string{"id", "name", "email", "signed_in_with", "xp", "coins", "joined", "last_seen"})
+	cw.Write([]string{"id", "name", "email", "signed_in_with", "stage", "tags", "starred", "xp", "coins", "notes", "joined", "last_seen"})
 	ts := func(u int64) string { return time.Unix(u, 0).UTC().Format("2006-01-02 15:04") }
 	// Prefix cells that spreadsheets would treat as formulas.
 	safe := func(s string) string {
@@ -191,7 +196,7 @@ func (a *Admin) visitorsCSV(w http.ResponseWriter, r *http.Request) {
 		return s
 	}
 	for _, u := range users {
-		cw.Write([]string{strconv.FormatInt(u.ID, 10), safe(u.Name), safe(u.Email), strings.Join(u.Providers, " "), strconv.Itoa(u.XP), strconv.Itoa(u.Coins), ts(u.CreatedAt), ts(u.LastSeen)})
+		cw.Write([]string{strconv.FormatInt(u.ID, 10), safe(u.Name), safe(u.Email), strings.Join(u.Providers, " "), u.Stage, safe(strings.Join(u.Tags, " ")), strconv.FormatBool(u.Starred), strconv.Itoa(u.XP), strconv.Itoa(u.Coins), strconv.Itoa(u.Notes), ts(u.CreatedAt), ts(u.LastSeen)})
 	}
 	cw.Flush()
 }

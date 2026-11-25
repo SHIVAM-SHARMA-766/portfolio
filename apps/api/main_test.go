@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -159,5 +160,61 @@ func TestAdminLoginAndLimit(t *testing.T) {
 	}
 	if codes[len(codes)-1] != http.StatusTooManyRequests {
 		t.Fatalf("expected throttling, got %v", codes)
+	}
+}
+
+func TestAdminCRM(t *testing.T) {
+	e := setup(t)
+	rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
+	c := rec.Result().Cookies()[0]
+	admin := c.Name + "=" + c.Value
+	user := e.user()
+	e.do("POST", "/api/events", `{"events":{"visit:home":5}}`, user, true)
+	_, list := e.do("GET", "/api/admin/visitors", "", admin, false)
+	v := list["visitors"].([]any)[0].(map[string]any)
+	id := strconv.Itoa(int(v["id"].(float64)))
+	if v["stage"] != "new" {
+		t.Fatalf("default stage: %v", v["stage"])
+	}
+
+	// Stage, tags and star
+	if rec, _ := e.do("PATCH", "/api/admin/visitors/"+id, `{"stage":"bogus"}`, admin, true); rec.Code != 400 {
+		t.Fatalf("unknown stage accepted: %d", rec.Code)
+	}
+	rec, out := e.do("PATCH", "/api/admin/visitors/"+id, `{"stage":"contacted","tags":[" Recruiter ","recruiter","AWS"],"starred":true}`, admin, true)
+	ct := out["contact"].(map[string]any)
+	if rec.Code != 200 || ct["stage"] != "contacted" || ct["starred"] != true || len(ct["tags"].([]any)) != 2 {
+		t.Fatalf("update: %d %v", rec.Code, out)
+	}
+
+	// Notes
+	if rec, _ := e.do("POST", "/api/admin/visitors/"+id+"/notes", `{"body":"   "}`, admin, true); rec.Code != 400 {
+		t.Fatalf("empty note accepted: %d", rec.Code)
+	}
+	rec, out = e.do("POST", "/api/admin/visitors/"+id+"/notes", `{"body":"Emailed about a DevOps role"}`, admin, true)
+	if rec.Code != 201 {
+		t.Fatalf("add note: %d %v", rec.Code, out)
+	}
+	noteID := strconv.Itoa(int(out["note"].(map[string]any)["id"].(float64)))
+	_, out = e.do("GET", "/api/admin/visitors/"+id, "", admin, false)
+	ct = out["contact"].(map[string]any)
+	if len(ct["notesList"].([]any)) != 1 || len(ct["activity"].([]any)) == 0 {
+		t.Fatalf("contact detail: %v", ct)
+	}
+	if rec, _ := e.do("DELETE", "/api/admin/visitors/"+id+"/notes/"+noteID, "", admin, true); rec.Code != 200 {
+		t.Fatalf("delete note: %d", rec.Code)
+	}
+	if rec, _ := e.do("GET", "/api/admin/visitors/999", "", admin, false); rec.Code != 404 {
+		t.Fatalf("missing contact: %d", rec.Code)
+	}
+
+	// Insights
+	rec, out = e.do("GET", "/api/admin/insights", "", admin, false)
+	if rec.Code != 200 || out["stages"].(map[string]any)["contacted"].(float64) != 1 || out["active7d"].(float64) != 1 {
+		t.Fatalf("insights: %d %v", rec.Code, out)
+	}
+	// Not for visitors
+	if rec, _ := e.do("GET", "/api/admin/insights", "", user, false); rec.Code != 401 {
+		t.Fatalf("insights without admin: %d", rec.Code)
 	}
 }

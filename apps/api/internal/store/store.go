@@ -65,6 +65,21 @@ CREATE TABLE IF NOT EXISTS purchases (
 	created_at  INTEGER NOT NULL,
 	PRIMARY KEY (user_id, item_id)
 );
+CREATE TABLE IF NOT EXISTS crm (
+	user_id     INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+	stage       TEXT NOT NULL DEFAULT 'new',
+	tags        TEXT NOT NULL DEFAULT '',   -- comma-separated
+	starred     INTEGER NOT NULL DEFAULT 0,
+	updated_at  INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS notes (
+	id          INTEGER PRIMARY KEY,
+	user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	body        TEXT NOT NULL,
+	created_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS notes_user ON notes(user_id);
+CREATE INDEX IF NOT EXISTS events_user_time ON events(user_id, created_at);
 CREATE TABLE IF NOT EXISTS page_views (
 	day    TEXT NOT NULL,
 	path   TEXT NOT NULL,
@@ -102,6 +117,13 @@ type User struct {
 	Providers []string `json:"providers,omitempty"`
 	XP        int      `json:"xp,omitempty"`
 	Coins     int      `json:"coins,omitempty"`
+	// CRM (admin only)
+	Stage      string   `json:"stage,omitempty"`
+	Tags       []string `json:"tags,omitempty"`
+	Starred    bool     `json:"starred,omitempty"`
+	Notes      int      `json:"notes,omitempty"`
+	Events     int      `json:"events,omitempty"`
+	LastActive int64    `json:"lastActive,omitempty"`
 }
 
 type Identity struct {
@@ -189,8 +211,12 @@ func (s *Store) Users(ctx context.Context, bonus map[string]int) ([]User, error)
 			COALESCE((SELECT group_concat(provider) FROM identities WHERE user_id=u.id),''),
 			COALESCE((SELECT SUM(points) FROM events WHERE user_id=u.id),0),
 			COALESCE((SELECT SUM(price) FROM purchases WHERE user_id=u.id),0),
-			COALESCE((SELECT group_concat(ach_id) FROM achievements WHERE user_id=u.id),'')
-		FROM users u ORDER BY u.created_at DESC`)
+			COALESCE((SELECT group_concat(ach_id) FROM achievements WHERE user_id=u.id),''),
+			COALESCE(c.stage,'new'), COALESCE(c.tags,''), COALESCE(c.starred,0),
+			(SELECT COUNT(*) FROM notes WHERE user_id=u.id),
+			(SELECT COUNT(*) FROM events WHERE user_id=u.id),
+			COALESCE((SELECT MAX(created_at) FROM events WHERE user_id=u.id),0)
+		FROM users u LEFT JOIN crm c ON c.user_id=u.id ORDER BY u.created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -198,16 +224,26 @@ func (s *Store) Users(ctx context.Context, bonus map[string]int) ([]User, error)
 	var out []User
 	for rows.Next() {
 		var u User
-		var providers, achs string
-		var pts, spent int
-		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Avatar, &u.CreatedAt, &u.LastSeen, &providers, &pts, &spent, &achs); err != nil {
+		var providers, achs, tags string
+		var pts, spent, starred int
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Avatar, &u.CreatedAt, &u.LastSeen, &providers, &pts, &spent, &achs,
+			&u.Stage, &tags, &starred, &u.Notes, &u.Events, &u.LastActive); err != nil {
 			return nil, err
+		}
+		u.Starred = starred == 1
+		if tags != "" {
+			u.Tags = strings.Split(tags, ",")
+		}
+		if u.LastActive < u.LastSeen {
+			u.LastActive = u.LastSeen
 		}
 		if providers != "" {
 			u.Providers = strings.Split(providers, ",")
 		}
-		for _, a := range strings.Split(achs, ",") {
-			pts += bonus[a]
+		if achs != "" {
+			for _, a := range strings.Split(achs, ",") {
+				pts += bonus[a]
+			}
 		}
 		u.XP, u.Coins = pts, pts-spent
 		out = append(out, u)

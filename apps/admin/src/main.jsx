@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState, useCallback } from 'preact/hooks';
 import { api, parseFrontmatter, stringifyFrontmatter, toJSON, slugify } from './api.js';
 import { Form, MarkdownEditor, uploadFile, publicUrl } from './fields.jsx';
 import * as S from './schemas.js';
+import { Dashboard, Contacts, Contact } from './crm.jsx';
+import { Icon, Avatar, CommandPalette } from './ui.jsx';
 import './style.css';
 
 // ---- tiny router & shared state ---------------------------------------------
@@ -107,111 +109,14 @@ function Login({ onDone }) {
   };
   return (
     <main class="login">
-      <form onSubmit={submit} class="card">
-        <div class="login-brand"><Logo size={36} /><h1>Admin</h1></div>
+      <form onSubmit={submit} class="card login-card">
+        <div class="login-brand"><Logo size={40} /><div><h1>Welcome back</h1><p class="muted">Sign in to manage your portfolio.</p></div></div>
         <label class="field"><span class="field-label">Username</span><input autocomplete="username" value={u} onInput={(e) => setU(e.currentTarget.value)} required autofocus /></label>
         <label class="field"><span class="field-label">Password</span><input type="password" autocomplete="current-password" value={p} onInput={(e) => setP(e.currentTarget.value)} required /></label>
         {err && <p class="error">{err}</p>}
         <button class="primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
       </form>
     </main>
-  );
-}
-
-// ---- dashboard -------------------------------------------------------------
-
-function Dashboard() {
-  const [d, setD] = useState(null);
-  useEffect(() => {
-    let stop = false;
-    const load = async () => { try { const x = await api.stats(); if (!stop) setD(x); } catch {} if (!stop) setTimeout(load, 10000); };
-    load();
-    return () => { stop = true; };
-  }, []);
-  if (!d) return <p class="muted">Loading…</p>;
-  const max = Math.max(1, ...(d.stats.viewsPerDay ?? []).map((x) => x.views));
-  const pages = Object.entries(d.livePages ?? {}).sort((a, b) => b[1] - a[1]);
-  return (
-    <>
-      <div class="head-row"><h1>Dashboard</h1><a class="button" href="/" target="_blank" rel="noopener">View site ↗</a></div>
-      <div class="quick">
-        <a class="card card--link" href="#/blog?new=1" onClick={go}><b>✍️ Write a post</b><small>New blog post</small></a>
-        <a class="card card--link" href="#/projects?new=1" onClick={go}><b>🚀 Add a project</b><small>Gets its own page</small></a>
-        <a class="card card--link" href="#/experience" onClick={go}><b>💼 Update experience</b><small>Roles and clients</small></a>
-        <a class="card card--link" href="#/media" onClick={go}><b>🖼️ Upload media</b><small>Images and PDFs</small></a>
-      </div>
-      <div class="tiles">
-        <div class="tile tile--live"><span>Online now</span><b>{d.live}</b></div>
-        <div class="tile"><span>Signed-up visitors</span><b>{d.stats.users}</b><small>+{d.stats.usersToday} today</small></div>
-        <div class="tile"><span>Page views today</span><b>{d.stats.viewsToday}</b></div>
-        <div class="tile"><span>Page views, 7 days</span><b>{d.stats.views7d}</b></div>
-      </div>
-      <div class="cols">
-        <section class="card">
-          <h2>Where people are right now</h2>
-          {pages.length ? <table class="table"><tbody>{pages.map(([p, n]) => <tr><td><code>{p}</code></td><td class="num">{n}</td></tr>)}</tbody></table> : <p class="muted">Nobody online at the moment.</p>}
-        </section>
-        <section class="card">
-          <h2>Views per day</h2>
-          <div class="bars">
-            {(d.stats.viewsPerDay ?? []).map((x) => (
-              <div class="bar" title={`${x.path}: ${x.views}`}><span style={{ height: `${(x.views / max) * 100}%` }} /><small>{x.path.slice(5)}</small></div>
-            ))}
-          </div>
-        </section>
-      </div>
-      <section class="card">
-        <h2>Top pages, 7 days</h2>
-        {d.stats.topPages7d?.length ? <table class="table"><tbody>{d.stats.topPages7d.map((x) => <tr><td><code>{x.path}</code></td><td class="num">{x.views}</td></tr>)}</tbody></table> : <p class="muted">No views yet.</p>}
-      </section>
-    </>
-  );
-}
-
-// ---- visitors --------------------------------------------------------------
-
-function Visitors() {
-  const [list, setList] = useState(null);
-  const [q, setQ] = useState('');
-  const load = () => api.visitors().then((d) => setList(d.visitors)).catch((e) => toast(e.message, 'err'));
-  useEffect(load, []);
-  const shown = useMemo(() => (list ?? []).filter((v) => `${v.name} ${v.email}`.toLowerCase().includes(q.toLowerCase())), [list, q]);
-  const del = async (v) => {
-    if (!confirm(`Delete ${v.email || v.name} and all their progress?`)) return;
-    try { await api.deleteVisitor(v.id); toast('Visitor deleted'); load(); } catch (e) { toast(e.message, 'err'); }
-  };
-  return (
-    <>
-      <div class="head-row">
-        <h1>Visitors <span class="count">{list?.length ?? ''}</span></h1>
-        <div class="actions">
-          <input type="search" placeholder="Search name or email" value={q} onInput={(e) => setQ(e.currentTarget.value)} />
-          <a class="button" href="/api/admin/visitors.csv">Export CSV</a>
-        </div>
-      </div>
-      <p class="muted">People who signed in to save their progress. Use their email to get in touch.</p>
-      {!list ? <p class="muted">Loading…</p> : !shown.length ? <p class="muted">No visitors yet.</p> : (
-        <div class="table-wrap">
-          <table class="table">
-            <thead><tr><th>Name</th><th>Email</th><th>Signed in with</th><th class="num">XP</th><th class="num">Coins</th><th>Joined</th><th>Last seen</th><th /></tr></thead>
-            <tbody>
-              {shown.map((v) => (
-                <tr>
-                  <td class="who">{v.avatar && <img src={v.avatar} alt="" width="24" height="24" />}{v.name || '—'}</td>
-                  <td>{v.email ? <a href={`mailto:${v.email}`}>{v.email}</a> : '—'}</td>
-                  <td>{(v.providers ?? []).join(', ')}</td>
-                  <td class="num">{v.xp}</td>
-                  <td class="num">{v.coins}</td>
-                  <td>{fmt(v.createdAt)}</td>
-                  <td>{fmt(v.lastSeen)}</td>
-                  <td><button class="link danger" onClick={() => del(v)}>Delete</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
   );
 }
 
@@ -666,20 +571,55 @@ function Media() {
 // ---- app shell -------------------------------------------------------------
 
 const NAV = [
-  ['Overview', [['#/dashboard', 'Dashboard'], ['#/visitors', 'Visitors']]],
-  ['Content', [['#/pages', 'Pages'], ['#/projects', 'Projects'], ['#/experience', 'Experience'], ['#/blog', 'Blog'], ['#/courses', 'Courses'], ['#/media', 'Media']]],
-  ['Profile', [[editHref('content/profile.json'), 'About & skills']]],
-  ['Game', [[editHref('content/shop.json'), 'Shop'], [editHref('content/missions.json'), 'Terminal missions'], [editHref('content/achievements.json'), 'Achievements']]],
-  ['Settings', [[editHref('content/site.json'), 'Site & game']]],
+  ['', [['#/dashboard', 'Dashboard', 'dashboard'], ['#/contacts', 'Contacts', 'contacts']]],
+  ['Content', [['#/pages', 'Pages', 'pages'], ['#/projects', 'Projects', 'projects'], ['#/experience', 'Experience', 'briefcase'], ['#/blog', 'Blog', 'pen'], ['#/courses', 'Courses', 'book'], ['#/media', 'Media', 'image']]],
+  ['Profile', [[editHref('content/profile.json'), 'About & skills', 'user']]],
+  ['Game', [[editHref('content/shop.json'), 'Shop', 'store'], [editHref('content/missions.json'), 'Terminal missions', 'flag'], [editHref('content/achievements.json'), 'Achievements', 'trophy']]],
+  ['Settings', [[editHref('content/site.json'), 'Site & game', 'settings']]],
 ];
+const TITLES = { '/dashboard': 'Dashboard', '/contacts': 'Contacts', '/contact': 'Contact', '/pages': 'Pages', '/projects': 'Projects', '/project': 'Project', '/experience': 'Experience', '/job': 'Role', '/blog': 'Blog', '/courses': 'Courses', '/course': 'Course', '/media': 'Media', '/edit': 'Editor' };
+
+function isOn(current, href) {
+  if (current === href) return true;
+  if (href.includes('?')) return false;
+  const path = current.split('?')[0];
+  return path === href || (href === '#/projects' && path === '#/project') || (href === '#/experience' && path === '#/job') || (href === '#/contacts' && path === '#/contact') || (href === '#/courses' && path === '#/course');
+}
+
+/** Everything the command palette can jump to: screens, contacts and content files. */
+function usePaletteItems(open) {
+  const [extra, setExtra] = useState([]);
+  useEffect(() => {
+    if (!open || extra.length) return;
+    Promise.all([api.visitors().catch(() => ({ visitors: [] })), api.files().catch(() => ({ files: [] }))]).then(([v, f]) => {
+      const people = v.visitors.map((x) => ({ group: 'Contacts', label: x.name || x.email, hint: x.email, icon: 'user', href: `#/contact?id=${x.id}` }));
+      const files = f.files.map((x) => x.path).filter((p) => /^content\/(pages|blog)\//.test(p)).map((p) => ({ group: 'Content', label: p.split('/').pop().replace(/\.(json|md)$/, ''), hint: p.includes('/blog/') ? 'Blog post' : 'Page', icon: p.includes('/blog/') ? 'pen' : 'pages', href: editHref(p) }));
+      setExtra([...people, ...files]);
+    });
+  }, [open]);
+  const screens = NAV.flatMap(([group, links]) => links.map(([href, label, icon]) => ({ group: 'Go to', label, icon, href })));
+  const actions = [
+    { group: 'Create', label: 'New blog post', icon: 'pen', href: '#/blog?new=1' },
+    { group: 'Create', label: 'New project', icon: 'projects', href: '#/projects?new=1' },
+    { group: 'Create', label: 'Upload media', icon: 'image', href: '#/media' },
+  ];
+  return [...screens, ...actions, ...extra];
+}
 
 function App() {
   const [me, setMe] = useState(undefined);
   const [menu, setMenu] = useState(false);
+  const [palette, setPalette] = useState(false);
   const route = useRoute();
   const check = () => api.me().then(setMe).catch(() => setMe(null));
   useEffect(check, []);
   useEffect(() => setMenu(false), [route.path, route.params.path]);
+  useEffect(() => {
+    const k = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette((p) => !p); } };
+    addEventListener('keydown', k);
+    return () => removeEventListener('keydown', k);
+  }, []);
+  const items = usePaletteItems(palette);
 
   if (me === undefined) return <p class="muted center">Loading…</p>;
   if (me === null) return <><Login onDone={check} /><Toast /></>;
@@ -687,7 +627,8 @@ function App() {
   const current = location.hash || '#/dashboard';
   let page;
   switch (route.path) {
-    case '/visitors': page = <Visitors />; break;
+    case '/visitors': case '/contacts': page = <Contacts params={route.params} />; break;
+    case '/contact': page = <Contact key={route.params.id} id={route.params.id} />; break;
     case '/pages': page = <Pages />; break;
     case '/blog': page = <Blog params={route.params} />; break;
     case '/projects': page = <ProjectsList params={route.params} />; break;
@@ -703,30 +644,37 @@ function App() {
   return (
     <div class={`shell ${menu ? 'menu-open' : ''}`}>
       <aside class="side">
-        <a class="brand" href="#/dashboard"><Logo size={26} /> Admin</a>
+        <a class="brand" href="#/dashboard" onClick={(e) => { e.preventDefault(); navigate('#/dashboard'); }}><Logo size={28} /><span><b>Shivam Sharma</b><small>Portfolio admin</small></span></a>
+        <button type="button" class="side-search" onClick={() => setPalette(true)}><Icon name="search" /><span>Search</span><kbd>Ctrl K</kbd></button>
         {NAV.map(([group, links]) => (
           <nav>
-            <h3>{group}</h3>
-            {links.map(([href, label]) => (
-              <a href={href} class={current === href || (!href.includes('?') && (current.split('?')[0] === href || (href === '#/projects' && current.startsWith('#/project')) || (href === '#/experience' && current.startsWith('#/job')))) ? 'on' : ''}
-                onClick={(e) => { e.preventDefault(); navigate(href); }}>{label}</a>
+            {group && <h3>{group}</h3>}
+            {links.map(([href, label, icon]) => (
+              <a href={href} class={isOn(current, href) ? 'on' : ''} onClick={(e) => { e.preventDefault(); navigate(href); }}><Icon name={icon} />{label}</a>
             ))}
           </nav>
         ))}
         <div class="side-foot">
-          <a href="/" target="_blank" rel="noopener">View site ↗</a>
-          <button class="link" onClick={async () => { await api.logout(); setMe(null); }}>Sign out ({me.user})</button>
+          <a class="side-link" href="/" target="_blank" rel="noopener"><Icon name="external" />View site</a>
+          <div class="side-user">
+            <Avatar name={me.user} size={28} />
+            <span><b>{me.user}</b><small>Administrator</small></span>
+            <button type="button" class="icon-btn" title="Sign out" onClick={async () => { await api.logout(); setMe(null); }}><Icon name="logout" /></button>
+          </div>
         </div>
       </aside>
       <div class="main">
         <header class="top">
-          <button class="menu-btn" onClick={() => setMenu(!menu)} aria-label="Menu">☰</button>
+          <button class="menu-btn icon-btn" onClick={() => setMenu(!menu)} aria-label="Menu"><Icon name="menu" size={18} /></button>
+          <nav class="crumbs" aria-label="Breadcrumb"><span>Admin</span><span class="sep">/</span><b>{TITLES[route.path] ?? 'Dashboard'}</b></nav>
           <span class="spacer" />
-          {!me.contentEditing && <span class="pill pill--warn">Content editing is not configured on the server</span>}
+          <button type="button" class="top-search" onClick={() => setPalette(true)}><Icon name="search" /><span>Search or jump to…</span><kbd>Ctrl K</kbd></button>
+          {!me.contentEditing && <span class="pill pill--warn">Content editing is not configured</span>}
           <DeployBadge />
         </header>
         <main class="content">{page}</main>
       </div>
+      <CommandPalette open={palette} onClose={() => setPalette(false)} items={items} onPick={(it) => navigate(it.href)} />
       <Toast />
     </div>
   );

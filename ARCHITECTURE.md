@@ -172,7 +172,7 @@ page-view counter for the admin dashboard. Touch devices see counts but no curso
 | `DELETE /api/me` | delete account and progress |
 | `GET /api/auth/{provider}/start`, `/callback` | OAuth / OpenID Connect sign-in |
 | `GET /api/live` | WebSocket presence and cursors |
-| `/api/admin/*` | admin sign-in, stats, visitors (+CSV), content files, deploy status |
+| `/api/admin/*` | admin sign-in, stats and insights, contacts (+CSV, stage, tags, notes, activity), content files, deploy status |
 
 - **Storage:** SQLite (WAL, one connection) at `/var/lib/portfolio-api/portfolio.db`:
   users, identities (one user can sign in with several providers; linked only on a
@@ -194,18 +194,27 @@ page-view counter for the admin dashboard. Touch devices see counts but no curso
 
 ## Admin panel (`apps/admin`)
 
-A schema-driven SPA: `schemas.js` describes every content file as fields, and
-`fields.jsx` renders them (text, markdown with preview, lists, nested objects, page
-blocks with add/reorder/remove, and **image / file fields** that upload straight to
-`apps/site/public/uploads/`, pick from what's uploaded, or take a path/URL). Screens:
-dashboard (quick actions, online now, where people are, views), visitors (search, CSV
-export, delete), pages and blog (titles, URLs, draft badges, view-on-site links),
-**projects** and **experience** (one card per project / role with cover, badges for
-missing cover or story, reorder; each opens its own editor, all saved into
-`profile.json`), courses → chapters → lessons (with quiz editor), about & skills, media
-(multi-upload, drag and drop, copy path or Markdown, delete), shop, missions,
-achievements, site & game settings. Every editor has "View on site". A deploy badge polls
-GitHub Actions after saves. Unsaved changes are guarded on navigation, Back and reload.
+A Preact SPA styled like a CRM: a sidebar with icons, breadcrumbs, a **command palette**
+(Ctrl/Cmd+K: screens, create actions, contacts, pages and posts), light and dark.
+
+- **Dashboard** (`crm.jsx`): KPI cards with week-over-week deltas (online now, contacts,
+  active contacts, views), 30-day charts for views and sign-ups, the pipeline by stage,
+  recent contacts, content health (projects without a cover or story, no CV, no LinkedIn,
+  few posts), live pages, top pages and the most common actions.
+- **Contacts**: everyone who signed in. Stage tabs with counts, search (name, email,
+  tag), starred filter, sortable columns, inline stage change, bulk move and CSV export.
+  A contact's page has stage, star, tags, private notes and an **activity timeline**
+  (every event, achievement and purchase, in plain words, grouped by day).
+- **Content**: schema-driven editors (`schemas.js` + `fields.jsx`): pages and blocks,
+  projects and experience (each item its own editor inside `profile.json`), blog, courses
+  → chapters → lessons, about & skills, media (multi-upload, drag and drop, delete), shop,
+  missions, achievements, site settings. Image / file fields upload directly. Every editor
+  has "View on site"; a deploy badge polls GitHub Actions after saves; unsaved changes are
+  guarded.
+
+CRM data lives in the API's SQLite (`crm`: stage, tags, star per user; `notes`), served by
+`GET/PATCH /api/admin/visitors/{id}`, `POST/DELETE …/notes`, and `GET /api/admin/insights`.
+Stages: new, contacted, engaged, opportunity, archived.
 
 ## Learn site
 
