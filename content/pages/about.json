@@ -11,8 +11,8 @@
     {
       "type": "banner",
       "eyebrow": "About",
-      "heading": "Securing and automating cloud platforms",
-      "body": "DevOps / DevSecOps engineer in Delhi — Terraform, Kubernetes, CI/CD and cloud security, documented well enough that a stranger could rebuild it.",
+      "heading": "The longer story",
+      "body": "Who I am, how I got here, how I work and what I am building — the parts a resume leaves out.",
       "tags": [],
       "ctas": [
         {
@@ -27,8 +27,156 @@
     },
     {
       "type": "text",
-      "heading": "About me",
-      "body": "I'm a DevOps / DevSecOps engineer based in Delhi. I started as a trainee in July 2025 and now own security, compliance and cost work for one enterprise AWS organisation and the full DevOps lifecycle for another.\n\nOutside work I run my own infrastructure entirely on free tiers — Terraform for five providers, self-hosted services on Oracle Cloud, and open-source tools like **Dohra**. Zero cost is a constraint, not an excuse: everything is infrastructure as code, version-controlled and documented.\n\nI'm currently preparing for the **CKA**, followed by the **CKS**."
+      "heading": "My story",
+      "body": "I studied **Artificial Intelligence & Machine Learning** at J.B. Institute of Technology (Uttarakhand Technical University), and joined **VA2PT** as a DevOps trainee in July 2025, a month before graduating. Three months later I was a Junior DevOps Engineer; today I'm a DevOps Engineer working across two enterprise clients.\n\nFor **Suzuki Digital** I own security, compliance and cost across a multi-account AWS organisation: consolidating 70+ accounts with Terraform, running cloud security posture management with Security Hub and GuardDuty, building a SIEM on Wazuh, and supporting CIS, ISO 27001 and SOC 2 controls. For **Flipspace** I run the full DevOps lifecycle of a multi-environment Amazon EKS platform: clusters, CI/CD on Azure Pipelines, monthly production releases, observability with Prometheus, Grafana and Loki, and on-call.\n\nOutside work I build things I want to use myself, and I run them the way I'd run production. A [password manager](/projects/vault/), a [CVE intelligence platform](/projects/pahredar/), a [class recorder](/projects/dohra/) and this site all run on free tiers, managed with [Terraform from one repository](/projects/multi-cloud-iac/). Zero cost is a constraint, not an excuse: everything is infrastructure as code, version-controlled, tested in CI and documented well enough that a stranger could rebuild it.\n\nRight now I'm preparing for the **CKA**, then the **CKS**."
+    },
+    {
+      "type": "timeline",
+      "heading": "The journey so far",
+      "items": [
+        {
+          "date": "Jul 2025",
+          "tag": "Work",
+          "title": "Joined VA2PT as a DevOps trainee",
+          "body": "Started on cloud security posture management for an enterprise AWS organisation."
+        },
+        {
+          "date": "Aug 2025",
+          "tag": "Education",
+          "title": "B.Tech in Artificial Intelligence & Machine Learning",
+          "body": "J.B. Institute of Technology, Uttarakhand Technical University."
+        },
+        {
+          "date": "Oct 2025",
+          "tag": "Work",
+          "title": "Junior DevOps Engineer",
+          "body": "Took on Flipspace: Amazon EKS across dev, staging and production, all provisioned with Terraform.",
+          "href": "experience/va2pt/flipspace/"
+        },
+        {
+          "date": "Aug 2026",
+          "tag": "Project",
+          "title": "One Terraform repository for every cloud I use",
+          "body": "Oracle Cloud, AWS, Cloudflare and GitHub, with one state per provider.",
+          "href": "projects/multi-cloud-iac/"
+        },
+        {
+          "date": "Sep 2026",
+          "tag": "Project",
+          "title": "Started Vault, a zero-knowledge password manager",
+          "body": "Encrypted in the browser, self-hosted, with organisations, a service desk and pull-based releases.",
+          "href": "projects/vault/"
+        },
+        {
+          "date": "Sep 2026",
+          "tag": "Project",
+          "title": "Built an assessment platform for a campus hiring drive",
+          "body": "Real Linux terminals and code that runs against test cases, scored automatically.",
+          "href": "projects/assessment-platform/"
+        },
+        {
+          "date": "Oct 2026",
+          "tag": "Open source",
+          "title": "Released Dohra",
+          "body": "A browser class recorder with local Hinglish transcripts; v0.7.0 shipped in November with signed updates.",
+          "href": "projects/dohra/"
+        },
+        {
+          "date": "Oct 2026",
+          "tag": "Project",
+          "title": "Pahredar v1",
+          "body": "Every published CVE, enriched and synced hourly, with security news and an endpoint scanner.",
+          "href": "projects/pahredar/"
+        },
+        {
+          "date": "Today",
+          "tag": "Work",
+          "title": "DevOps Engineer at VA2PT",
+          "body": "Security, compliance and cost for Suzuki Digital; end-to-end DevOps for Flipspace.",
+          "href": "experience/va2pt/"
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "heading": "How I work",
+      "columns": 3,
+      "items": [
+        {
+          "icon": "🧱",
+          "title": "Infrastructure as code, always",
+          "body": "If it isn't in Terraform and Git, it doesn't exist. Every provider and setting is reviewable and reproducible.",
+          "tags": []
+        },
+        {
+          "icon": "🔐",
+          "title": "Assume the server is hostile",
+          "body": "Security is designed in, not bolted on: Vault encrypts in the browser; the assessment platform never runs candidate code on its API server.",
+          "tags": []
+        },
+        {
+          "icon": "🪨",
+          "title": "Boring beats clever",
+          "body": "Something that fails loudly and restarts is better than something elegant that needs nursing at 2am.",
+          "tags": []
+        },
+        {
+          "icon": "📝",
+          "title": "Document for a stranger",
+          "body": "READMEs, architecture docs and decision records good enough that someone with no context can change things safely.",
+          "tags": []
+        },
+        {
+          "icon": "✅",
+          "title": "Tests before trust",
+          "body": "CI runs unit and browser tests on every change; releases verify their hashes and roll back on failure.",
+          "tags": []
+        },
+        {
+          "icon": "💸",
+          "title": "Free tiers, real quality",
+          "body": "Verify free-tier limits in the provider's own docs before placing a workload — then build it properly anyway.",
+          "tags": []
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "heading": "What I'm working on now",
+      "body": "Updated November 2026.",
+      "columns": 2,
+      "items": [
+        {
+          "icon": "☸️",
+          "title": "CKA, then CKS",
+          "body": "Kubernetes certification, with a hands-on lab kept in its own repository.",
+          "tags": []
+        },
+        {
+          "icon": "🛰️",
+          "title": "Pahredar: attack-surface monitoring",
+          "body": "Growing from CVE tracking into watching your own internet-facing estate: passive signals first, then recon-driven scanning.",
+          "href": "projects/pahredar/",
+          "cta": "About Pahredar",
+          "tags": []
+        },
+        {
+          "icon": "🔑",
+          "title": "Vault editions",
+          "body": "Personal and Business editions from one codebase, with a one-command install for your own server.",
+          "href": "projects/vault/",
+          "cta": "About Vault",
+          "tags": []
+        },
+        {
+          "icon": "📚",
+          "title": "Teaching on the learn site",
+          "body": "A free Docker course, lesson by lesson, with quizzes at the end of each.",
+          "href": "https://learn.shivamsharma.duckdns.org/",
+          "cta": "Open the course",
+          "tags": []
+        }
+      ]
     },
     {
       "type": "education",

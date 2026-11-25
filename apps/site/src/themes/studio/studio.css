@@ -264,3 +264,19 @@ a.s-tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, v
   .s-cards[style*="--cols:1"] .s-tile__media { flex: 0 0 48%; aspect-ratio: 40 / 21; align-self: center; }
   .s-cards[style*="--cols:1"] .s-tile__body { padding: 1.8rem 2rem; justify-content: center; }
 }
+
+/* Journey timeline */
+.s-journey { list-style: none; margin: 0; padding: 0; position: relative; }
+.s-journey::before { content: ''; position: absolute; left: 132px; top: .6rem; bottom: .6rem; width: 2px; background: var(--border); }
+.s-journey li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 2.5rem; padding: 0 0 2rem; position: relative; }
+.s-journey li::before { content: ''; position: absolute; left: 127px; top: .45rem; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--accent); }
+.s-journey__when { margin: .15rem 0 0; color: var(--muted); font-size: .88rem; text-align: right; }
+.s-journey__tag { display: inline-block; margin-bottom: .35rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+.s-journey h3 { margin: 0 0 .35rem; font-size: 1.12rem; }
+.s-journey__body p { margin: 0; color: var(--muted); max-width: 62ch; }
+@media (max-width: 760px) {
+  .s-journey::before { left: 5px; }
+  .s-journey li { grid-template-columns: 1fr; gap: .2rem; padding-left: 1.6rem; }
+  .s-journey li::before { left: 0; }
+  .s-journey__when { text-align: left; }
+}

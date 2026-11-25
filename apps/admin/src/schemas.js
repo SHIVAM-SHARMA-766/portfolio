@@ -20,6 +20,7 @@ const subPages = list('pages', 'Detail pages', [s('slug', 'Slug', { pattern: '^[
 export const blockTypes = {
   banner: { label: 'Banner (page header)', fields: [s('eyebrow', 'Small line above'), s('heading', 'Heading', { required: true }), text('body', 'Text'), img('image', 'Image (optional)'), strs('tags', 'Tags'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link')], { summary: 'label' })] },
   glance: { label: 'At a glance', fields: [heading, list('facts', 'Facts', [s('label', 'Label'), s('value', 'Value'), s('href', 'Link (optional)')], { summary: 'label' }), strs('points', 'Key points')] },
+  timeline: { label: 'Timeline', fields: [heading, text('body', 'Intro'), list('items', 'Milestones', [s('date', 'When (e.g. Jul 2025)'), s('title', 'Title'), text('body', 'Text'), s('href', 'Link (optional)'), s('tag', 'Tag (e.g. Work, Project, Learning)')], { summary: 'title' })] },
   cards: { label: 'Cards', fields: [heading, text('body', 'Intro'), num('columns', 'Columns (1–4)'), list('items', 'Cards', card, { summary: 'title' })] },
   hero: { label: 'Hero', fields: [s('heading', 'Heading', { required: true }), s('subheading', 'Subheading'), text('body', 'Intro (markdown)'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link — "projects/" stays inside the theme, or a full URL')], { summary: 'label' })] },
   text: { label: 'Text', fields: [heading, md('body', 'Body', { required: true })] },

@@ -29,6 +29,8 @@ export const blockSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('banner'), eyebrow: z.string().nullish(), heading: z.string(), body: z.string().nullish(), image: z.string().nullish(), tags: z.array(z.string()).default([]), ctas: z.array(cta).default([]), back: cta.nullish() }),
   // "At a glance": key facts on the left, key points on the right (project / client pages)
   z.object({ type: z.literal('glance'), heading: z.string().nullish(), facts: z.array(z.object({ label: z.string(), value: z.string(), href: z.string().nullish() })).default([]), points: z.array(z.string()).default([]) }),
+  // A dated journey (about page)
+  z.object({ type: z.literal('timeline'), heading: z.string().nullish(), body: z.string().nullish(), items: z.array(z.object({ date: z.string(), title: z.string(), body: z.string().nullish(), href: z.string().nullish(), tag: z.string().nullish() })).default([]) }),
   z.object({ type: z.literal('cards'), heading: z.string().nullish(), body: z.string().nullish(), columns: z.number().int().min(1).max(4).nullish(), items: z.array(cardSchema).default([]) }),
   z.object({ type: z.literal('hero'), heading: z.string(), subheading: z.string().nullish(), body: z.string().nullish(), ctas: z.array(cta).default([]) }),
   z.object({ type: z.literal('text'), heading: z.string().nullish(), body: z.string() }),

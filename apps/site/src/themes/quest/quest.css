@@ -275,3 +275,10 @@ body { display: flex; flex-direction: column; }
 .q-facts dt { font-family: 'Press Start 2P', monospace; font-size: .5rem; color: var(--accent); padding-top: .3rem; }
 .q-facts dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 720px) { .q-glance { grid-template-columns: 1fr; } }
+
+/* Journey timeline */
+.q-journey { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.q-journey li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 1rem; background: var(--bg); padding: .8rem 1rem; align-items: start; }
+.q-journey__lv { font-family: 'Press Start 2P', monospace; font-size: .55rem; color: var(--bg); background: var(--accent); padding: .4rem .3rem; text-align: center; }
+.q-journey h3 { font-size: .62rem; line-height: 1.7; margin: .2rem 0 .3rem; }
+.q-journey p { margin: 0; }

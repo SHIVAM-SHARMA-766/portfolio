@@ -241,3 +241,12 @@ a.t-entry:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accen
 .t-facts dt { color: var(--accent-2); white-space: pre; flex: none; }
 .t-facts dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 760px) { .t-glance { grid-template-columns: 1fr; } .t-facts div { flex-direction: column; gap: 0; padding: .3rem 0; } .t-shell-fab { width: 46px; height: 46px; right: 12px; } }
+
+/* Journey timeline */
+.t-journey { list-style: none; margin: .4rem 0 0; padding: 0; border-left: 1px solid var(--border); }
+.t-journey li { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 1rem; padding: .5rem 0 .5rem 1rem; position: relative; }
+.t-journey li::before { content: '*'; position: absolute; left: -.35rem; top: .45rem; color: var(--accent); background: var(--bg); }
+.t-journey__when { color: var(--accent-2); }
+.t-journey__title { margin: 0; color: var(--fg); font-weight: 600; }
+.t-journey__body { margin: .15rem 0 0; color: var(--muted); }
+@media (max-width: 760px) { .t-journey li { grid-template-columns: 1fr; gap: 0; } }

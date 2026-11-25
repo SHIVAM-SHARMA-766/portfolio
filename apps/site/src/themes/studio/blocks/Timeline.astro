@@ -1,0 +1,21 @@
+---
+import { mdInline, resolveHref } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'timeline'>; theme: string };
+---
+<section class="s-wrap s-section">
+  {block.heading && <h2 class="s-h2">{block.heading}</h2>}
+  {block.body && <p class="s-lead s-cards-intro" set:html={mdInline(block.body)} />}
+  <ol class="s-journey">
+    {block.items.map((it) => (
+      <li>
+        <p class="s-journey__when">{it.date}</p>
+        <div class="s-journey__body">
+          {it.tag && <span class="s-journey__tag">{it.tag}</span>}
+          <h3>{it.href ? <a class="s-plain" href={resolveHref(theme, it.href)}>{it.title} →</a> : it.title}</h3>
+          {it.body && <p set:html={mdInline(it.body)} />}
+        </div>
+      </li>
+    ))}
+  </ol>
+</section>

@@ -1,0 +1,21 @@
+---
+import Panel from '../Panel.astro';
+import { mdInline, resolveHref } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block, theme } = Astro.props as { block: BlockOf<'timeline'>; theme: string };
+---
+<Panel title={block.heading ?? 'The story so far'} icon="🗺️">
+  {block.body && <p set:html={mdInline(block.body)} />}
+  <ol class="q-journey">
+    {block.items.map((it, i) => (
+      <li>
+        <span class="q-journey__lv">Ch.{i + 1}</span>
+        <div>
+          <small class="q-muted">{it.date}{it.tag && ` · ${it.tag}`}</small>
+          <h3>{it.href ? <a class="q-plain" href={resolveHref(theme, it.href)}>{it.title} ▶</a> : it.title}</h3>
+          {it.body && <p set:html={mdInline(it.body)} />}
+        </div>
+      </li>
+    ))}
+  </ol>
+</Panel>

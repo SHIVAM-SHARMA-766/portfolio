@@ -78,6 +78,13 @@
       ]
     },
     {
+      "type": "cta",
+      "heading": "The longer story",
+      "body": "From an AI/ML degree to running production AWS for two enterprise clients, and building a password manager, a CVE platform and more on free tiers.",
+      "label": "Read my story",
+      "href": "about/"
+    },
+    {
       "type": "projects",
       "heading": "Featured work",
       "filter": "featured",
