@@ -250,3 +250,28 @@ body { display: flex; flex-direction: column; }
 .q-prose img, .prose img, .post-cover { display: block; max-width: 100%; height: auto; margin: 1rem 0; box-shadow: 0 0 0 var(--px) var(--border); }
 .post-cover { width: 100%; }
 .prose pre { max-width: 100%; overflow-x: auto; } .prose table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* ---- Review fixes ---- */
+.q-available { display: inline-block; margin: .2rem 0 .6rem; color: #86efac; font-size: .85rem; }
+.q-hero-actions { margin-top: 1rem; }
+.q-hero-links { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin: .9rem 0 0; font-size: .9rem; }
+.q-hero-links a { color: var(--fg); }
+.q-hero-links a:hover { color: var(--accent); }
+/* Long labels wrap instead of running off a phone screen */
+.q-btn { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.q-btn--big { line-height: 1.7; }
+/* Cards respect the column count (no 3 + 1 orphan) */
+@media (min-width: 900px) { .q-board[style*="--cols"] { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); } }
+/* World map on phones: a scrollable strip with fading edges; the current zone is scrolled into view */
+@media (max-width: 720px) {
+  .q-map { gap: .6rem; scroll-snap-type: x proximity; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 32px), transparent); }
+  .q-zone { scroll-snap-align: center; min-width: 84px; padding: .6rem .7rem; }
+}
+/* At a glance */
+.q-glance { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 1.6rem; align-items: start; }
+.q-facts { margin: 0; background: var(--bg); padding: .6rem 1rem; }
+.q-facts div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: .6rem; padding: .45rem 0; border-bottom: 2px dashed var(--border); }
+.q-facts div:last-child { border-bottom: 0; }
+.q-facts dt { font-family: 'Press Start 2P', monospace; font-size: .5rem; color: var(--accent); padding-top: .3rem; }
+.q-facts dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 720px) { .q-glance { grid-template-columns: 1fr; } }

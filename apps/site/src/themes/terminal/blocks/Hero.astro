@@ -1,18 +1,24 @@
 ---
 import Cmd from '../Cmd.astro';
-import { resolveHref, mdInline, photo } from '../../../lib/content';
+import { resolveHref, mdInline, photo, site, contactLinks } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string };
 ---
 <Cmd cmd="whoami">
   <div class={photo ? 't-hero t-hero--photo' : 't-hero'}>
     <div>
+      {site.availability && <p class="t-available">● {site.availability}</p>}
       <h1 class="t-hero-name">{block.heading}<span class="t-cursor" aria-hidden="true">█</span></h1>
       {block.subheading && <p class="t-hero-role"># {block.subheading}</p>}
       {block.body && <p class="t-hero-body" set:html={mdInline(block.body)} />}
       {block.ctas.length > 0 && (
-        <p class="t-actions">{block.ctas.map((c) => <a class="t-link-btn" href={resolveHref(theme, c.href)}>[ {c.label} ]</a>)}</p>
+        <p class="t-actions">
+          {block.ctas.map((c) => <a class="t-link-btn" href={resolveHref(theme, c.href)}>[ {c.label} ]</a>)}
+          {site.resume && <a class="t-link-btn" href={site.resume} target="_blank" rel="noopener">[ cv.pdf ]</a>}
+          <a class="t-link-btn t-try" href="#shell-in" data-focus-shell>[ try the shell ↓ ]</a>
+        </p>
       )}
+      {contactLinks.length > 0 && <p class="t-dim t-hero-links">{contactLinks.map((l) => <a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}>{l.label.toLowerCase()}</a>)}</p>}
     </div>
     {photo && (
       <figure class={photo.cutout ? 't-portrait t-portrait--cut' : 't-portrait'}>

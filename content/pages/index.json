@@ -29,8 +29,8 @@
       "heading": "At a glance",
       "items": [
         {
-          "value": "70+ → 47",
-          "label": "AWS accounts consolidated with Terraform"
+          "value": "47",
+          "label": "AWS accounts — consolidated from 70+ with Terraform"
         },
         {
           "value": "~$120K",
@@ -96,13 +96,6 @@
     {
       "type": "courses",
       "heading": "Learn with me"
-    },
-    {
-      "type": "cta",
-      "heading": "Play while you look around",
-      "body": "Every page you visit, project you open and flag you capture earns XP and coins. Spend coins to unlock the Quest theme and new colour palettes. Sign in to keep your progress.",
-      "label": "Start with my story",
-      "href": "about/"
     },
     {
       "type": "contact",

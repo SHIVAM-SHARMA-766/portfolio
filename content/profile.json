@@ -162,7 +162,7 @@
       "slug": "dohra",
       "name": "Dohra — local class recorder",
       "year": "2026",
-      "featured": true,
+      "featured": false,
       "summary": "Open-source Chromium extension that records a class playing in a browser tab and transcribes it on your own computer — no bot joins the meeting and nothing is uploaded.",
       "highlights": [
         "Go companion running whisper.cpp for live local transcription, including Hinglish in Roman script.",
@@ -200,7 +200,7 @@
       "slug": "assessment-platform",
       "name": "DevOps Assessment Platform",
       "year": "2026",
-      "featured": true,
+      "featured": false,
       "summary": "Online exam platform with live invigilation, containerised with Docker Compose; hosted on EC2 for a campus hiring drive at JBIT.",
       "highlights": [
         "Live invigilation with camera and screen capture.",

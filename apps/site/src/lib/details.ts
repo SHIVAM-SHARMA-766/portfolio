@@ -20,7 +20,6 @@ export const jobSlug = (job: Job) => job.slug || slugify(job.company);
 export const engagementSlug = (e: Engagement) => e.slug || slugify(e.title.split(/\s[—–-]\s/)[0]);
 export const shortTitle = (title: string) => title.split(/\s[—–-]\s/)[0];
 export const period = (job: Job) => `${formatMonth(job.start)} – ${formatMonth(job.end ?? undefined)}`;
-const bullets = (items: string[]) => items.map((h) => `- ${h}`).join('\n');
 
 export function projectCard(p: Project, base: string): Card {
   return {
@@ -59,7 +58,12 @@ export async function detailPages(): Promise<Detail[]> {
     const blocks: Block[] = [
       { type: 'banner', eyebrow: [p.year, p.role, p.featured ? 'Featured' : null].filter(Boolean).join(' · ') || null, heading: p.name, body: p.summary, image: p.cover ?? null, tags: p.tags, ctas: p.links.map((l) => ({ label: `${l.label} ↗`, href: l.url })), back: { label: 'All projects', href: `/${b.projects}/` } },
     ];
-    if (p.highlights.length) blocks.push({ type: 'text', heading: 'Highlights', body: bullets(p.highlights) });
+    blocks.push({ type: 'glance', heading: 'At a glance', facts: [
+      ...(p.role ? [{ label: 'Role', value: p.role, href: null }] : []),
+      ...(p.year ? [{ label: 'Year', value: p.year, href: null }] : []),
+      ...(p.tags.length ? [{ label: 'Stack', value: p.tags.join(' · '), href: null }] : []),
+      ...p.links.map((l) => ({ label: l.label, value: l.url.replace(/^https?:\/\//, '').replace(/\/$/, ''), href: l.url })),
+    ], points: p.highlights });
     if (p.body) blocks.push({ type: 'text', heading: 'The story', body: p.body });
     if (p.pages.length) blocks.push({ type: 'cards', heading: 'More about this project', body: null, columns: null, items: p.pages.map((sp) => subCard(sp, `${url}${sp.slug}/`)) });
     const others = profile.projects.filter((o) => o.slug !== p.slug).slice(0, 3);
@@ -82,8 +86,13 @@ export async function detailPages(): Promise<Detail[]> {
     const jb: Block[] = [
       { type: 'banner', eyebrow: `${period(job)}${job.location ? ` · ${job.location}` : ''}`, heading: `${job.role} at ${job.company}`, body: job.summary ?? job.progression ?? null, image: job.logo ?? null, tags: [], ctas: [], back: { label: 'All experience', href: `/${b.experience}/` } },
     ];
-    if (job.summary && job.progression) jb.push({ type: 'text', heading: 'Growth', body: job.progression });
-    if (job.highlights.length) jb.push({ type: 'text', heading: 'Highlights', body: bullets(job.highlights) });
+    jb.push({ type: 'glance', heading: 'At a glance', facts: [
+      { label: 'Company', value: job.company, href: null },
+      { label: 'Role', value: job.role, href: null },
+      { label: 'Period', value: period(job), href: null },
+      ...(job.location ? [{ label: 'Location', value: job.location, href: null }] : []),
+      ...(job.progression ? [{ label: 'Growth', value: job.progression, href: null }] : []),
+    ], points: job.highlights });
     if (job.engagements.length) jb.push({ type: 'cards', heading: 'Clients & engagements', body: null, columns: 2, items: job.engagements.map((e) => engagementCard(job, e, b.experience)) });
     out.push({ page: page(`${b.experience}/${jobSlug(job)}`, `${job.role} at ${job.company}`, job.summary ?? `${job.role} at ${job.company}`, jb), current: b.experience });
 
@@ -92,7 +101,12 @@ export async function detailPages(): Promise<Detail[]> {
       const eb: Block[] = [
         { type: 'banner', eyebrow: `${job.company} · ${period(job)}`, heading: e.title, body: e.summary ?? null, image: e.cover ?? null, tags: e.tags, ctas: [], back: { label: `${job.role} at ${job.company}`, href: jurl } },
       ];
-      if (e.highlights.length) eb.push({ type: 'text', heading: 'What I did', body: bullets(e.highlights) });
+      eb.push({ type: 'glance', heading: 'What I did', facts: [
+        { label: 'Client', value: shortTitle(e.title), href: null },
+        { label: 'Via', value: `${job.role}, ${job.company}`, href: null },
+        { label: 'Period', value: period(job), href: null },
+        ...(e.tags.length ? [{ label: 'Stack', value: e.tags.join(' · '), href: null }] : []),
+      ], points: e.highlights });
       if (e.body) eb.push({ type: 'text', heading: 'The story', body: e.body });
       if (e.pages.length) eb.push({ type: 'cards', heading: 'Deep dives', body: null, columns: null, items: e.pages.map((sp) => subCard(sp, `${eurl}${sp.slug}/`)) });
       const others = job.engagements.filter((o) => o !== e);

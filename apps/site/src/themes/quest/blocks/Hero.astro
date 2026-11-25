@@ -1,5 +1,5 @@
 ---
-import { resolveHref, mdInline, photo, initials } from '../../../lib/content';
+import { resolveHref, mdInline, photo, initials, site, contactLinks } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string };
 ---
@@ -10,13 +10,18 @@ const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string 
     ) : <span>{initials}</span>}
   </div>
   <div class="q-dialog">
-    <p class="q-nametag">{block.heading}</p>
-    <h1 class="q-hero-title">{block.subheading ?? block.heading}</h1>
+    {block.subheading && <p class="q-nametag">{block.subheading}</p>}
+    {site.availability && <p class="q-available">✦ {site.availability}</p>}
+    <h1 class="q-hero-title">{block.heading}</h1>
     {block.body && <p set:html={mdInline(block.body)} />}
     {block.ctas.length > 0 && (
-      <ul class="q-choices">
-        {block.ctas.map((c) => <li><a href={resolveHref(theme, c.href)}>{c.label}</a></li>)}
-      </ul>
+      <div class="q-actions q-hero-actions">
+        {block.ctas.map((c, i) => <a class={i === 0 ? 'q-btn' : 'q-btn q-btn--ghost'} href={resolveHref(theme, c.href)}>▶ {c.label}</a>)}
+        {site.resume && <a class="q-btn q-btn--ghost" href={site.resume} target="_blank" rel="noopener">📜 CV</a>}
+      </div>
+    )}
+    {contactLinks.length > 0 && (
+      <p class="q-hero-links">{contactLinks.map((l) => <a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}>{l.label}{l.external ? ' ↗' : ''}</a>)}</p>
     )}
     <span class="q-next" aria-hidden="true">▼</span>
   </div>

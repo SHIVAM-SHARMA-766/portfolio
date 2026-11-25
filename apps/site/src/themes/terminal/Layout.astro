@@ -58,6 +58,7 @@ const cwd = slug ? `~/${slug}` : '~';
           <slot />
           <div data-game-end aria-hidden="true"></div>
           <Shell theme={theme} nav={nav} />
+          <a class="t-shell-fab" href="#shell-in" data-focus-shell aria-label="Open the terminal">$_</a>
         </main>
       </div>
       <footer class="t-footer">

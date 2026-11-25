@@ -31,3 +31,18 @@ const data = {
   import { startShell } from './shell';
   startShell();
 </script>
+
+<script>
+  // "try the shell" links and the floating $_ button: scroll to the prompt and
+  // focus it. The button hides while the prompt is on screen.
+  const input = document.getElementById('shell-in') as HTMLInputElement | null;
+  document.addEventListener('click', (e) => {
+    const a = (e.target as Element).closest?.('[data-focus-shell]');
+    if (!a || !input) return;
+    e.preventDefault();
+    input.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    setTimeout(() => input.focus({ preventScroll: true }), 300);
+  });
+  const fab = document.querySelector<HTMLElement>('.t-shell-fab');
+  if (input && fab) new IntersectionObserver(([en]) => fab.classList.toggle('is-hidden', en.isIntersecting)).observe(input);
+</script>

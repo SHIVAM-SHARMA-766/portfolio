@@ -1,0 +1,18 @@
+---
+import Cmd from '../Cmd.astro';
+import { mdInline } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'glance'> };
+const pad = Math.max(...block.facts.map((f) => f.label.length), 4);
+---
+<Cmd cmd="cat facts.yml">
+  {block.heading && <h2 class="t-h"># {block.heading}</h2>}
+  <div class="t-glance">
+    {block.facts.length > 0 && (
+      <dl class="t-facts">
+        {block.facts.map((f) => <div><dt>{f.label.toLowerCase().padEnd(pad, ' ')}:</dt><dd>{f.href ? <a href={f.href} target="_blank" rel="noopener">{f.value}</a> : f.value}</dd></div>)}
+      </dl>
+    )}
+    {block.points.length > 0 && <ul class="t-list">{block.points.map((p) => <li set:html={mdInline(p)} />)}</ul>}
+  </div>
+</Cmd>

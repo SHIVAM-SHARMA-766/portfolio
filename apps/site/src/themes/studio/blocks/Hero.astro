@@ -1,15 +1,22 @@
 ---
-import { resolveHref, mdInline, photo } from '../../../lib/content';
+import { resolveHref, mdInline, photo, site, contactLinks } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'hero'>; theme: string };
 ---
 <section class={`s-wrap s-hero ${photo ? 's-hero--photo' : ''}`}>
   <div class="s-hero__text">
+    {site.availability && <p class="s-available"><span aria-hidden="true"></span>{site.availability}</p>}
     {block.subheading && <p class="s-eyebrow">{block.subheading}</p>}
     <h1>{block.heading}</h1>
     {block.body && <p class="s-lead" set:html={mdInline(block.body)} />}
     {block.ctas.length > 0 && (
-      <div class="s-ctas">{block.ctas.map((c, i) => <a class={i === 0 ? 's-btn' : 's-btn s-btn--ghost'} href={resolveHref(theme, c.href)}>{c.label}</a>)}</div>
+      <div class="s-ctas">
+        {block.ctas.map((c, i) => <a class={i === 0 ? 's-btn' : 's-btn s-btn--ghost'} href={resolveHref(theme, c.href)}>{c.label}</a>)}
+        {site.resume && <a class="s-btn s-btn--ghost" href={site.resume} target="_blank" rel="noopener">Download CV</a>}
+      </div>
+    )}
+    {contactLinks.length > 0 && (
+      <p class="s-hero-links">{contactLinks.map((l) => <a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}>{l.label}{l.external ? ' ↗' : ''}</a>)}</p>
     )}
   </div>
   {photo && (photo.cutout ? (

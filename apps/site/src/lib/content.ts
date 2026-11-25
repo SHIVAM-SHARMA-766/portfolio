@@ -159,3 +159,9 @@ export async function gameConfig(currentPageId: string | null) {
     palettes: shopPalettes(),
   };
 }
+
+/** Ways to reach me for the hero: email, socials and the CV (when set). */
+export const contactLinks = [
+  ...(site.email ? [{ label: 'Email', href: `mailto:${site.email}`, external: false }] : []),
+  ...site.socials.map((s) => ({ label: s.label, href: s.url, external: true })),
+];

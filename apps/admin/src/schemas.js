@@ -19,6 +19,7 @@ const subPages = list('pages', 'Detail pages', [s('slug', 'Slug', { pattern: '^[
 
 export const blockTypes = {
   banner: { label: 'Banner (page header)', fields: [s('eyebrow', 'Small line above'), s('heading', 'Heading', { required: true }), text('body', 'Text'), img('image', 'Image (optional)'), strs('tags', 'Tags'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link')], { summary: 'label' })] },
+  glance: { label: 'At a glance', fields: [heading, list('facts', 'Facts', [s('label', 'Label'), s('value', 'Value'), s('href', 'Link (optional)')], { summary: 'label' }), strs('points', 'Key points')] },
   cards: { label: 'Cards', fields: [heading, text('body', 'Intro'), num('columns', 'Columns (1–4)'), list('items', 'Cards', card, { summary: 'title' })] },
   hero: { label: 'Hero', fields: [s('heading', 'Heading', { required: true }), s('subheading', 'Subheading'), text('body', 'Intro (markdown)'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link — "projects/" stays inside the theme, or a full URL')], { summary: 'label' })] },
   text: { label: 'Text', fields: [heading, md('body', 'Body', { required: true })] },
@@ -107,6 +108,7 @@ export const profileFields = [
 
 export const siteFields = [
   s('name', 'Name'), s('shortName', 'Short name'), s('role', 'Role'), s('tagline', 'Tagline'), text('description', 'Description (search engines)'),
+  s('availability', 'Availability badge (optional)', { help: 'e.g. “Open to DevOps / DevSecOps roles”. Shown on the home page hero; leave empty to hide.' }),
   doc('resume', 'CV / resume (PDF)', { help: 'Shows a “Download CV” button on the contact page and a CV link in the footer.' }),
   img('photo', 'Photo', { help: 'A 4:5 portrait works best. Also used as the preview image when the site is shared.' }),
   img('photoCutout', 'Photo without background', { help: 'Optional: the same portrait as a transparent PNG/WebP. Every theme shows it on a soft tile; without it they use the photo.' }),

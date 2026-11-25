@@ -114,7 +114,11 @@ body.g-has-bar { padding-bottom: 6.5rem; } /* the preview bar never covers the f
   .g-shop-theme__head { grid-template-columns: 56px 1fr; }
   .g-shop-preview { width: 56px; }
   .g-shop-actions { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
-  .g-preview-bar { bottom: 8px; font-size: .82rem; }
+  .g-preview-bar { bottom: 8px; font-size: .78rem; padding: .35rem .5rem .35rem .7rem; gap: .5rem; flex-wrap: nowrap; }
+  .g-preview-bar .g-btn { padding: .3rem .55rem; font-size: .75rem; white-space: nowrap; }
+  .g-preview-bar > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .g-preview-bar__actions { flex-wrap: nowrap; }
+  body.g-has-bar { padding-bottom: 4rem; }
   /* On phones the bottom belongs to the preview bar: the welcome card and
      toasts come in from the top instead of stacking on it */
   .g-welcome, .g-has-bar .g-welcome { top: 12px; bottom: auto; left: 12px; width: calc(100vw - 24px); }
@@ -135,3 +139,8 @@ body.g-has-bar { padding-bottom: 6.5rem; } /* the preview bar never covers the f
 [data-theme="quest"] .g-ripple { border-radius: 0; border-width: 3px; animation-timing-function: steps(5); }
 [data-theme="quest"] .g-plus { font-family: 'Press Start 2P', monospace; font-size: .6rem; animation-timing-function: steps(6); }
 [data-theme="studio"] .g-ripple { border-width: 1.5px; background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Counters bump when visiting/reading earns points quietly */
+.g-bump { animation: g-bump .5s ease-out; }
+@keyframes g-bump { 30% { transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .g-bump { animation: none; } }

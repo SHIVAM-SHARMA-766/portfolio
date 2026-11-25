@@ -20,6 +20,8 @@ const fullTitle = slug === '' && title === 'Home' ? `${site.name} — ${site.rol
 const canonical = new URL(pageUrl(site.defaultTheme, slug), site.siteUrl).href;
 const palettes = palettesFor(theme).map((p) => p.id);
 const defaultPalette = site.defaultPalettes[theme] ?? palettes[0];
+// A first visit follows the system's dark mode where the theme has a dark palette
+const darkPalette = palettes.includes('dark') ? 'dark' : null;
 const config = { ...(await gameConfig(pageIdent)), theme };
 ---
 <head>
@@ -43,7 +45,7 @@ const config = { ...(await gameConfig(pageIdent)), theme };
   {fonts && <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />}
   {fonts && <link rel="stylesheet" href={fonts} />}
   <style set:html={paletteCss(theme)}></style>
-  <script is:inline define:vars={{ theme, palettes, defaultPalette }}>
+  <script is:inline define:vars={{ theme, palettes, defaultPalette, darkPalette }}>
     // Runs before paint so the saved palette never flashes.
     (function () {
       var pal = defaultPalette, root = document.documentElement;
@@ -51,6 +53,7 @@ const config = { ...(await gameConfig(pageIdent)), theme };
         var p = JSON.parse(localStorage.getItem('pf.prefs.v1')) || {};
         var saved = (p.palettes || {})[theme];
         if (saved && palettes.indexOf(saved) !== -1) pal = saved;
+        else if (darkPalette && matchMedia('(prefers-color-scheme: dark)').matches) pal = darkPalette;
         p.theme = theme;
         localStorage.setItem('pf.prefs.v1', JSON.stringify(p));
       } catch (e) {}

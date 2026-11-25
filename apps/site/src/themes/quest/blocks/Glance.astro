@@ -1,0 +1,16 @@
+---
+import Panel from '../Panel.astro';
+import { mdInline } from '../../../lib/content';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'glance'> };
+---
+<Panel title={block.heading ?? 'Character sheet'} icon="🧾">
+  <div class="q-glance">
+    {block.facts.length > 0 && (
+      <dl class="q-facts">
+        {block.facts.map((f) => <div><dt>{f.label}</dt><dd>{f.href ? <a href={f.href} target="_blank" rel="noopener">{f.value} ↗</a> : f.value}</dd></div>)}
+      </dl>
+    )}
+    {block.points.length > 0 && <ul class="q-list">{block.points.map((p) => <li set:html={mdInline(p)} />)}</ul>}
+  </div>
+</Panel>

@@ -13,5 +13,5 @@ const items = posts.map((p) => ({
 }));
 ---
 {posts.length === 0 ? <p class="s-wrap s-muted">No posts yet.</p> : (
-  <Cards theme={theme} block={{ type: 'cards', heading: block.heading, body: null, columns: 3, items }} />
+  <Cards theme={theme} block={{ type: 'cards', heading: block.heading, body: null, columns: items.length === 1 ? 1 : 3, items }} />
 )}

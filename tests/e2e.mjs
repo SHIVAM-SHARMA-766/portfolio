@@ -141,8 +141,13 @@ try {
   });
 
   await step('first visit shows a welcome card, once', async () => {
+    // Not on arrival: the card waits for the first scroll (or 8 s)
+    await page.waitForTimeout(600);
+    assert.equal(await page.locator('.g-welcome').count(), 0, 'no welcome card on arrival');
+    await page.mouse.wheel(0, 700);
     await page.waitForSelector('.g-welcome', { timeout: 5000 });
     await shot(page, 'welcome');
+    await page.evaluate(() => scrollTo(0, 0));
     await page.click('[data-welcome="play"]');
     await page.reload();
     await page.waitForTimeout(1800);
@@ -256,6 +261,10 @@ try {
     assert.equal(await page.locator('[data-theme-lock]').isVisible(), false);
     await shot(page, 'quest-preview');
     await page.evaluate(() => sessionStorage.setItem('pf.preview.theme:quest', String(Date.now() - 600000)));
+    // Someone reading is never locked out mid-page…
+    await page.waitForTimeout(1500);
+    assert.equal(await page.locator('[data-theme-lock]').isVisible(), false, 'no lock mid-page');
+    // …the next page shows the unlock screen
     await page.reload();
     await page.waitForFunction(() => window.game?.account?.ready);
     assert.equal(await page.locator('[data-theme-lock]').isVisible(), true);

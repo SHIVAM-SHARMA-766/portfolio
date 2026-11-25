@@ -232,3 +232,35 @@ a.s-tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, v
 .prose img, .post-cover { display: block; max-width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 18px 40px -28px rgb(0 0 0 / .4); margin: 1.4rem 0; }
 .post-cover { width: 100%; margin: 0 0 2rem; }
 .prose pre { max-width: 100%; overflow-x: auto; } .prose table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* ---- Review fixes ---- */
+/* Header: coins live inside the XP pill; the online count only on wide screens */
+.s-top .acct-coins { display: none; }
+.s-pill-coins { padding-left: .5rem; margin-left: .1rem; border-left: 1px solid var(--border); }
+@media (max-width: 1279px) { .s-top .g-live { display: none; } }
+@media (max-width: 520px) { .s-tools .s-pill { display: inline-flex; padding-right: .55rem; } .s-tools .s-pill > span:not(.s-ring):not(.s-pill-coins) { display: none; } .s-pill-coins { border: 0; padding: 0; } }
+/* Hero: availability, CV, ways to reach me */
+.s-available { display: inline-flex; align-items: center; gap: .5rem; margin: 0 0 1.2rem; padding: .3rem .8rem; border-radius: 99px; background: color-mix(in srgb, #16a34a 12%, var(--surface)); color: color-mix(in srgb, #16a34a 75%, var(--fg)); font-size: .85rem; font-weight: 600; }
+.s-available span { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgb(22 163 74 / .2); }
+.s-hero-links { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin: 1.4rem 0 0; font-size: .92rem; }
+.s-hero-links a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+.s-hero-links a:hover { color: var(--accent); border-color: var(--accent); }
+/* Contact: the address never breaks mid-word */
+.s-email { word-break: normal; overflow-wrap: anywhere; font-size: clamp(1.1rem, 4.6vw, 2rem); }
+/* At a glance */
+.s-glance { padding-block: 3rem 1rem; }
+.s-glance__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 2.5rem; align-items: start; }
+.s-facts { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .4rem 1.2rem; }
+.s-facts div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: .8rem; padding: .7rem 0; border-bottom: 1px solid var(--border); }
+.s-facts div:last-child { border-bottom: 0; }
+.s-facts dt { color: var(--muted); font-size: .85rem; }
+.s-facts dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.s-points { margin: 0; padding-left: 1.1rem; display: grid; gap: .7rem; }
+.s-points li::marker { color: var(--accent); }
+@media (max-width: 760px) { .s-glance__grid { grid-template-columns: 1fr; gap: 1.4rem; } }
+/* One card on its own (e.g. a single blog post): wide, image beside the text */
+@media (min-width: 761px) {
+  .s-cards[style*="--cols:1"] .s-tile { flex-direction: row; }
+  .s-cards[style*="--cols:1"] .s-tile__media { flex: 0 0 48%; aspect-ratio: 40 / 21; align-self: center; }
+  .s-cards[style*="--cols:1"] .s-tile__body { padding: 1.8rem 2rem; justify-content: center; }
+}

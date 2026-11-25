@@ -4,6 +4,8 @@ import { xpAttrs, hue, initialsOf, isExternal } from '../../../lib/cards';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'cards'>; theme: string };
 const cols = block.columns ?? Math.min(3, Math.max(1, block.items.length));
+// A generated cover only for projects; other cards without an image stay text-only
+const media = (c: (typeof block.items)[number]) => !!c.image || !!c.xp?.id.startsWith('project:');
 ---
 <section class="s-wrap s-section">
   {block.heading && <h2 class="s-h2">{block.heading}</h2>}
@@ -14,14 +16,14 @@ const cols = block.columns ?? Math.min(3, Math.max(1, block.items.length));
       const link = c.href ? { href: resolveHref(theme, c.href), ...(isExternal(c.href) ? { target: '_blank', rel: 'noopener' } : {}) } : {};
       return (
         <Tag class="s-tile" {...link} {...xpAttrs(c)}>
-          {(c.image || c.xp) && (
+          {media(c) && (
             <div class="s-tile__media" style={`--h:${hue(c.title)}`}>
               {c.image ? <img src={c.image} alt="" loading="lazy" /> : <span aria-hidden="true">{c.icon ?? initialsOf(c.title)}</span>}
             </div>
           )}
           <div class="s-tile__body">
             {(c.meta || c.badge) && <p class="s-tile__meta">{c.meta}{c.badge && <b>{c.badge}</b>}</p>}
-            <h3>{!c.image && !c.xp && c.icon && <span aria-hidden="true">{c.icon} </span>}{c.title}</h3>
+            <h3>{!media(c) && c.icon && <span aria-hidden="true">{c.icon} </span>}{c.title}</h3>
             {c.body && <p set:html={mdInline(c.body)} />}
             {c.tags.length > 0 && <p class="s-chips">{c.tags.map((t) => <span>{t}</span>)}</p>}
             {c.href && <span class="s-tile__cta">{c.cta ?? 'Open'} →</span>}

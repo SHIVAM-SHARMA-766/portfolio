@@ -13,7 +13,7 @@
 //   [data-shop-item="palette:x"] [data-price]           gets [data-locked] until owned; price filled in
 //   [data-palette-btn="id"]                             applies a palette, or opens the shop if locked
 //   [data-theme-lock="theme:quest"]                     overlay shown after the free preview of a locked theme
-//   [data-preview-bar="theme:quest"] [data-preview-left] banner during the free preview
+//   [data-preview-bar="theme:quest"]                    banner during the free preview
 //   [data-buy-slot="item"]                              filled with the right buy button for that item
 //   [data-shop]                                         the shop, grouped by theme
 //   [data-account-guest] / [data-account-user]          shown for guests / signed-in visitors
@@ -31,7 +31,7 @@ import { mountLive } from './live.js';
 import { shopView } from './shop.js';
 
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-const PREVIEW_SECONDS = 90;
+const PREVIEW_SECONDS = 180;
 const MAX_TOASTS = 3;
 const PROVIDER_LABEL = { google: 'Google', github: 'GitHub', linkedin: 'LinkedIn' };
 
@@ -110,6 +110,13 @@ export function toast(html, kind = 'xp') {
 }
 
 const xpToast = { el: null, sum: 0, n: 0, label: '' };
+function bump() {
+  $$('[data-game-coins], [data-game-xp]').forEach((el) => {
+    const host = el.closest('button, a, .acct-coins') ?? el;
+    host.classList.remove('g-bump'); void host.offsetWidth; host.classList.add('g-bump');
+  });
+}
+
 function showXp(points, label) {
   const live = xpToast.el?.isConnected && !xpToast.el.classList.contains('g-toast--out');
   if (live) {
@@ -193,7 +200,7 @@ function buyButton(id, { compact = false } = {}) {
   if (owns(id)) return compact ? '' : '<span class="g-chip g-chip--ok">Owned</span>';
   const can = account?.canBuy(id) ?? { ok: false, reason: 'login' };
   if (can.reason === 'requires') return `<button type="button" class="g-btn" disabled title="Unlock ${esc(can.requires?.label ?? 'the theme')} first">🔒 ${esc(can.requires?.label?.replace(/ theme$/i, '') ?? 'Theme')} first</button>`;
-  if (can.reason === 'login') return `<button type="button" class="g-btn g-btn--primary" data-open-login>Sign in to unlock · 🪙 ${it.price}</button>`;
+  if (can.reason === 'login') return `<button type="button" class="g-btn g-btn--primary" data-open-login>${compact ? 'Unlock' : 'Sign in to unlock'} · 🪙 ${it.price}</button>`;
   if (can.reason === 'coins') return `<button type="button" class="g-btn" disabled>🪙 ${it.price} · need ${can.short} more</button>`;
   if (pendingBuy === id) return `<button type="button" class="g-btn g-btn--confirm" data-buy="${esc(id)}">Confirm · ${can.left} left</button>`;
   return `<button type="button" class="g-btn g-btn--primary" data-buy="${esc(id)}">Unlock · 🪙 ${it.price}</button>`;
@@ -262,7 +269,7 @@ function renderAccount(xp) {
     el.querySelectorAll('[data-price]').forEach((p) => (p.textContent = owned || !it ? '' : blocked ? '🔒' : `🪙 ${it.price}`));
     if (!owned && it) el.title = blocked ? `${it.label} — unlock ${itemOf(it.requires)?.label ?? 'its theme'} first` : `${it.label} — 🪙 ${it.price}`;
   });
-  $$('[data-buy-slot]').forEach((el) => setHTML(el, buyButton(el.getAttribute('data-buy-slot'))));
+  $$('[data-buy-slot]').forEach((el) => setHTML(el, buyButton(el.getAttribute('data-buy-slot'), { compact: !!el.closest('.g-preview-bar') })));
   $$('[data-palette-btn]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.paletteBtn === currentPalette())));
   const shopDialog = document.getElementById('shop-dialog');
   if (shopDialog?.open) $$('[data-shop]').forEach(renderShop);
@@ -286,29 +293,23 @@ function renderAccount(xp) {
 
 // ---- locked themes: free preview, then the unlock screen ---------------------------
 
-let previewTimer = null;
 function updateThemeLock() {
+  // The preview is decided when a page loads: someone reading is never locked
+  // out mid-page. Once the preview time has passed, the next page shows the
+  // unlock screen.
   $$('[data-theme-lock]').forEach((overlay) => {
     const id = overlay.getAttribute('data-theme-lock');
     const bar = document.querySelector(`[data-preview-bar="${id}"]`);
-    if (owns(id)) { overlay.hidden = true; if (bar) bar.hidden = true; document.body.classList.remove('g-has-bar'); clearInterval(previewTimer); return; }
+    if (owns(id)) { overlay.hidden = true; if (bar) bar.hidden = true; document.body.classList.remove('g-has-bar'); return; }
+    if (overlay.dataset.decided) return;
+    overlay.dataset.decided = '1';
     const key = `pf.preview.${id}`;
     let start = Date.now();
     try { start = Number(sessionStorage.getItem(key)) || start; sessionStorage.setItem(key, String(start)); } catch {}
-    const tick = () => {
-      const left = Math.max(0, PREVIEW_SECONDS - Math.floor((Date.now() - start) / 1000));
-      if (bar) {
-        bar.hidden = left <= 0;
-        document.body.classList.toggle('g-has-bar', !bar.hidden); // lifts toasts above the bar
-        bar.querySelectorAll('[data-preview-left]').forEach((el) => (el.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`));
-      }
-      overlay.hidden = left > 0;
-      if (left <= 0) clearInterval(previewTimer);
-    };
-    tick();
-    clearInterval(previewTimer);
-    if (!overlay.hidden) return;
-    previewTimer = setInterval(tick, 1000);
+    const expired = Date.now() - start > PREVIEW_SECONDS * 1000;
+    overlay.hidden = !expired;
+    if (bar) bar.hidden = expired;
+    document.body.classList.toggle('g-has-bar', !expired && !!bar);
   });
 }
 
@@ -374,7 +375,13 @@ async function buyItem(id) {
 function welcome() {
   const prefs = readPrefs();
   if (prefs.welcomed || document.documentElement.dataset.game === 'off' || config.pageId == null) return;
-  setTimeout(() => {
+  // Not on arrival: the visitor sees the page first. The card comes after the
+  // first real scroll, or after 8 seconds.
+  let shown = false;
+  const show = () => {
+    if (shown) return;
+    shown = true;
+    removeEventListener('scroll', onScroll);
     const card = document.createElement('div');
     card.className = 'g-welcome';
     card.setAttribute('role', 'dialog');
@@ -390,7 +397,10 @@ function welcome() {
       card.remove();
       releaseToasts();
     });
-  }, 600);
+  };
+  const onScroll = () => { if (scrollY > 240) show(); };
+  addEventListener('scroll', onScroll, { passive: true });
+  setTimeout(show, 8000);
 }
 
 // ---- mount ---------------------------------------------------------------------------------
@@ -416,7 +426,10 @@ export function mountGame() {
     emit: (type, detail) => {
       if (type === 'award') account?.queue(detail.id, detail.points);
       if (type === 'award' && detail.points > 0 && !detail.meta.silent) {
-        showXp(detail.points, detail.meta.label ?? '');
+        // Page visits and reads are quiet (a toast on every page is noise);
+        // the counters bump instead. Actions (opening a project…) still toast.
+        if (/^(visit|read):/.test(detail.id)) bump();
+        else showXp(detail.points, detail.meta.label ?? '');
         if (sound) beep(880);
       }
       if (type === 'achievement') {

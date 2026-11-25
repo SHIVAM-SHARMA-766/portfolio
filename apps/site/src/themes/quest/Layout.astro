@@ -48,6 +48,10 @@ const { theme, title, description, slug, nav, pageIdent, current = slug, image }
       {site.learnUrl && <a class="q-zone" href={site.learnUrl}><span class="q-zone-icon" aria-hidden="true">🏯</span><span>Dojo ↗</span></a>}
     </nav>
 
+    <script is:inline>
+      // Phones: bring the current zone into view in the scrollable map
+      document.querySelector('.q-map [aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    </script>
     <main id="main" class="q-main">
       <slot />
       <div data-game-end aria-hidden="true"></div>
