@@ -4,6 +4,7 @@ import { api, parseFrontmatter, stringifyFrontmatter, toJSON, slugify } from './
 import { Form, MarkdownEditor, uploadFile, publicUrl } from './fields.jsx';
 import * as S from './schemas.js';
 import { Dashboard, Contacts, Contact } from './crm.jsx';
+import { ProfileSection, SECTIONS } from './profile.jsx';
 import { Icon, Avatar, CommandPalette } from './ui.jsx';
 import './style.css';
 
@@ -335,8 +336,7 @@ function editorFor(path) {
   if (/^content\/courses\/[^/]+\/index\.md$/.test(path)) return { kind: 'md', fields: S.overviewFields, title: 'Course overview', bodyLabel: 'Overview' };
   if (/^content\/courses\/[^/]+\/[^/]+\/.+\.mdx?$/.test(path)) return { kind: 'md', fields: S.lessonFields, title: 'Lesson', bodyLabel: 'Lesson', deletable: true };
   const single = {
-    'content/profile.json': ['About & skills', S.profileFields],
-    'content/site.json': ['Site & game settings', S.siteFields],
+    'content/site.json': ['Site settings', S.siteFields],
     'content/shop.json': ['Shop', S.shopFields],
     'content/missions.json': ['Terminal missions', S.missionFields],
     'content/achievements.json': ['Achievements', S.achievementFields],
@@ -358,160 +358,6 @@ function Edit({ params }) {
     <FileEditor key={path} path={path} kind={ed.kind} fields={ed.fields} title={ed.title} bodyLabel={ed.bodyLabel} initial={initial} back={back} viewUrl={ed.viewUrl}
       onSaved={() => { if (params.new) { sessionStorage.removeItem('admin.new'); history.replaceState(null, '', editHref(path, params.course ? `&course=${params.course}` : '')); } }}
       onDeleted={ed.deletable ? () => navigate(back?.[0] ?? '#/dashboard') : null} />
-  );
-}
-
-// ---- projects & experience (both live in content/profile.json) ---------------
-
-const PROFILE = 'content/profile.json';
-const KINDS = {
-  project: { coll: 'projects', fields: () => S.projectFields, title: 'Project', list: '#/projects', back: 'Projects', label: (x) => x.name, url: (x) => (x.slug ? `/projects/${x.slug}/` : null) },
-  job: { coll: 'experience', fields: () => S.jobFields, title: 'Role', list: '#/experience', back: 'Experience', label: (x) => `${x.role ?? ''} at ${x.company ?? ''}`, url: (x) => (x.company ? `/experience/${x.slug || slugify(x.company)}/` : null) },
-};
-
-function useProfile() {
-  const [p, setP] = useState(null); // { data, sha }
-  const load = useCallback(() => api.file(PROFILE).then((f) => setP({ data: JSON.parse(f.content), sha: f.sha })).catch((e) => toast(e.message, 'err')), []);
-  useEffect(load, []);
-  const save = async (data, message) => {
-    const r = await api.save(PROFILE, toJSON(data), p.sha, message);
-    savedAt = Date.now();
-    setP({ data, sha: r.sha });
-  };
-  return [p, save, load];
-}
-
-function ProfileList({ kind, intro, newLabel, render, onNew }) {
-  const k = KINDS[kind];
-  const [p, save] = useProfile();
-  const items = p?.data[k.coll] ?? null;
-  const move = async (i, d) => {
-    const a = [...items]; const j = i + d;
-    if (j < 0 || j >= a.length) return;
-    [a[i], a[j]] = [a[j], a[i]];
-    try { await save({ ...p.data, [k.coll]: a }, `Reorder ${k.coll} (admin)`); toast('Order saved.'); } catch (e) { toast(e.message, 'err'); }
-  };
-  return (
-    <>
-      <div class="head-row"><h1>{k.back} <span class="count">{items?.length ?? ''}</span></h1><button class="primary" onClick={onNew}>{newLabel}</button></div>
-      <p class="muted">{intro}</p>
-      {!items ? <p class="muted">Loading…</p> : (
-        <div class="plist">
-          {items.map((x, i) => (
-            <div class="pcard">
-              <a class="pcard-main" href={`#/${kind}?i=${i}`} onClick={go}>{render(x)}</a>
-              <div class="pcard-tools">
-                <button title="Move up" disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
-                <button title="Move down" disabled={i === items.length - 1} onClick={() => move(i, 1)}>↓</button>
-                {k.url(x) && <a class="button" href={k.url(x)} target="_blank" rel="noopener" title="View on site">↗</a>}
-              </div>
-            </div>
-          ))}
-          {!items.length && <p class="muted">Nothing here yet.</p>}
-        </div>
-      )}
-    </>
-  );
-}
-
-function ProjectsList({ params = {} }) {
-  const create = () => {
-    const name = prompt('Project name');
-    if (!name) return;
-    sessionStorage.setItem('admin.newItem', JSON.stringify({ name, slug: slugify(name), year: String(new Date().getFullYear()), summary: '' }));
-    navigate('#/project?new=1');
-  };
-  useEffect(() => { if (params.new) { history.replaceState(null, '', '#/projects'); create(); } }, []);
-  return (
-    <ProfileList kind="project" newLabel="+ New project" onNew={create}
-      intro="Each project gets its own page with a banner, highlights, the full story and optional extra pages. The order here is the order on the site."
-      render={(x) => (
-        <>
-          <span class="pcard-cover">{x.cover ? <img src={x.cover} alt="" loading="lazy" onError={(e) => (e.currentTarget.style.display = 'none')} /> : <b>{(x.name ?? '?').slice(0, 2).toUpperCase()}</b>}</span>
-          <span class="pcard-text"><b>{x.name}</b><small>{[x.year, x.role].filter(Boolean).join(' · ')}{x.featured && <span class="pill pill--ok">Featured</span>}{!x.cover && <span class="pill">No cover</span>}{!x.body && <span class="pill">No full story</span>}</small><small class="clip">{x.summary}</small></span>
-        </>
-      )} />
-  );
-}
-
-function JobsList() {
-  const create = () => {
-    const company = prompt('Company');
-    if (!company) return;
-    const role = prompt('Your role') ?? '';
-    sessionStorage.setItem('admin.newItem', JSON.stringify({ company, role, start: new Date().toISOString().slice(0, 7), engagements: [] }));
-    navigate('#/job?new=1');
-  };
-  return (
-    <ProfileList kind="job" newLabel="+ New role" onNew={create}
-      intro="Each role gets a page, and each client / engagement inside it gets its own page too. Newest first."
-      render={(x) => (
-        <>
-          <span class="pcard-cover">{x.logo ? <img src={x.logo} alt="" loading="lazy" /> : <b>{(x.company ?? '?').slice(0, 2).toUpperCase()}</b>}</span>
-          <span class="pcard-text"><b>{x.role} · {x.company}</b><small>{x.start} → {x.end || 'present'}{x.location && ` · ${x.location}`}</small><small>{(x.engagements ?? []).length} clients / engagements: {(x.engagements ?? []).map((e) => e.title?.split(/\s[—–-]\s/)[0]).join(', ') || '—'}</small></span>
-        </>
-      )} />
-  );
-}
-
-/** Edits one project or role inside profile.json. */
-function ProfileItem({ kind, params }) {
-  const k = KINDS[kind];
-  const isNew = !!params.new;
-  const [p, save] = useProfile();
-  const [item, setItem] = useState(null);
-  const [changed, setChanged] = useState(false);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (!p || item) return;
-    if (isNew) { try { setItem(JSON.parse(sessionStorage.getItem('admin.newItem')) ?? {}); } catch { setItem({}); } setChanged(true); setDirty(true); }
-    else setItem(p.data[k.coll]?.[Number(params.i)] ?? null);
-  }, [p]);
-  useEffect(() => () => setDirty(false), []);
-  const edit = (v) => { setItem(v); setChanged(true); setDirty(true); };
-  const doSave = useCallback(async () => {
-    if (!item || busy) return;
-    if (kind === 'project' && (p.data.projects ?? []).some((x, i) => x.slug === item.slug && (isNew || i !== Number(params.i)))) return toast(`Another project already uses the slug “${item.slug}”.`, 'err');
-    setBusy(true);
-    try {
-      const list = [...(p.data[k.coll] ?? [])];
-      if (isNew) list.push(item); else list[Number(params.i)] = item;
-      await save({ ...p.data, [k.coll]: list }, `${isNew ? 'Add' : 'Update'} ${k.title.toLowerCase()} ${k.label(item)} (admin)`);
-      setChanged(false); setDirty(false);
-      toast('Saved. The site will update in about a minute.');
-      if (isNew) { sessionStorage.removeItem('admin.newItem'); history.replaceState(null, '', `#/${kind}?i=${list.length - 1}`); }
-    } catch (e) { toast(e.message, 'err'); }
-    setBusy(false);
-  }, [item, busy, p]);
-  useEffect(() => {
-    const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); } };
-    addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
-  }, [doSave]);
-  const del = async () => {
-    if (!confirm(`Delete “${k.label(item)}”? Its page disappears after the next deploy.`)) return;
-    try {
-      await save({ ...p.data, [k.coll]: p.data[k.coll].filter((_, i) => i !== Number(params.i)) }, `Delete ${k.title.toLowerCase()} ${k.label(item)} (admin)`);
-      setDirty(false); toast('Deleted.'); navigate(k.list);
-    } catch (e) { toast(e.message, 'err'); }
-  };
-  if (!p || item === null) return p && !isNew ? <p class="error">Not found. <a href={k.list} onClick={go}>Back</a></p> : <p class="muted">Loading…</p>;
-  return (
-    <div class="editor">
-      <div class="head-row sticky">
-        <div>
-          <a class="back" href={k.list} onClick={go}>← {k.back}</a>
-          <h1>{k.label(item) || `New ${k.title.toLowerCase()}`}</h1>
-          <code class="path">{PROFILE}</code>
-        </div>
-        <div class="actions">
-          {!isNew && <View url={k.url(item)} />}
-          {!isNew && <button class="danger" onClick={del}>Delete</button>}
-          <button class="primary" onClick={doSave} disabled={busy || !changed}>{busy ? 'Saving…' : changed ? (isNew ? 'Create' : 'Save') : 'Saved'}</button>
-        </div>
-      </div>
-      <Form fields={k.fields()} value={item} onChange={edit} />
-    </div>
   );
 }
 
@@ -572,18 +418,18 @@ function Media() {
 
 const NAV = [
   ['', [['#/dashboard', 'Dashboard', 'dashboard'], ['#/contacts', 'Contacts', 'contacts']]],
-  ['Content', [['#/pages', 'Pages', 'pages'], ['#/projects', 'Projects', 'projects'], ['#/experience', 'Experience', 'briefcase'], ['#/blog', 'Blog', 'pen'], ['#/courses', 'Courses', 'book'], ['#/media', 'Media', 'image']]],
-  ['Profile', [[editHref('content/profile.json'), 'About & skills', 'user']]],
+  ['Profile', [['#/intro', 'Intro', 'user'], ['#/about-me', 'About', 'note'], ['#/experience', 'Experience', 'briefcase'], ['#/education', 'Education', 'book'], ['#/certifications', 'Licenses & certifications', 'trophy'], ['#/projects', 'Projects', 'projects'], ['#/skills', 'Skills', 'check'], ['#/languages', 'Languages', 'globe'], ['#/awards', 'Honors & awards', 'star'], ['#/volunteering', 'Volunteering', 'contacts']]],
+  ['Website', [['#/pages', 'Pages', 'pages'], ['#/blog', 'Blog', 'pen'], ['#/courses', 'Courses', 'book'], ['#/media', 'Media library', 'image']]],
   ['Game', [[editHref('content/shop.json'), 'Shop', 'store'], [editHref('content/missions.json'), 'Terminal missions', 'flag'], [editHref('content/achievements.json'), 'Achievements', 'trophy']]],
-  ['Settings', [[editHref('content/site.json'), 'Site & game', 'settings']]],
+  ['Settings', [[editHref('content/site.json'), 'Site settings', 'settings']]],
 ];
-const TITLES = { '/dashboard': 'Dashboard', '/contacts': 'Contacts', '/contact': 'Contact', '/pages': 'Pages', '/projects': 'Projects', '/project': 'Project', '/experience': 'Experience', '/job': 'Role', '/blog': 'Blog', '/courses': 'Courses', '/course': 'Course', '/media': 'Media', '/edit': 'Editor' };
+const TITLES = { '/intro': 'Intro', '/about-me': 'About', '/education': 'Education', '/certifications': 'Licenses & certifications', '/skills': 'Skills', '/languages': 'Languages', '/awards': 'Honors & awards', '/volunteering': 'Volunteering', '/dashboard': 'Dashboard', '/contacts': 'Contacts', '/contact': 'Contact', '/pages': 'Pages', '/projects': 'Projects', '/project': 'Project', '/experience': 'Experience', '/job': 'Role', '/blog': 'Blog', '/courses': 'Courses', '/course': 'Course', '/media': 'Media', '/edit': 'Editor' };
 
 function isOn(current, href) {
   if (current === href) return true;
   if (href.includes('?')) return false;
   const path = current.split('?')[0];
-  return path === href || (href === '#/projects' && path === '#/project') || (href === '#/experience' && path === '#/job') || (href === '#/contacts' && path === '#/contact') || (href === '#/courses' && path === '#/course');
+  return path === href || (href === '#/contacts' && path === '#/contact') || (href === '#/courses' && path === '#/course');
 }
 
 /** Everything the command palette can jump to: screens, contacts and content files. */
@@ -631,10 +477,13 @@ function App() {
     case '/contact': page = <Contact key={route.params.id} id={route.params.id} />; break;
     case '/pages': page = <Pages />; break;
     case '/blog': page = <Blog params={route.params} />; break;
-    case '/projects': page = <ProjectsList params={route.params} />; break;
-    case '/project': page = <ProfileItem key={route.params.i ?? 'new'} kind="project" params={route.params} />; break;
-    case '/experience': page = <JobsList />; break;
-    case '/job': page = <ProfileItem key={route.params.i ?? 'new'} kind="job" params={route.params} />; break;
+    case '/projects': case '/experience': case '/education': case '/certifications': case '/skills': case '/languages': case '/awards': case '/volunteering':
+      page = <ProfileSection key={route.path} kind={route.path.slice(1)} params={route.params} />; break;
+    // old links
+    case '/project': page = <ProfileSection key="projects" kind="projects" params={{ edit: route.params.i, new: route.params.new }} />; break;
+    case '/job': page = <ProfileSection key="experience" kind="experience" params={{ edit: route.params.i, new: route.params.new }} />; break;
+    case '/intro': page = <FileEditor key="intro" path="content/site.json" kind="json" fields={S.introFields} title="Intro" viewUrl={() => '/'} />; break;
+    case '/about-me': page = <FileEditor key="about" path="content/profile.json" kind="json" fields={S.aboutFields} title="About" viewUrl={() => '/about/'} />; break;
     case '/courses': page = <Courses />; break;
     case '/course': page = <Course slug={route.params.slug} />; break;
     case '/edit': page = <Edit params={route.params} />; break;

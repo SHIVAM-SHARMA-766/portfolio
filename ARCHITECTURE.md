@@ -48,8 +48,8 @@ so the game catalog is unchanged. Detail pages have no page id (no visit/read XP
 The banner image (project cover) is also the page's share image.
 
 **Blog covers.** Posts take optional `cover` / `coverAlt`; the posts block renders cards
-with the cover, the post page shows it on top, and it is the post's share image. Experience, projects, skills and education
-read from `profile.json`, so the resume is written once. Each theme renders each block
+with the cover, the post page shows it on top, and it is the post's share image. Experience, projects, skills, education, certifications, languages,
+awards and volunteering read from `profile.json` (one block type each; empty ones render nothing). Each theme renders each block
 type its own way. `BlockRenderer.astro` falls back to a generic renderer when a theme
 lacks one. The build fails on invalid content (Zod), and optional fields accept `null`/`""`.
 
@@ -205,6 +205,16 @@ A Preact SPA styled like a CRM: a sidebar with icons, breadcrumbs, a **command p
   tag), starred filter, sortable columns, inline stage change, bulk move and CSV export.
   A contact's page has stage, star, tags, private notes and an **activity timeline**
   (every event, achievement and purchase, in plain words, grouped by day).
+- **Profile** (`profile.jsx`), LinkedIn-style: Intro (name, headline, photo, CV, contact
+  info), About, Experience (several positions per company, employment and location type,
+  skills, clients), Education, Licenses & certifications (issuer, dates, credential, status),
+  Projects, Skills, Languages, Honors & awards, Volunteering. Each section is a list of
+  cards with + Add and ✏️ Edit; forms open in a side drawer with month pickers, "currently
+  here" toggles and skill chips that suggest from the rest of the profile. Empty sections
+  are hidden on the site.
+- **Media while editing**: the Markdown editor's Image button uploads or picks from the
+  library, and images pasted or dropped into the text upload and insert themselves; image
+  fields upload directly. The Media library page lists, copies and deletes uploads.
 - **Content**: schema-driven editors (`schemas.js` + `fields.jsx`): pages and blocks,
   projects and experience (each item its own editor inside `profile.json`), blog, courses
   → chapters → lessons, about & skills, media (multi-upload, drag and drop, delete), shop,

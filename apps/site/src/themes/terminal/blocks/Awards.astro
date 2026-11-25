@@ -1,0 +1,9 @@
+---
+// Renders nothing when the section is empty (as on LinkedIn).
+import Entries from '../Entries.astro';
+import { entriesFor } from '../../../lib/entries';
+import type { BlockOf } from '../../../lib/schema';
+const { block } = Astro.props as { block: BlockOf<'awards'> };
+const items = entriesFor('awards');
+---
+{items.length > 0 && <Entries heading={block.heading ?? 'Honors & awards'} items={items} cmd="cat awards.txt" />}

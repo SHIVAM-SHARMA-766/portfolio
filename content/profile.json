@@ -8,7 +8,6 @@
       "location": "Delhi",
       "start": "2025-07",
       "end": "",
-      "progression": "Trainee (Jul 2025) → Junior DevOps Engineer (Oct 2025) → DevOps Engineer",
       "engagements": [
         {
           "title": "Suzuki Digital — DevSecOps & DevOps, AWS multi-account",
@@ -46,7 +45,32 @@
           ]
         }
       ],
-      "summary": "I joined VA2PT as a trainee in July 2025. Today I own security, compliance and cost work for one enterprise AWS organisation and the full DevOps lifecycle for another."
+      "summary": "I joined VA2PT as a trainee in July 2025. Today I own security, compliance and cost work for one enterprise AWS organisation and the full DevOps lifecycle for another.",
+      "employmentType": "Full-time",
+      "positions": [
+        {
+          "title": "DevOps Engineer"
+        },
+        {
+          "title": "Junior DevOps Engineer",
+          "start": "2025-10"
+        },
+        {
+          "title": "DevOps Trainee",
+          "start": "2025-07",
+          "end": "2025-10"
+        }
+      ],
+      "skills": [
+        "AWS",
+        "Terraform",
+        "Amazon EKS",
+        "Azure Pipelines",
+        "Security Hub",
+        "Wazuh",
+        "Prometheus",
+        "Grafana"
+      ]
     }
   ],
   "projects": [
@@ -93,7 +117,9 @@
           "summary": "Pull-based releases with automatic rollback, monitoring, backups and a service desk — on one always-free instance.",
           "body": "## Releases the host pulls\n\nCode reaches the server by the server pulling it. Every merge to `main` runs CI (crypto, core, API, web, site, end-to-end, audit) and GitHub Actions uploads a tarball with a SHA-256 manifest to a releases bucket, using a cloud user that can write that bucket and nothing else.\n\nOn the host, a timer checks every five minutes, verifies the hash and the manifest, validates the Caddyfile, installs, checks the service through Caddy, and **reinstalls the previous release if anything fails**. Nothing inbound is involved; SSH stays closed.\n\n```\npull request ──CI──▶ merge to main ──▶ releases bucket (tarball + SHA-256 manifest)\n                                              │ every 5 min\n                                              ▼\n                              host: verify → install → health check\n                                              │ fails\n                                              ▼\n                                   reinstall the previous release\n```\n\n## One always-free instance\n\nCaddy terminates TLS and serves the public website at `/`, the vault client at `/app/` and the Node API at `/api/` (localhost only). A probe reports metrics every five minutes, and cloud monitoring alarms reach me by email and push.\n\n## Backups that restore anywhere\n\nOne encrypted file holds everything and restores onto SQLite or PostgreSQL, from disk or any S3-compatible store — tested in CI on every change.\n\n## Support built in\n\nA service desk handles access requests, lost authenticators and support tickets, without any of it being able to read a vault.\n\n![A service desk ticket](/uploads/proj-vault-desk-ticket.webp)"
         }
-      ]
+      ],
+      "start": "2026-09",
+      "associatedWith": "Personal project"
     },
     {
       "slug": "pahredar",
@@ -126,7 +152,9 @@
           "summary": "A modular monolith in Go over Postgres, and a sync engine that keeps 430k+ records current without ever clobbering data.",
           "body": "## One binary, three services\n\n```\n external sources: cvelistV5 · NVD · CISA KEV · EPSS · Exploit-DB · Metasploit · Nuclei · feeds\n                               │ scheduled HTTPS pulls\n ┌─────────────────────────────▼──────────────────────────────┐\n │ backend (Go, single binary)                                │\n │   intelligence · news · endpoint scanner   (services)      │\n │   store · config · scheduler · job queue · HTTP  (core)    │\n └───────────────▲─────────────────────────────┬──────────────┘\n                 │ JSON                         │ SQL (pgx)\n      React + Vite frontend               Postgres: source of truth\n      (nginx, proxies /api)               + full-text search\n```\n\nPahredar is a **modular monolith**: each product service owns its domain over a shared core. One deployable, because a single operator and $0 hosting rule out microservices, but clear seams so services grow independently. Cross-service reads go through named interfaces — the scanner asks intelligence \"which CVEs affect this technology?\" without touching its internals.\n\n## A sync engine you can trust\n\n- **Idempotent:** every job is an upsert, so re-running a job or replaying a window is safe.\n- **Cursor-based:** incremental jobs only advance their cursor after a successful commit.\n- **Never concurrent with itself:** a Postgres advisory lock guards each source.\n- **Failures are isolated:** a failing source doesn't block the others; it is retried with exponential backoff.\n- **Bulk loads use `COPY`** into a staging table, then one `INSERT … ON CONFLICT DO UPDATE`.\n- **No clobbering:** CVE writes are serialised and every writer derives the row from both the CVE List and NVD records, so neither job can overwrite the other's contribution with stale data.\n\nThe first start streams the ~615 MB CVE List archive without writing it all to disk, pulls NVD four pages at a time inside its rate limit, and the database ends up around 4.5 GB.\n\n![Data sync: every source, its last success and cursor, with a manual run button](/uploads/proj-pahredar-sync.webp)\n\n## Built with\n\nGo (standard library HTTP, pgx, goose migrations embedded in the binary), Postgres 17 with `tsvector` full-text search and `pg_trgm`, React + Vite + TypeScript with TanStack Query, Tailwind and Recharts, all run with Docker Compose."
         }
-      ]
+      ],
+      "start": "2026-10",
+      "associatedWith": "Personal project"
     },
     {
       "slug": "multi-cloud-iac",
@@ -156,7 +184,9 @@
           "summary": "Four rules that stop one provider's change from breaking another, or a free estate from starting to cost money.",
           "body": "![The repository layout](/uploads/proj-infra-tree.webp)\n\n## Each stack owns its own state\n\nNever reference one stack's resources from another through remote state. If two stacks need the same value, it is passed as a variable. Cross-stack references would recreate exactly the coupling this layout exists to avoid.\n\n## `terraform.tfvars` is never committed\n\nCopy `terraform.tfvars.example` and fill it in. Credentials come from each provider's own config (`~/.oci/config`, `~/.aws/credentials`, `CLOUDFLARE_API_TOKEN`, `gh auth`), so nothing secret ever lands in git.\n\n## Free-tier constraints are load-bearing\n\nSeveral resources have settings that must not drift: capacity modes, absent VPC attachments, specific billing modes. Each one is commented where it applies, with the reason. Changing one of them is how a free estate starts costing money.\n\n## Nothing here creates content\n\nThis repository manages infrastructure and settings only. Application code and site content live in their own repositories, so destroying a stack never destroys work."
         }
-      ]
+      ],
+      "start": "2026-08",
+      "associatedWith": "Personal project"
     },
     {
       "slug": "dohra",
@@ -194,7 +224,9 @@
           "summary": "A Manifest V3 extension plus an optional Go companion that runs whisper.cpp locally. No server anywhere.",
           "body": "Dohra is a Manifest V3 extension for Chromium browsers, plus an optional local companion program written in Go that transcribes with whisper.cpp.\n\n```\npopup ─▶ background (service worker) ─▶ offscreen document (the recorder)\n                                              │ chunks\n                                              ▼\n                                   storage worker ─▶ OPFS ─▶ Downloads/Dohra/\n\noffscreen ─16 kHz PCM─▶ background ══native messaging══▶ dohra-companion (Go) ─▶ whisper-cli\n```\n\n## Recording\n\nThe background service worker gets a tab capture stream and hands it to an offscreen document, which records in chunks. A dedicated storage worker does all file I/O into the browser's private file system (OPFS), then the finished file is copied to `Downloads/Dohra/`. Interrupted recordings are recovered on the next start.\n\n## Transcription\n\nSpeech recognition runs outside the browser: the extension sends 16 kHz audio over native messaging to the companion, which runs whisper.cpp chunk by chunk and streams lines back. The transcript is saved next to the recording and survives crashes and closed browsers.\n\n## Who said what\n\nIn Google Meet and Microsoft Teams, each line is labelled with the speaker's name, taken from the meeting's own active-speaker indicator.\n\n![Speaker names in the transcript](/uploads/proj-dohra-speakers.webp)\n\n## Search everything\n\nThe library searches every recording's title and transcript, and a result opens the recording at that line.\n\n![Searching across recordings](/uploads/proj-dohra-search.webp)"
         }
-      ]
+      ],
+      "start": "2026-10",
+      "associatedWith": "Personal project"
     },
     {
       "slug": "assessment-platform",
@@ -225,7 +257,10 @@
           "summary": "How an exam stays fair when candidates run real commands and real code.",
           "body": "## The clock belongs to the server\n\n`expires_at` is written once when an attempt starts. Refreshing, reopening in another browser or clearing storage changes nothing, and a sweeper closes and grades attempts whose time has run out.\n\n## Per-candidate flags\n\nA practical answer is an HMAC of the attempt and question, so two candidates solving the same task submit different strings. A leaked flag scores nothing and shows whose attempt it came from. The flag is never stored and never sent to the browser.\n\n## Candidate code never runs on the application server\n\nThe API has no Docker access at all. It writes a job row; a separate worker owns the Docker socket and runs the code in a throwaway container with no network, a read-only root filesystem, an unprivileged user, every capability dropped, and memory, CPU, PID and wall-clock limits.\n\n## Terminals are proxied, not exposed\n\nA lab container publishes no host port. The only way in is an authenticated WebSocket through the API, which checks that the attempt belongs to the person asking and is still running.\n\n## Leaving the exam blanks it\n\nSwitching tab, losing focus or leaving fullscreen covers the paper with a lockout, while the clock keeps running underneath. One alt-tab fires two browser events milliseconds apart, so they are de-duplicated, and developer-tool shortcuts are swallowed with a quiet note."
         }
-      ]
+      ],
+      "start": "2026-09",
+      "end": "2026-10",
+      "associatedWith": "Personal project"
     },
     {
       "slug": "portfolio",
@@ -265,7 +300,9 @@
           "summary": "Astro static sites, a small Go API with SQLite, Caddy on an always-free VM, and CI that tests everything before it deploys.",
           "body": "## The stack\n\n- **Astro** builds the portfolio and the learn site as static HTML, from one `content/` folder.\n- **A Go API** with SQLite handles sign-in (OAuth / OpenID Connect), saved progress, the coin shop, live presence over WebSockets and the admin endpoints.\n- **Caddy** serves everything from one always-free Oracle Cloud VM with automatic HTTPS.\n- **GitHub Actions** runs unit tests, Go tests and a browser test suite against the real API binary, then deploys over SSH with a key restricted to rsync.\n\n## Clean URLs with themes\n\nURLs never contain the theme. Each theme is built separately, the visitor's choice lives in a cookie, and Caddy serves the matching build for the same path.\n\n## Trusting points from a browser\n\nClients can send anything, so the API only accepts events listed in a game catalog generated from the content at build time. Points come from the catalog, never from the browser, and the site and API are built from the same commit so they always agree.\n\n## Content as code\n\nThe admin panel commits through the GitHub API. An invalid edit fails the build instead of breaking the live site, and every change is versioned."
         }
-      ]
+      ],
+      "start": "2026-11",
+      "associatedWith": "Personal project"
     }
   ],
   "skills": [
@@ -352,15 +389,32 @@
   ],
   "education": [
     {
-      "degree": "B.Tech, Artificial Intelligence & Machine Learning",
-      "institution": "J.B. Institute of Technology (Uttarakhand Technical University)",
+      "school": "J.B. Institute of Technology (Uttarakhand Technical University)",
+      "degree": "B.Tech",
+      "field": "Artificial Intelligence & Machine Learning",
       "end": "2025-08"
     }
   ],
   "certifications": [
     {
       "name": "Certified Kubernetes Administrator (CKA)",
-      "status": "In preparation, followed by CKS"
+      "issuer": "The Linux Foundation",
+      "status": "in-progress",
+      "skills": [
+        "Kubernetes"
+      ]
+    },
+    {
+      "name": "Certified Kubernetes Security Specialist (CKS)",
+      "issuer": "The Linux Foundation",
+      "status": "planned",
+      "skills": [
+        "Kubernetes",
+        "Security"
+      ]
     }
-  ]
+  ],
+  "languages": [],
+  "awards": [],
+  "volunteering": []
 }

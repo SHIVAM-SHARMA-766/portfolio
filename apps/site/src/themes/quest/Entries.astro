@@ -1,0 +1,22 @@
+---
+import Panel from './Panel.astro';
+import { md } from '../../lib/content';
+import type { Entry } from '../../lib/entries';
+interface Props { heading: string; items: Entry[]; icon: string }
+const { heading, items, icon } = Astro.props;
+---
+<Panel title={heading} icon={icon}>
+  <ul class="q-entries">
+    {items.map((e) => (
+      <li>
+        <span aria-hidden="true">{icon}</span>
+        <div>
+          <b>{e.href ? <a class="q-plain" href={e.href} target="_blank" rel="noopener">{e.title} ↗</a> : e.title}</b>{e.badge && <span class="q-badge">{e.badge}</span>}
+          {(e.subtitle || e.meta) && <small>{[e.subtitle, e.meta].filter(Boolean).join(' · ')}</small>}
+          {e.body && <div class="q-entry__body" set:html={md(e.body)} />}
+          {e.tags && e.tags.length > 0 && <p class="q-loot">{e.tags.map((t) => <span>{t}</span>)}</p>}
+        </div>
+      </li>
+    ))}
+  </ul>
+</Panel>

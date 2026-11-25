@@ -136,11 +136,11 @@ async function contentHealth() {
   const out = [];
   const [profile, files] = await Promise.all([api.file('content/profile.json').then((f) => JSON.parse(f.content)), api.files().then((x) => x.files.map((f) => f.path))]);
   (profile.projects ?? []).forEach((p, i) => {
-    if (!p.cover) out.push({ text: `“${p.name}” has no cover image`, href: `#/project?i=${i}` });
-    if (!p.body) out.push({ text: `“${p.name}” has no full story`, href: `#/project?i=${i}` });
+    if (!p.cover) out.push({ text: `“${p.name}” has no cover image`, href: `#/projects?edit=${i}` });
+    if (!p.body) out.push({ text: `“${p.name}” has no full story`, href: `#/projects?edit=${i}` });
   });
   const site = await api.file('content/site.json').then((f) => JSON.parse(f.content)).catch(() => ({}));
-  const settings = `#/edit?path=${encodeURIComponent('content/site.json')}`;
+  const settings = '#/intro';
   if (!site.resume) out.push({ text: 'No CV uploaded yet', href: settings });
   if (!(site.socials ?? []).some((s) => /linkedin/i.test(s.label))) out.push({ text: 'No LinkedIn link in the socials', href: settings });
   const posts = files.filter((p) => /^content\/blog\/.+\.md$/.test(p)).length;

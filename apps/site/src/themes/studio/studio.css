@@ -280,3 +280,17 @@ a.s-tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, v
   .s-journey li::before { left: 0; }
   .s-journey__when { text-align: left; }
 }
+
+/* Profile sections (education, certifications, languages, awards, volunteering) */
+.s-entries { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.4rem; }
+.s-entries li { padding-bottom: 1.4rem; border-bottom: 1px solid var(--border); }
+.s-entries li:last-child { border-bottom: 0; padding-bottom: 0; }
+.s-entry__title { margin: 0; font-weight: 600; font-size: 1.05rem; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.s-entry__badge { font-size: .72rem; font-weight: 600; padding: .1rem .55rem; border-radius: 99px; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); }
+.s-entry__sub { margin: .15rem 0 0; }
+.s-entry__meta { margin: .1rem 0 0; color: var(--muted); font-size: .88rem; }
+.s-entry__body { color: var(--muted); font-size: .94rem; }
+.s-entries .s-chips { margin: .6rem 0 0; }
+.s-positions { list-style: none; margin: .6rem 0 .8rem; padding: 0 0 0 1rem; border-left: 2px solid var(--border); display: grid; gap: .45rem; }
+.s-positions li { display: grid; }
+.s-positions span { font-size: .85rem; }

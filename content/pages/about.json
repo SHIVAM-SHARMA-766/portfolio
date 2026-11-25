@@ -180,7 +180,23 @@
     },
     {
       "type": "education",
-      "heading": "Education & certifications"
+      "heading": "Education"
+    },
+    {
+      "type": "certifications",
+      "heading": "Licenses & certifications"
+    },
+    {
+      "type": "languages",
+      "heading": "Languages"
+    },
+    {
+      "type": "awards",
+      "heading": "Honors & awards"
+    },
+    {
+      "type": "volunteering",
+      "heading": "Volunteering"
     },
     {
       "type": "skills",

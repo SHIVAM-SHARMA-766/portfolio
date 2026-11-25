@@ -48,7 +48,18 @@ export function Field({ field, value, onChange }) {
     case 'string':
       return (
         <Label field={field}>
-          <input type="text" value={value ?? ''} pattern={field.pattern} required={field.required} onInput={(e) => onChange(e.currentTarget.value)} />
+          <input type="text" value={value ?? ''} pattern={field.pattern} required={field.required} placeholder={field.placeholder} list={field.suggest ? `dl-${field.name}` : undefined} onInput={(e) => onChange(e.currentTarget.value)} />
+          {field.suggest && <datalist id={`dl-${field.name}`}>{(typeof field.suggest === 'function' ? field.suggest() : field.suggest).map((o) => <option value={o} />)}</datalist>}
+        </Label>
+      );
+    case 'month':
+      return <MonthField field={field} value={value} onChange={onChange} />;
+    case 'tags':
+      return <TagsField field={field} value={value ?? []} onChange={onChange} />;
+    case 'url':
+      return (
+        <Label field={field}>
+          <input type="url" inputMode="url" placeholder="https://…" value={value ?? ''} onInput={(e) => onChange(e.currentTarget.value || undefined)} />
         </Label>
       );
     case 'image':
@@ -57,7 +68,7 @@ export function Field({ field, value, onChange }) {
     case 'text':
       return (
         <Label field={field}>
-          <textarea rows={3} value={value ?? ''} onInput={(e) => onChange(e.currentTarget.value)} />
+          <textarea rows={field.rows ?? 3} value={value ?? ''} placeholder={field.placeholder} onInput={(e) => onChange(e.currentTarget.value)} />
         </Label>
       );
     case 'markdown':
@@ -79,7 +90,7 @@ export function Field({ field, value, onChange }) {
         <Label field={field}>
           <select value={value ?? ''} onChange={(e) => onChange(e.currentTarget.value || undefined)}>
             {!field.options.includes('') && !value && <option value="">—</option>}
-            {field.options.map((o) => <option value={o}>{o || '—'}</option>)}
+            {field.options.map((o) => <option value={o}>{field.labels?.[o] ?? (o || '—')}</option>)}
           </select>
         </Label>
       );
@@ -185,6 +196,29 @@ function BlocksField({ field, value, onChange }) {
 export function MarkdownEditor({ value, onChange, tall }) {
   const ref = useRef(null);
   const [view, setView] = useState('split');
+  const [picking, setPicking] = useState(false);
+  const [uploading, setUploading] = useState(0);
+  // Insert text at the cursor (or the end)
+  const insert = (text) => {
+    const ta = ref.current;
+    const at = ta ? ta.selectionStart : value.length;
+    const next = value.slice(0, at) + text + value.slice(at);
+    onChange(next);
+    requestAnimationFrame(() => { if (ta) { ta.focus(); ta.setSelectionRange(at + text.length, at + text.length); } });
+  };
+  const altOf = (name) => name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+  // Images dropped or pasted into the editor upload straight away, like WordPress
+  const uploadAll = async (files) => {
+    const imgs = [...files].filter((f) => f.type.startsWith('image/'));
+    if (!imgs.length) return false;
+    setUploading((n) => n + imgs.length);
+    for (const f of imgs) {
+      try { const url = await uploadFile(f); insert(`\n![${altOf(f.name)}](${url})\n`); notify('Image uploaded. It goes live with your next save.'); }
+      catch (x) { notify(x.message, 'err'); }
+      setUploading((n) => n - 1);
+    }
+    return true;
+  };
   const wrap = (before, after = before, placeholder = 'text') => {
     const ta = ref.current;
     const { selectionStart: a, selectionEnd: b } = ta;
@@ -210,13 +244,19 @@ export function MarkdownEditor({ value, onChange, tall }) {
         <button type="button" onClick={() => wrap('`')} title="Inline code">{'</>'}</button>
         <button type="button" onClick={() => wrap('\n```bash\n', '\n```\n', 'command')} title="Code block">▤</button>
         <button type="button" onClick={() => wrap('\n:::tip\n', '\n:::\n', 'A helpful tip')} title="Callout (learn site)">💡</button>
+        <button type="button" onClick={() => setPicking(true)} title="Insert an image (or paste / drop one into the text)">🖼 Image</button>
+        {uploading > 0 && <span class="muted md-uploading">Uploading {uploading}…</span>}
         <span class="spacer" />
         {['write', 'split', 'preview'].map((v) => <button type="button" class={view === v ? 'on' : ''} onClick={() => setView(v)}>{v}</button>)}
       </div>
       <div class="md-panes">
-        {view !== 'preview' && <textarea ref={ref} value={value} onInput={(e) => onChange(e.currentTarget.value)} spellcheck />}
+        {view !== 'preview' && <textarea ref={ref} value={value} onInput={(e) => onChange(e.currentTarget.value)} spellcheck
+          onPaste={(e) => { if (e.clipboardData?.files?.length) { e.preventDefault(); uploadAll(e.clipboardData.files); } }}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { if (e.dataTransfer?.files?.length) { e.preventDefault(); uploadAll(e.dataTransfer.files); } }} />}
         {view !== 'write' && <div class="md-preview prose" dangerouslySetInnerHTML={{ __html: marked.parse(value || '*Nothing yet.*') }} />}
       </div>
+      {picking && <MediaPicker images onUpload={async (f) => { setPicking(false); await uploadAll([f]); }} onPick={(u) => { setPicking(false); insert(`\n![${altOf(u.split('/').pop())}](${u})\n`); }} onClose={() => setPicking(false)} />}
     </div>
   );
 }
@@ -269,7 +309,7 @@ function MediaField({ field, value, onChange }) {
   );
 }
 
-export function MediaPicker({ images, onPick, onClose }) {
+export function MediaPicker({ images, onPick, onClose, onUpload }) {
   const [files, setFiles] = useState(null);
   useEffect(() => { api.files().then((d) => setFiles(d.files.map((f) => f.path).filter((p) => p.startsWith(UPLOADS) && !p.split('/').pop().startsWith('.')).reverse())).catch((e) => notify(e.message, 'err')); }, []);
   useEffect(() => { const k = (e) => e.key === 'Escape' && onClose(); addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
@@ -277,7 +317,7 @@ export function MediaPicker({ images, onPick, onClose }) {
   return (
     <div class="modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div class="modal-box" role="dialog" aria-label="Choose a file">
-        <div class="head-row"><h2>Choose from media</h2><button type="button" onClick={onClose}>✕</button></div>
+        <div class="head-row"><h2>{onUpload ? 'Add an image' : 'Choose from media'}</h2><div class="actions">{onUpload && <label class="button primary">⬆ Upload new<input type="file" accept="image/*" hidden onChange={(e) => { const f = e.currentTarget.files?.[0]; if (f) onUpload(f); }} /></label>}<button type="button" onClick={onClose}>✕</button></div></div>
         {!files ? <p class="muted">Loading…</p> : !shown.length ? <p class="muted">Nothing uploaded yet. Use “Upload” instead.</p> : (
           <div class="media">
             {shown.map((p) => (
@@ -289,6 +329,51 @@ export function MediaPicker({ images, onPick, onClose }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ---- dates and skills ---------------------------------------------------------
+
+/** Month + year (YYYY-MM), optionally with a "present" checkbox that clears it. */
+function MonthField({ field, value, onChange }) {
+  const [present, setPresent] = useState(field.present && !value);
+  useEffect(() => { if (value) setPresent(false); }, [value]);
+  return (
+    <div class="field">
+      <span class="field-label">{field.label}</span>
+      <div class="month-row">
+        <input type="month" value={present ? '' : (value ?? '')} disabled={present} onInput={(e) => onChange(e.currentTarget.value || undefined)} />
+        {field.present && (
+          <label class="month-present"><input type="checkbox" checked={present} onChange={(e) => { setPresent(e.currentTarget.checked); if (e.currentTarget.checked) onChange(undefined); }} />{field.present}</label>
+        )}
+      </div>
+      {field.help && <small class="field-help">{field.help}</small>}
+    </div>
+  );
+}
+
+/** Chips: type and press Enter (or comma); suggestions come from the rest of the profile. */
+function TagsField({ field, value, onChange }) {
+  const [text, setText] = useState('');
+  const add = (raw) => {
+    const t = raw.trim().replace(/,$/, '');
+    if (t && !value.some((v) => v.toLowerCase() === t.toLowerCase())) onChange([...value, t]);
+    setText('');
+  };
+  const options = (typeof field.suggest === 'function' ? field.suggest() : field.suggest ?? []).filter((o) => !value.includes(o));
+  return (
+    <div class="field">
+      <span class="field-label">{field.label}</span>
+      <div class="chips-input">
+        {value.map((t) => <span class="tag tag--edit">{t}<button type="button" onClick={() => onChange(value.filter((x) => x !== t))} aria-label={`Remove ${t}`}>×</button></span>)}
+        <input value={text} list={`dl-${field.name}`} placeholder={value.length ? 'Add another…' : (field.placeholder ?? 'Type and press Enter')}
+          onInput={(e) => { const v = e.currentTarget.value; if (v.endsWith(',')) add(v); else setText(v); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(text); } else if (e.key === 'Backspace' && !text && value.length) onChange(value.slice(0, -1)); }}
+          onBlur={() => text && add(text)} />
+        <datalist id={`dl-${field.name}`}>{options.map((o) => <option value={o} />)}</datalist>
+      </div>
+      {field.help && <small class="field-help">{field.help}</small>}
     </div>
   );
 }

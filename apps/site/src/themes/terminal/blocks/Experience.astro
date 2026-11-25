@@ -4,6 +4,7 @@ import Cards from './Cards.astro';
 import { profile } from '../../../lib/content';
 import { bases, engagementCard, jobSlug, engagementSlug, period, shortTitle } from '../../../lib/details';
 import { xpAttrs } from '../../../lib/cards';
+import { positionsOf, jobMeta } from '../../../lib/entries';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'experience'>; theme: string };
 const { experience: base } = await bases();
@@ -18,9 +19,9 @@ const cards = profile.experience.flatMap((job) => job.engagements.map((e) => eng
     {profile.experience.map((job) => (
       <article class="t-job">
         <p><span class="t-acc-2">commit {hash(job.company + job.start)}</span> <span class="t-dim">(HEAD → {job.end ? 'past' : 'main'})</span></p>
-        <p class="t-dim">Date: {period(job)}{job.location && ` · ${job.location}`}</p>
+        <p class="t-dim">Date: {period(job)}{jobMeta(job) && ` · ${jobMeta(job)}`}</p>
         <h3 class="t-job-title"><a href={`/${base}/${jobSlug(job)}/`}>{job.role} @ {job.company}</a></h3>
-        {job.progression && <p class="t-dim">{job.progression}</p>}
+        {positionsOf(job).length > 1 && <ul class="t-list t-positions">{positionsOf(job).map((p) => <li><b>{p.title}</b> <span class="t-dim">{[p.when, p.length].filter(Boolean).join(' · ')}</span></li>)}</ul>}
         {job.highlights.length > 0 && <ul class="t-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
         {job.engagements.map((e) => (
           <div class="t-eng">

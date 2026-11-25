@@ -250,3 +250,10 @@ a.t-entry:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accen
 .t-journey__title { margin: 0; color: var(--fg); font-weight: 600; }
 .t-journey__body { margin: .15rem 0 0; color: var(--muted); }
 @media (max-width: 760px) { .t-journey li { grid-template-columns: 1fr; gap: 0; } }
+
+/* Profile sections */
+.t-entries { list-style: none; margin: 0; padding: 0; display: grid; gap: .9rem; }
+.t-entry__title { margin: 0; color: var(--fg); font-weight: 700; }
+.t-entries p { margin: .1rem 0; }
+.t-entry__body { color: var(--muted); }
+.t-positions b { color: var(--fg); }

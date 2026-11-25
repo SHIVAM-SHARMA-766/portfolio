@@ -4,6 +4,7 @@ import Cards from './Cards.astro';
 import { profile } from '../../../lib/content';
 import { bases, engagementCard, jobSlug, engagementSlug, period, shortTitle } from '../../../lib/details';
 import { xpAttrs } from '../../../lib/cards';
+import { positionsOf, jobMeta } from '../../../lib/entries';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'experience'>; theme: string };
 const { experience: base } = await bases();
@@ -19,8 +20,8 @@ const cards = profile.experience.flatMap((job) => job.engagements.map((e) => ({ 
           <h3><a class="q-plain" href={`/${base}/${jobSlug(job)}/`}>{job.role} <span class="q-muted">@ {job.company}</span></a></h3>
           <span class={`q-badge ${job.end ? '' : 'q-badge--live'}`}>{job.end ? 'Completed' : 'In progress'}</span>
         </div>
-        <p class="q-muted">{period(job)}{job.location && ` · ${job.location}`}</p>
-        {job.progression && <p class="q-levels">🪜 {job.progression}</p>}
+        <p class="q-muted">{period(job)}{jobMeta(job) && ` · ${jobMeta(job)}`}</p>
+        {positionsOf(job).length > 1 && <ul class="q-levels-list">{positionsOf(job).map((p, i) => <li><span class="q-badge">Lv {positionsOf(job).length - i}</span> {p.title} <small class="q-muted">{p.when}</small></li>)}</ul>}
         {job.highlights.length > 0 && <ul class="q-list">{job.highlights.map((h) => <li>{h}</li>)}</ul>}
         {job.engagements.map((e) => (
           <a class="q-quest-link" href={`/${base}/${jobSlug(job)}/${engagementSlug(e)}/`} {...xpAttrs(engagementCard(job, e, base))}>

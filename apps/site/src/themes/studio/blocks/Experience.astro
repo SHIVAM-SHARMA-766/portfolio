@@ -3,6 +3,7 @@ import Cards from './Cards.astro';
 import { profile, mdInline } from '../../../lib/content';
 import { bases, engagementCard, jobSlug, period, shortTitle, engagementSlug } from '../../../lib/details';
 import { xpAttrs } from '../../../lib/cards';
+import { positionsOf, jobMeta, duration } from '../../../lib/entries';
 import type { BlockOf } from '../../../lib/schema';
 const { block, theme } = Astro.props as { block: BlockOf<'experience'>; theme: string };
 const { experience: base } = await bases();
@@ -19,8 +20,9 @@ const cards = profile.experience.flatMap((job) => job.engagements.map((e) => eng
           <p class="s-when">{period(job)}</p>
           <div>
             <h3><a class="s-plain" href={`/${base}/${jobSlug(job)}/`}>{job.role}, <span class="s-muted">{job.company}</span></a></h3>
-            {job.location && <p class="s-muted">{job.location}</p>}
-            {job.progression && <p class="s-small">{job.progression}</p>}
+            <p class="s-muted">{[jobMeta(job), duration(job.start, job.end)].filter(Boolean).join(' · ')}</p>
+            {positionsOf(job).length > 1 && <ol class="s-positions">{positionsOf(job).map((p) => <li><b>{p.title}</b><span class="s-muted">{[p.when, p.length].filter(Boolean).join(' · ')}</span></li>)}</ol>}
+            {job.skills.length > 0 && <p class="s-chips">{job.skills.map((t) => <span>{t}</span>)}</p>}
             {job.highlights.length > 0 && <ul>{job.highlights.map((h) => <li>{h}</li>)}</ul>}
             {job.engagements.map((e) => {
               const card = engagementCard(job, e, base);

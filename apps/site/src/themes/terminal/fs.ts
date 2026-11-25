@@ -77,7 +77,8 @@ export async function buildFs(theme: string) {
   const root = dir({
     'about.md': file(`# ${site.name}\n${site.role} · ${site.location ?? ''}\n\n${profile.summary}`, { href: '/about/' }),
     'skills.txt': file(profile.skills.map((g) => `${g.group}: ${g.items.join(', ')}`).join('\n')),
-    'education.txt': file([...profile.education.map((e) => `${e.degree} — ${e.institution} (${formatMonth(e.end ?? undefined)})`), ...profile.certifications.map((c) => `${c.name}${c.status ? ` — ${c.status}` : ''}`)].join('\n')),
+    'education.txt': file(profile.education.map((e) => `${[e.degree, e.field].filter(Boolean).join(', ')} — ${e.school}${e.end ? ` (${formatMonth(e.end)})` : ''}`).join('\n')),
+    'certifications.txt': file(profile.certifications.map((c) => `${c.name}${c.issuer ? ` — ${c.issuer}` : ''}${c.status !== 'earned' ? ` [${c.status}]` : ''}`).join('\n') || 'none yet'),
     'contact.sh': file(contactLines.join('\n'), { exec: true }),
     experience: dir(experience),
     projects: dir(projects),

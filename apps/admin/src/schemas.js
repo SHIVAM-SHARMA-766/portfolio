@@ -11,6 +11,24 @@ const strs = (name, label, extra = {}) => ({ name, label, type: 'strings', ...ex
 const obj = (name, label, fields, extra = {}) => ({ name, label, type: 'object', fields, ...extra });
 const img = (name, label, extra = {}) => ({ name, label, type: 'image', ...extra });
 const doc = (name, label, extra = {}) => ({ name, label, type: 'file', ...extra });
+const month = (name, label, extra = {}) => ({ name, label, type: 'month', ...extra });
+const tags = (name, label, extra = {}) => ({ name, label, type: 'tags', ...extra });
+const url = (name, label, extra = {}) => ({ name, label, type: 'url', ...extra });
+
+// Suggestions shared by the profile forms (filled when profile.json loads)
+export const pool = { skills: [], companies: [] };
+export function fillPool(profile) {
+  const skills = new Set();
+  (profile.skills ?? []).forEach((g) => (g.items ?? []).forEach((x) => skills.add(x)));
+  (profile.experience ?? []).forEach((j) => (j.skills ?? []).forEach((x) => skills.add(x)));
+  (profile.projects ?? []).forEach((p) => (p.tags ?? []).forEach((x) => skills.add(x)));
+  pool.skills = [...skills].sort((a, b) => a.localeCompare(b));
+  pool.companies = (profile.experience ?? []).map((j) => j.company).filter(Boolean);
+}
+const skillsSuggest = () => pool.skills;
+const EMPLOYMENT = ['Full-time', 'Part-time', 'Self-employed', 'Freelance', 'Contract', 'Internship', 'Apprenticeship', 'Trainee'];
+const LOCATION_TYPES = ['On-site', 'Hybrid', 'Remote'];
+const PROFICIENCY = ['Elementary', 'Limited working', 'Professional working', 'Full professional', 'Native or bilingual'];
 const link = [s('label', 'Label'), s('url', 'URL')];
 const heading = s('heading', 'Heading');
 
@@ -76,48 +94,102 @@ export const courseFields = [
   list('chapters', 'Chapters', [s('slug', 'Folder name', { pattern: '^[a-z0-9-]+$' }), s('title', 'Title')], { summary: 'title' }),
 ];
 
+// ---- profile sections (LinkedIn-style) -------------------------------------------
+
 export const projectFields = [
-  s('name', 'Name', { required: true }), s('slug', 'URL slug', { pattern: '^[a-z0-9-]+$', help: 'The project page is /projects/<slug>/. Changing it breaks old links and resets who has “opened” it.' }),
-  s('year', 'Year'), s('role', 'My role'), bool('featured', 'Featured (shown on the home page)'),
-  img('cover', 'Cover image', { help: '16:9 works best: a screenshot or diagram. Without one, a cover is generated from the theme colours.' }),
-  text('summary', 'Summary', { help: 'One or two sentences, shown on the card and at the top of the project page.' }),
-  strs('highlights', 'Highlights'), strs('tags', 'Tags'), list('links', 'Links (source, demo…)', link, { summary: 'label' }),
-  md('body', 'Full story', { help: 'Shown on the project page under the highlights: the problem, what you built, what you learned.' }),
+  s('name', 'Project name', { required: true }),
+  text('summary', 'Description', { help: 'One or two sentences, shown on the card and at the top of the project page.' }),
+  tags('tags', 'Skills', { suggest: skillsSuggest, help: 'Shown as the stack. Press Enter after each.' }),
+  img('cover', 'Media: cover image', { help: '16:9 works best: a screenshot or diagram. Without one, a cover is generated from the theme colours.' }),
+  month('start', 'Start date'), month('end', 'End date', { present: 'I am currently working on this' }),
+  s('associatedWith', 'Associated with', { suggest: () => [...pool.companies, 'Personal project', 'Open source', 'University'], placeholder: 'Personal project' }),
+  s('role', 'My role', { placeholder: 'Solo — design and build' }),
+  list('links', 'Links (source, live demo, release…)', [s('label', 'Label'), url('url', 'URL')], { summary: 'label' }),
+  bool('featured', 'Featured on the home page'),
+  strs('highlights', 'Key points', { help: 'Shown in the “At a glance” box. One per line.' }),
+  md('body', 'Full story', { help: 'The problem, what you built, how, and what you learned. Paste or drop screenshots straight into the text.' }),
   subPages,
+  s('slug', 'URL slug', { pattern: '^[a-z0-9-]+$', help: 'The page is /projects/<slug>/. Changing it breaks old links.' }),
+  s('year', 'Year (only if there are no dates)'),
 ];
 
 export const engagementFields = [
-  s('title', 'Title', { help: 'e.g. "Suzuki Digital — DevSecOps & DevOps, AWS multi-account". The part before “—” is the short name.' }),
-  s('slug', 'URL slug (default: from the title)', { pattern: '^[a-z0-9-]*$' }), text('summary', 'Summary'), img('cover', 'Cover image (optional)'), strs('tags', 'Tags'),
-  strs('highlights', 'What I did'), md('body', 'Full story (shown on its page)'), subPages,
+  s('title', 'Client / engagement', { help: 'e.g. "Suzuki Digital — DevSecOps & DevOps, AWS multi-account". The part before “—” is the short name.' }),
+  text('summary', 'Summary'), tags('tags', 'Skills', { suggest: skillsSuggest }), img('cover', 'Cover image (optional)'),
+  strs('highlights', 'What I did (one per line)'), md('body', 'Full story (shown on its page)'), subPages,
+  s('slug', 'URL slug (default: from the title)', { pattern: '^[a-z0-9-]*$' }),
 ];
 
 export const jobFields = [
-  s('company', 'Company', { required: true }), s('role', 'Role', { required: true }), s('location', 'Location'),
-  s('start', 'Start (YYYY-MM)'), s('end', 'End (YYYY-MM, empty = present)'), s('progression', 'Progression', { help: 'e.g. Trainee (Jul 2025) → Junior (Oct 2025) → Engineer' }),
-  s('slug', 'URL slug (default: from the company name)', { pattern: '^[a-z0-9-]*$' }), text('summary', 'About this role (shown on its page)'), img('logo', 'Company logo (optional)'),
-  strs('highlights', 'Highlights (for roles without separate clients)'),
-  list('engagements', 'Clients / engagements', engagementFields, { summary: 'title' }),
+  s('role', 'Title', { required: true, placeholder: 'DevOps Engineer' }),
+  sel('employmentType', 'Employment type', EMPLOYMENT),
+  s('company', 'Company or organisation', { required: true }),
+  month('start', 'Start date', { help: 'When you joined the company.' }),
+  month('end', 'End date', { present: 'I currently work here' }),
+  s('location', 'Location', { placeholder: 'Delhi, India' }),
+  sel('locationType', 'Location type', LOCATION_TYPES),
+  list('positions', 'Positions at this company (promotions)', [s('title', 'Title'), month('start', 'Start date'), month('end', 'End date', { present: 'Current title' })], { summary: 'title', help: 'Newest first, like LinkedIn: e.g. DevOps Engineer → Junior DevOps Engineer → Trainee.' }),
+  text('summary', 'Description', { rows: 4, help: 'What the role is about; shown on its page.' }),
+  tags('skills', 'Skills', { suggest: skillsSuggest }),
+  img('logo', 'Company logo (optional)'),
+  list('engagements', 'Clients / engagements (each gets its own page)', engagementFields, { summary: 'title' }),
+  strs('highlights', 'Key points (for roles without separate clients)'),
+  s('slug', 'URL slug (default: from the company name)', { pattern: '^[a-z0-9-]*$' }),
 ];
 
-export const profileFields = [
-  s('headline', 'Headline'), text('summary', 'Summary'),
-  list('skills', 'Skill groups', [s('group', 'Group'), strs('items', 'Skills')], { summary: 'group' }),
-  list('education', 'Education', [s('degree', 'Degree'), s('institution', 'Institution'), s('end', 'End (YYYY-MM)')], { summary: 'degree' }),
-  list('certifications', 'Certifications', [s('name', 'Name'), s('status', 'Status')], { summary: 'name' }),
+export const educationFields = [
+  s('school', 'School', { required: true }),
+  s('degree', 'Degree', { placeholder: 'B.Tech' }),
+  s('field', 'Field of study', { placeholder: 'Artificial Intelligence & Machine Learning' }),
+  month('start', 'Start date'), month('end', 'End date (or expected)'),
+  s('grade', 'Grade'),
+  text('activities', 'Activities and societies'),
+  text('description', 'Description'),
+  tags('skills', 'Skills', { suggest: skillsSuggest }),
+  img('logo', 'School logo (optional)'),
+];
+
+export const certificationFields = [
+  s('name', 'Name', { required: true, placeholder: 'Certified Kubernetes Administrator (CKA)' }),
+  s('issuer', 'Issuing organisation', { placeholder: 'The Linux Foundation' }),
+  sel('status', 'Status', ['earned', 'in-progress', 'planned'], { labels: { earned: 'Earned', 'in-progress': 'In progress', planned: 'Planned' } }),
+  month('issued', 'Issue date'), month('expires', 'Expiration date', { present: 'This credential does not expire' }),
+  s('credentialId', 'Credential ID'),
+  url('credentialUrl', 'Credential URL'),
+  tags('skills', 'Skills', { suggest: skillsSuggest }),
+  text('note', 'Note (optional)'),
+];
+
+export const skillGroupFields = [s('group', 'Group', { required: true, placeholder: 'Cloud' }), tags('items', 'Skills', { suggest: skillsSuggest })];
+export const languageFields = [s('name', 'Language', { required: true }), sel('proficiency', 'Proficiency', PROFICIENCY)];
+export const awardFields = [s('title', 'Title', { required: true }), s('issuer', 'Issuer'), month('date', 'Issue date'), text('description', 'Description'), url('url', 'Link (optional)')];
+export const volunteeringFields = [s('organization', 'Organisation', { required: true }), s('role', 'Role', { required: true }), s('cause', 'Cause'), month('start', 'Start date'), month('end', 'End date', { present: 'I am currently volunteering here' }), text('description', 'Description')];
+
+export const aboutFields = [
+  s('headline', 'Headline', { help: 'A one-line summary of who you are professionally.' }),
+  text('summary', 'About', { rows: 8, help: 'The short “About” used across the site. Your longer story lives on the About page.' }),
+];
+
+// Intro: the basics visitors see first (LinkedIn's intro + contact info)
+export const introFields = [
+  s('name', 'Full name', { required: true }), s('shortName', 'Short name (used in the terminal theme)'),
+  s('role', 'Headline', { help: 'e.g. DevOps / DevSecOps Engineer' }),
+  s('tagline', 'Tagline', { help: 'One sentence, used in the footer.' }),
+  s('location', 'Location'),
+  s('availability', 'Open to work badge (optional)', { help: 'e.g. “Open to DevOps / DevSecOps roles”. Leave empty to hide.' }),
+  img('photo', 'Profile photo', { help: 'A 4:5 portrait works best. Also the preview image when the site is shared.' }),
+  img('photoCutout', 'Photo without background (optional)'),
+  s('photoAlt', 'Photo description (for screen readers)'),
+  doc('resume', 'CV / resume (PDF)', { help: 'Shows a “Download CV” button in the hero and on the contact page.' }),
+  s('email', 'Email', { help: 'Shown on the contact page.' }),
+  list('socials', 'Contact info and profiles (LinkedIn, GitHub…)', [s('label', 'Label', { suggest: ['LinkedIn', 'GitHub', 'X', 'Medium', 'Dev.to', 'Stack Overflow', 'YouTube', 'Website'] }), url('url', 'URL')], { summary: 'label' }),
 ];
 
 export const siteFields = [
-  s('name', 'Name'), s('shortName', 'Short name'), s('role', 'Role'), s('tagline', 'Tagline'), text('description', 'Description (search engines)'),
-  s('availability', 'Availability badge (optional)', { help: 'e.g. “Open to DevOps / DevSecOps roles”. Shown on the home page hero; leave empty to hide.' }),
-  doc('resume', 'CV / resume (PDF)', { help: 'Shows a “Download CV” button on the contact page and a CV link in the footer.' }),
-  img('photo', 'Photo', { help: 'A 4:5 portrait works best. Also used as the preview image when the site is shared.' }),
-  img('photoCutout', 'Photo without background', { help: 'Optional: the same portrait as a transparent PNG/WebP. Every theme shows it on a soft tile; without it they use the photo.' }),
-  s('photoAlt', 'Photo description (for screen readers)'),
-  s('photoPosition', 'Photo crop focus', { help: 'Which part stays in frame, e.g. "50% 25%" keeps the face near the top. First number moves left/right, second up/down.' }),
-  s('location', 'Location'), s('email', 'Email'), s('siteUrl', 'Site URL'), s('learnUrl', 'Learn site URL'), s('apiUrl', 'API URL'),
+  text('description', 'Description (search engines)'),
+  s('photoPosition', 'Photo crop focus', { help: 'Which part stays in frame, e.g. "50% 25%". First number moves left/right, second up/down.' }),
+  s('siteUrl', 'Site URL'), s('learnUrl', 'Learn site URL'), s('apiUrl', 'API URL'),
   s('cookieDomain', 'Cookie domain (shares progress across subdomains)'),
-  list('socials', 'Social links', link, { summary: 'label' }),
   sel('defaultTheme', 'Default theme', ['terminal', 'quest', 'studio']),
   obj('defaultPalettes', 'Default palettes', [s('terminal', 'Terminal'), s('quest', 'Quest'), s('studio', 'Studio')]),
   obj('game', 'Game', [

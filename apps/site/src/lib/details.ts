@@ -4,6 +4,7 @@
 // with the same block components it uses for hand-written pages.
 import { profile, rewards, ids, slugify, formatMonth, getPages } from './content';
 import type { Block, Card, Page, Profile } from './schema';
+import { positionsOf, range, duration } from './entries';
 
 type Project = Profile['projects'][number];
 type Job = Profile['experience'][number];
@@ -60,7 +61,8 @@ export async function detailPages(): Promise<Detail[]> {
     ];
     blocks.push({ type: 'glance', heading: 'At a glance', facts: [
       ...(p.role ? [{ label: 'Role', value: p.role, href: null }] : []),
-      ...(p.year ? [{ label: 'Year', value: p.year, href: null }] : []),
+      ...(p.start || p.year ? [{ label: 'When', value: range(p.start, p.end) || p.year!, href: null }] : []),
+      ...(p.associatedWith ? [{ label: 'Context', value: p.associatedWith, href: null }] : []),
       ...(p.tags.length ? [{ label: 'Stack', value: p.tags.join(' · '), href: null }] : []),
       ...p.links.map((l) => ({ label: l.label, value: l.url.replace(/^https?:\/\//, '').replace(/\/$/, ''), href: l.url })),
     ], points: p.highlights });
@@ -84,14 +86,16 @@ export async function detailPages(): Promise<Detail[]> {
   for (const job of profile.experience) {
     const jurl = `/${b.experience}/${jobSlug(job)}/`;
     const jb: Block[] = [
-      { type: 'banner', eyebrow: `${period(job)}${job.location ? ` · ${job.location}` : ''}`, heading: `${job.role} at ${job.company}`, body: job.summary ?? job.progression ?? null, image: job.logo ?? null, tags: [], ctas: [], back: { label: 'All experience', href: `/${b.experience}/` } },
+      { type: 'banner', eyebrow: `${period(job)}${job.location ? ` · ${job.location}` : ''}`, heading: `${job.role} at ${job.company}`, body: job.summary ?? null, image: job.logo ?? null, tags: [], ctas: [], back: { label: 'All experience', href: `/${b.experience}/` } },
     ];
     jb.push({ type: 'glance', heading: 'At a glance', facts: [
       { label: 'Company', value: job.company, href: null },
       { label: 'Role', value: job.role, href: null },
-      { label: 'Period', value: period(job), href: null },
-      ...(job.location ? [{ label: 'Location', value: job.location, href: null }] : []),
-      ...(job.progression ? [{ label: 'Growth', value: job.progression, href: null }] : []),
+      { label: 'Period', value: [period(job), duration(job.start, job.end)].filter(Boolean).join(' · '), href: null },
+      ...(job.employmentType ? [{ label: 'Type', value: job.employmentType, href: null }] : []),
+      ...([job.location, job.locationType].some(Boolean) ? [{ label: 'Location', value: [job.location, job.locationType].filter(Boolean).join(' · '), href: null }] : []),
+      ...(positionsOf(job).length > 1 ? [{ label: 'Positions', value: positionsOf(job).map((x) => `${x.title}${x.when ? ` (${x.when})` : ''}`).join(' → '), href: null }] : []),
+      ...(job.skills.length ? [{ label: 'Skills', value: job.skills.join(' · '), href: null }] : []),
     ], points: job.highlights });
     if (job.engagements.length) jb.push({ type: 'cards', heading: 'Clients & engagements', body: null, columns: 2, items: job.engagements.map((e) => engagementCard(job, e, b.experience)) });
     out.push({ page: page(`${b.experience}/${jobSlug(job)}`, `${job.role} at ${job.company}`, job.summary ?? `${job.role} at ${job.company}`, jb), current: b.experience });

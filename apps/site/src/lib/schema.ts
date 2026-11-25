@@ -39,6 +39,10 @@ export const blockSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('projects'), heading: z.string().nullish(), filter: z.enum(['all', 'featured']).default('all'), limit: z.number().int().positive().nullish() }),
   z.object({ type: z.literal('skills'), heading: z.string().nullish() }),
   z.object({ type: z.literal('education'), heading: z.string().nullish() }),
+  z.object({ type: z.literal('volunteering'), heading: z.string().nullish() }),
+  z.object({ type: z.literal('awards'), heading: z.string().nullish() }),
+  z.object({ type: z.literal('languages'), heading: z.string().nullish() }),
+  z.object({ type: z.literal('certifications'), heading: z.string().nullish() }),
   z.object({ type: z.literal('contact'), heading: z.string().nullish(), body: z.string().nullish() }),
   z.object({ type: z.literal('cta'), heading: z.string(), body: z.string().nullish(), label: z.string(), href: z.string() }),
   z.object({ type: z.literal('posts'), heading: z.string().nullish(), limit: z.number().int().positive().nullish() }),
@@ -110,6 +114,11 @@ export const profileSchema = z.object({
     start: z.string(),
     end: z.string().nullish(),
     progression: z.string().nullish(),
+    employmentType: z.string().nullish(),   // Full-time, Internship, Contract…
+    locationType: z.string().nullish(),     // On-site, Hybrid, Remote
+    // Several titles at one company, newest first (LinkedIn-style promotions)
+    positions: z.array(z.object({ title: z.string(), start: z.string().nullish(), end: z.string().nullish() })).default([]),
+    skills: z.array(z.string()).default([]),
     slug: z.string().regex(/^[a-z0-9-]+$/).nullish(),
     summary: z.string().nullish(),
     logo: z.string().nullish(),
@@ -131,6 +140,9 @@ export const profileSchema = z.object({
     year: z.string().nullish(),
     featured: z.boolean().default(false),
     role: z.string().nullish(),
+    start: z.string().nullish(),
+    end: z.string().nullish(),
+    associatedWith: z.string().nullish(),
     cover: z.string().nullish(),
     summary: z.string(),
     body: z.string().default(''),
@@ -140,8 +152,20 @@ export const profileSchema = z.object({
     links: z.array(link).default([]),
   })),
   skills: z.array(z.object({ group: z.string(), items: z.array(z.string()) })),
-  education: z.array(z.object({ degree: z.string(), institution: z.string(), end: z.string().nullish() })).default([]),
-  certifications: z.array(z.object({ name: z.string(), status: z.string().nullish() })).default([]),
+  education: z.array(z.object({
+    school: z.string(), degree: z.string().nullish(), field: z.string().nullish(),
+    start: z.string().nullish(), end: z.string().nullish(), grade: z.string().nullish(),
+    activities: z.string().nullish(), description: z.string().nullish(), skills: z.array(z.string()).default([]), logo: z.string().nullish(),
+  })).default([]),
+  // Licenses & certifications (separate from education, as on LinkedIn)
+  certifications: z.array(z.object({
+    name: z.string(), issuer: z.string().nullish(), status: z.enum(['earned', 'in-progress', 'planned']).default('earned'),
+    issued: z.string().nullish(), expires: z.string().nullish(), credentialId: z.string().nullish(), credentialUrl: z.string().nullish(),
+    skills: z.array(z.string()).default([]), note: z.string().nullish(),
+  })).default([]),
+  languages: z.array(z.object({ name: z.string(), proficiency: z.string().nullish() })).default([]),
+  awards: z.array(z.object({ title: z.string(), issuer: z.string().nullish(), date: z.string().nullish(), description: z.string().nullish(), url: z.string().nullish() })).default([]),
+  volunteering: z.array(z.object({ organization: z.string(), role: z.string(), cause: z.string().nullish(), start: z.string().nullish(), end: z.string().nullish(), description: z.string().nullish() })).default([]),
 });
 export type Profile = z.infer<typeof profileSchema>;
 
