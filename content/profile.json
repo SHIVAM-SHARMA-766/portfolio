@@ -71,7 +71,8 @@
         "Wazuh",
         "Prometheus",
         "Grafana"
-      ]
+      ],
+      "locationType": "On-site"
     }
   ],
   "projects": [
