@@ -157,7 +157,7 @@ async function contentHealth() {
   return out.slice(0, 8);
 }
 
-export function Empty({ icon, title, text }) {
+export function Empty({ icon, title, text = '' }) {
   return <div class="empty"><span class="empty-icon"><Icon name={icon} size={20} /></span><b>{title}</b>{text && <small>{text}</small>}</div>;
 }
 
@@ -179,6 +179,7 @@ function csvOf(rows) {
   return [head.join(','), ...body].join('\n');
 }
 
+/** @param {{ params?: any }} props */
 export function Contacts({ params = {} }) {
   const [list, setList] = useState(null);
   const [q, setQ] = useState('');
@@ -187,7 +188,7 @@ export function Contacts({ params = {} }) {
   const [sort, setSort] = useState({ key: 'createdAt', dir: -1 });
   const [sel, setSel] = useState(new Set());
   const load = useCallback(() => api.visitors().then((d) => setList(d.visitors)).catch((e) => notify(e.message, 'err')), []);
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
   useEffect(() => { if (params.stage) setStage(params.stage); }, [params.stage]);
   const counts = useMemo(() => Object.fromEntries([['all', (list ?? []).length], ...STAGES.map((s) => [s.id, (list ?? []).filter((v) => (v.stage ?? 'new') === s.id).length])]), [list]);
   const shown = useMemo(() => {

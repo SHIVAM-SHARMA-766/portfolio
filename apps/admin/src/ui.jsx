@@ -40,6 +40,7 @@ const PATHS = {
   sort: 'M8 9l4-4 4 4M16 15l-4 4-4-4',
 };
 
+/** @param {{ name: string, size?: number, class?: string, fill?: boolean }} props */
 export function Icon({ name, size = 16, class: cls = '', fill = false }) {
   return (
     <svg class={`ic ${cls}`} width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -51,7 +52,7 @@ export function Icon({ name, size = 16, class: cls = '', fill = false }) {
 // ---- people ------------------------------------------------------------------
 
 const COLORS = ['#4f46e5', '#0891b2', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#2563eb'];
-export function Avatar({ name, email, src, size = 32 }) {
+export function Avatar({ name, email = '', src = '', size = 32 }) {
   const label = (name || email || '?').trim();
   const initials = label.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
   const color = COLORS[[...label].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % COLORS.length];
@@ -71,7 +72,7 @@ export const STAGES = [
 export const stageLabel = (id) => STAGES.find((s) => s.id === id)?.label ?? id;
 export const StagePill = ({ stage }) => <span class={`stage stage--${stage}`}>{stageLabel(stage)}</span>;
 
-export function StageSelect({ value, onChange, compact }) {
+export function StageSelect({ value, onChange, compact = false }) {
   return (
     <select class={`stage-select stage--${value} ${compact ? 'is-compact' : ''}`} value={value} onChange={(e) => onChange(e.currentTarget.value)} onClick={(e) => e.stopPropagation()} aria-label="Stage">
       {STAGES.map((s) => <option value={s.id}>{s.label}</option>)}

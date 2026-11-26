@@ -10,7 +10,6 @@ import * as S from './schemas.js';
 import { HistoryDrawer } from './history.jsx';
 
 const PROFILE = 'content/profile.json';
-const go = (hash) => (e) => { e?.preventDefault?.(); location.hash = hash; };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const month = (ym) => { if (!ym) return ''; const [y, m] = ym.split('-').map(Number); return m ? `${MONTHS[m - 1]} ${y}` : String(y); };
@@ -82,7 +81,7 @@ export const SECTIONS = {
 function useProfile() {
   const [p, setP] = useState(null);
   const load = useCallback(() => api.file(PROFILE).then((f) => { const data = JSON.parse(f.content); S.fillPool(data); setP({ data, sha: f.sha }); }).catch((e) => notify(e.message, 'err')), []);
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
   const save = async (data, message) => {
     const r = await api.save(PROFILE, toJSON(data), p.sha, message);
     dispatchEvent(new CustomEvent('admin-saved'));
@@ -98,6 +97,7 @@ function Logo({ src, name }) {
   return src && !broken ? <img class="pf-logo" src={src} alt="" onError={() => setBroken(true)} /> : <span class="pf-logo pf-logo--text">{letters}</span>;
 }
 
+/** @param {{ kind: string, params?: any }} props */
 export function ProfileSection({ kind, params = {} }) {
   const sec = SECTIONS[kind];
   const coll = kind;
@@ -115,7 +115,7 @@ export function ProfileSection({ kind, params = {} }) {
     else if (params.edit != null && items[Number(params.edit)]) setEditing({ index: Number(params.edit), item: structuredClone(items[Number(params.edit)]) });
   }, [!!items, params.new, params.edit]);
 
-  const close = () => { setEditing(null); if (params.new || params.edit != null) history.replaceState(null, '', `#/${kind}`); };
+  const close = () => { setEditing(null); if (params.new || params.edit != null) window.history.replaceState(null, '', `#/${kind}`); };
   const reorder = async (from, to) => {
     if (from === to) return;
     const a = [...items]; const [x] = a.splice(from, 1); a.splice(to, 0, x);
@@ -220,7 +220,7 @@ function Drawer({ title, item, fields, onSave, onDelete, onClose, wide }) {
   });
   return (
     <div class="drawer-wrap" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <form class={`drawer ${wide ? 'drawer--wide' : ''}`} role="dialog" aria-label={title} onSubmit={submit}>
+      <form class={`drawer ${wide ? 'drawer--wide' : ''}`} role="none" aria-modal="true" aria-label={title} onSubmit={submit}>
         <header class="drawer-head"><h2>{title}</h2><button type="button" class="icon-btn" onClick={close} aria-label="Close"><Icon name="x" size={18} /></button></header>
         <div class="drawer-body"><Form fields={fields} value={value} onChange={(v) => { setValue(v); setChanged(true); }} /></div>
         <footer class="drawer-foot">

@@ -31,7 +31,6 @@ const skillsSuggest = () => pool.skills;
 const EMPLOYMENT = ['Full-time', 'Part-time', 'Self-employed', 'Freelance', 'Contract', 'Internship', 'Apprenticeship', 'Trainee'];
 const LOCATION_TYPES = ['On-site', 'Hybrid', 'Remote'];
 const PROFICIENCY = ['Elementary', 'Limited working', 'Professional working', 'Full professional', 'Native or bilingual'];
-const link = [s('label', 'Label'), s('url', 'URL')];
 const heading = s('heading', 'Heading');
 
 const card = [s('title', 'Title'), text('body', 'Text'), s('href', 'Link'), s('meta', 'Small line above the title'), s('badge', 'Badge'), img('image', 'Image'), s('icon', 'Icon (emoji)'), strs('tags', 'Tags'), s('cta', 'Link label')];
@@ -78,6 +77,25 @@ export const postFields = [
   img('cover', 'Cover image', { side: 'Cover', help: '1600×840 works best. Also used when the link is shared.' }),
   s('coverAlt', 'Cover description (screen readers)', { side: 'Cover' }),
   bool('draft', 'Draft', { hidden: true }),
+];
+
+// ---- profile sections (LinkedIn-style) -------------------------------------------
+
+export const projectFields = [
+  s('name', 'Project name', { required: true }),
+  text('summary', 'Description', { help: 'One or two sentences, shown on the card and at the top of the project page.' }),
+  tags('tags', 'Skills', { suggest: skillsSuggest, help: 'Shown as the stack. Press Enter after each.' }),
+  img('cover', 'Media: cover image', { help: '16:9 works best: a screenshot or diagram. Without one, a cover is generated from the theme colours.' }),
+  month('start', 'Start date'), month('end', 'End date', { present: 'I am currently working on this' }),
+  s('associatedWith', 'Associated with', { suggest: () => [...pool.companies, 'Personal project', 'Open source', 'University'], placeholder: 'Personal project' }),
+  s('role', 'My role', { placeholder: 'Solo — design and build' }),
+  list('links', 'Links (source, live demo, release…)', [s('label', 'Label'), url('url', 'URL')], { summary: 'label' }),
+  bool('featured', 'Featured on the home page'),
+  strs('highlights', 'Key points', { help: 'Shown in the “At a glance” box. One per line.' }),
+  md('body', 'Full story', { help: 'The problem, what you built, how, and what you learned. Paste or drop screenshots straight into the text.' }),
+  subPages,
+  s('slug', 'URL slug', { pattern: '^[a-z0-9-]+$', help: 'The page is /projects/<slug>/. Changing it breaks old links.' }),
+  s('year', 'Year (only if there are no dates)'),
 ];
 
 export const engagementFields = [

@@ -34,7 +34,7 @@ export function Form({ fields, value, onChange }) {
   );
 }
 
-function Label({ field, children, inline }) {
+function Label({ field, children, inline = false }) {
   return (
     <label class={`field ${inline ? 'field--inline' : ''}`}>
       <span class="field-label">{field.label}{field.required && <b class="req"> *</b>}</span>
@@ -158,7 +158,7 @@ function useReorder(value, onChange) {
   });
 }
 
-function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen, extraTools, removeLabel = 'this item', drag }) {
+function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen = false, extraTools = null, removeLabel = 'this item', drag = null }) {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
     <div class={`item ${open ? 'is-open' : ''} ${drag?.dragging ? 'is-dragging' : ''} ${drag?.over ? 'is-over' : ''}`} {...(drag?.target ?? {})}>
@@ -255,7 +255,7 @@ function BlocksField({ field, value, onChange }) {
   );
 }
 
-export function MarkdownEditor({ value, onChange, tall }) {
+export function MarkdownEditor({ value, onChange, tall = false }) {
   const ref = useRef(null);
   const [view, setView] = useState('split');
   const [picking, setPicking] = useState(false);
@@ -316,7 +316,7 @@ export function MarkdownEditor({ value, onChange, tall }) {
           onPaste={(e) => { if (e.clipboardData?.files?.length) { e.preventDefault(); uploadAll(e.clipboardData.files); } }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => { if (e.dataTransfer?.files?.length) { e.preventDefault(); uploadAll(e.dataTransfer.files); } }} />}
-        {view !== 'write' && <div class="md-preview prose" dangerouslySetInnerHTML={{ __html: marked.parse(value || '*Nothing yet.*') }} />}
+        {view !== 'write' && <div class="md-preview prose" dangerouslySetInnerHTML={{ __html: /** @type {string} */ (marked.parse(value || '*Nothing yet.*', { async: false })) }} />}
       </div>
       {picking && <MediaPicker images onUpload={async (f) => { setPicking(false); await uploadAll([f]); }} onPick={(u) => { setPicking(false); insert(`\n![${altOf(u.split('/').pop())}](${u})\n`); }} onClose={() => setPicking(false)} />}
     </div>
@@ -341,7 +341,7 @@ function MediaField({ field, value, onChange }) {
     if (!file) return;
     setBusy(true);
     try {
-      const url = await uploadFile(file);
+      const url = String(await uploadFile(file));
       if (isImage(file.name)) setLocal({ url, src: URL.createObjectURL(file) });
       onChange(url);
       notify('Uploaded. It goes live with your next save.');
@@ -371,7 +371,8 @@ function MediaField({ field, value, onChange }) {
   );
 }
 
-export function MediaPicker({ images, onPick, onClose, onUpload }) {
+/** @param {{ images?: boolean, onPick: (url: string) => void, onClose: () => void, onUpload?: ((f: File) => any) | null }} props */
+export function MediaPicker({ images = false, onPick, onClose, onUpload = null }) {
   const [files, setFiles] = useState(null);
   useEffect(() => { api.files().then((d) => setFiles(d.files.map((f) => f.path).filter((p) => p.startsWith(UPLOADS) && !p.split('/').pop().startsWith('.')).reverse())).catch((e) => notify(e.message, 'err')); }, []);
   useEffect(() => { const k = (e) => e.key === 'Escape' && onClose(); addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);

@@ -11,7 +11,7 @@ async function call(method, path, body) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data.error || `${res.status} ${res.statusText}`);
+    const err = /** @type {Error & { status?: number }} */ (new Error(data.error || `${res.status} ${res.statusText}`));
     err.status = res.status;
     throw err;
   }

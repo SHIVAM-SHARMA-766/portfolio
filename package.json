@@ -20,7 +20,8 @@
     "build:api": "npm run game-data && cd apps/api && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags=\"-s -w\" -o ../../dist/portfolio-api .",
     "test": "node --test \"packages/game/test/*.test.js\"",
     "test:api": "npm run game-data && cd apps/api && go test ./...",
-    "test:e2e": "node tests/e2e.mjs"
+    "test:e2e": "node tests/e2e.mjs",
+    "typecheck": "npm run typecheck -w @portfolio/admin"
   },
   "devDependencies": {
     "playwright-core": "1.65.0"

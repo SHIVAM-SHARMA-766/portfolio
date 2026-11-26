@@ -78,7 +78,7 @@ export function HistoryPage() {
   const [q, setQ] = useState('');
   const [only, setOnly] = useState('all');
   const load = useCallback(() => api.history('').then((d) => setList(d.history)).catch((e) => setErr(e.message)), []);
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
   const shown = useMemo(() => (list ?? []).filter((e) => (only === 'all' || (only === 'admin') === e.admin) && `${e.message} ${e.author}`.toLowerCase().includes(q.toLowerCase())), [list, q, only]);
   const groups = [];
   for (const e of shown) {
