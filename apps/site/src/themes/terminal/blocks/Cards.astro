@@ -3,8 +3,10 @@ import Cmd from '../Cmd.astro';
 import { mdInline, resolveHref } from '../../../lib/content';
 import { xpAttrs, isExternal } from '../../../lib/cards';
 import type { BlockOf } from '../../../lib/schema';
+import { srcsetFor } from '../../../lib/images';
 const { block, theme } = Astro.props as { block: BlockOf<'cards'>; theme: string };
 const cols = block.columns ?? Math.min(3, Math.max(1, block.items.length));
+const sets = await Promise.all(block.items.map((c) => srcsetFor(c.image)));
 ---
 <Cmd cmd="ls -la">
   {block.heading && <h2 class="t-h"># {block.heading}</h2>}
@@ -16,7 +18,7 @@ const cols = block.columns ?? Math.min(3, Math.max(1, block.items.length));
       const link = c.href ? { href: resolveHref(theme, c.href), ...(isExternal(c.href) ? { target: '_blank', rel: 'noopener' } : {}) } : {};
       return (
         <Tag class="t-entry" {...link} {...xpAttrs(c)}>
-          {c.image && <img class="t-entry__img" src={c.image} alt="" loading="lazy" />}
+          {c.image && <img class="t-entry__img" src={c.image} srcset={sets[block.items.indexOf(c)]} sizes="(max-width: 760px) 100vw, 320px" alt="" loading="lazy" decoding="async" />}
           <span class="t-dim t-entry__meta">drwxr-xr-x {c.meta ?? ''}{c.badge && <span class="t-tag">★ {c.badge.toLowerCase()}</span>}</span>
           <span class="t-entry__title">{c.icon && !c.xp ? `${c.icon} ` : ''}{c.title}/</span>
           {c.body && <span class="t-entry__body" set:html={mdInline(c.body)} />}

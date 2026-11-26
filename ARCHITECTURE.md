@@ -151,6 +151,25 @@ Missions (`content/missions.json`) are CTF flags placed by `kind`: `hidden-file`
 `flag:<id>`. The shell only scrolls to follow its output after the visitor's first
 command, so the boot lines never pull the page away from the top on load.
 
+## SEO and sharing
+
+- **Share cards** (`components/Head.astro`): Open Graph and Twitter `summary_large_image`
+  on every page. The image is the page's own (project cover, banner image, post cover) as a
+  JPEG copy from `/uploads/_og/` (LinkedIn is unreliable with WebP), else
+  `/images/og-default.jpg`, rendered from `brand/og-card.html` by `node scripts/og-card.mjs`.
+  Posts are `og:type=article` with published time and tags; home and about are `profile`.
+- **Structured data** (`lib/seo.ts`): JSON-LD `@graph` per page. `ProfilePage` + `Person`
+  (job title, employer, school, skills, socials) on home and about, `WebSite` on home,
+  `BlogPosting` on posts, `SoftwareSourceCode` (with a repo link) or `CreativeWork` on
+  projects, and `BreadcrumbList` on every page below the top level (company names come
+  from the profile). `<` is escaped inside the script tag.
+- **Responsive images** (`lib/images.ts` + `scripts/responsive-images.mjs`, run after the
+  site build): WebP copies at 480 and 960 px in `/uploads/_w480/` and `/uploads/_w960/` for
+  each upload wider than that; cards, banners and post covers get `srcset`/`sizes`. Both
+  files must agree on widths and paths.
+- `sitemap.xml` (all pages including generated detail pages), `robots.txt` (admin and API
+  disallowed), canonical URLs without the theme, RSS at `/rss.xml`.
+
 ## Live presence
 
 `GET /api/live` is a WebSocket (`apps/api/internal/live`). Clients join with their path

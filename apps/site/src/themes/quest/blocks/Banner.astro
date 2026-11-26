@@ -1,7 +1,9 @@
 ---
 import { mdInline, resolveHref } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
+import { srcsetFor } from '../../../lib/images';
 const { block, theme } = Astro.props as { block: BlockOf<'banner'>; theme: string };
+const set = await srcsetFor(block.image);
 ---
 <section class={`q-panel q-banner ${block.image ? 'q-banner--img' : ''}`}>
   <div>
@@ -12,5 +14,5 @@ const { block, theme } = Astro.props as { block: BlockOf<'banner'>; theme: strin
     {block.tags.length > 0 && <p class="q-loot">{block.tags.map((t) => <span>{t}</span>)}</p>}
     {block.ctas.length > 0 && <div class="q-actions">{block.ctas.map((c) => <a class="q-btn" href={resolveHref(theme, c.href)} {...(/^https?:/.test(c.href) ? { target: '_blank', rel: 'noopener' } : {})}>{c.label}</a>)}</div>}
   </div>
-  {block.image && <img class="q-banner-img" src={block.image} alt="" />}
+  {block.image && <img class="q-banner-img" src={block.image} srcset={set} sizes="(max-width: 900px) 100vw, 480px" alt="" fetchpriority="high" />}
 </section>

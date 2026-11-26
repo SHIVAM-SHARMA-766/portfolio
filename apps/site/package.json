@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node ../../scripts/copy-default-theme.mjs",
+    "build": "astro build && node ../../scripts/copy-default-theme.mjs && node ../../scripts/responsive-images.mjs",
     "preview": "astro preview",
     "check": "astro check"
   },

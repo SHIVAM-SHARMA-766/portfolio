@@ -2,10 +2,12 @@
 import { mdInline, resolveHref } from '../../../lib/content';
 import { xpAttrs, hue, initialsOf, isExternal } from '../../../lib/cards';
 import type { BlockOf } from '../../../lib/schema';
+import { srcsetFor } from '../../../lib/images';
 const { block, theme } = Astro.props as { block: BlockOf<'cards'>; theme: string };
 const cols = block.columns ?? Math.min(3, Math.max(1, block.items.length));
 // A generated cover only for projects; other cards without an image stay text-only
 const media = (c: (typeof block.items)[number]) => !!c.image || !!c.xp?.id.startsWith('project:');
+const sets = await Promise.all(block.items.map((c) => srcsetFor(c.image)));
 ---
 <section class="s-wrap s-section">
   {block.heading && <h2 class="s-h2">{block.heading}</h2>}
@@ -18,7 +20,7 @@ const media = (c: (typeof block.items)[number]) => !!c.image || !!c.xp?.id.start
         <Tag class="s-tile" {...link} {...xpAttrs(c)}>
           {media(c) && (
             <div class="s-tile__media" style={`--h:${hue(c.title)}`}>
-              {c.image ? <img src={c.image} alt="" loading="lazy" /> : <span aria-hidden="true">{c.icon ?? initialsOf(c.title)}</span>}
+              {c.image ? <img src={c.image} srcset={sets[block.items.indexOf(c)]} sizes={`(max-width: 760px) 100vw, ${Math.round(1100 / cols)}px`} alt="" loading="lazy" decoding="async" /> : <span aria-hidden="true">{c.icon ?? initialsOf(c.title)}</span>}
             </div>
           )}
           <div class="s-tile__body">

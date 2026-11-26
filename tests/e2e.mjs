@@ -450,6 +450,42 @@ try {
     await ad.close();
   });
 
+  await step('SEO: structured data, share cards and responsive images', async () => {
+    const pg = await browser.newPage();
+    await pg.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+    const ld = async (url) => {
+      await pg.goto(`${S}${url}`);
+      const blocks = await pg.locator('script[type="application/ld+json"]').allTextContents();
+      return blocks.flatMap((b) => JSON.parse(b)['@graph']);
+    };
+    const types = (g) => g.map((x) => x['@type']);
+    assert.deepEqual(types(await ld('/')), ['ProfilePage', 'WebSite']);
+    const post = await ld('/blog/hello-world/');
+    assert.deepEqual(types(post), ['BlogPosting', 'BreadcrumbList']);
+    assert.ok(post[0].datePublished && post[0].author.name);
+    assert.equal(await pg.getAttribute('meta[property="og:type"]', 'content'), 'article');
+    const project = await ld('/projects/vault/');
+    assert.ok(['SoftwareSourceCode', 'CreativeWork'].includes(project[0]['@type']));
+    assert.deepEqual(project[1].itemListElement.map((i) => i.position), [1, 2, 3]);
+    // The share image and every srcset candidate exist
+    const og = new URL(await pg.getAttribute('meta[property="og:image"]', 'content'));
+    assert.match(og.pathname, /\.jpg$/);
+    assert.equal((await pg.request.get(`${S}${og.pathname}`)).status(), 200, og.pathname);
+    await pg.goto(`${S}/projects/`);
+    const sets = await pg.locator('img[srcset]').evaluateAll((imgs) => imgs.map((i) => i.getAttribute('srcset')));
+    assert.ok(sets.length > 0, 'cards use srcset');
+    for (const url of new Set(sets.flatMap((x) => x.split(',').map((c) => c.trim().split(' ')[0])))) {
+      assert.equal((await pg.request.get(`${S}${url}`)).status(), 200, url);
+    }
+    // A phone picks a small variant
+    const m = await browser.newPage({ viewport: { width: 375, height: 800 }, deviceScaleFactor: 1 });
+    await m.goto(`${S}/projects/`);
+    const src = await m.locator('img[srcset]').first().evaluate(async (i) => { i.loading = 'eager'; await i.decode().catch(() => {}); return i.currentSrc; });
+    assert.match(src, /_w480\//, src);
+    await m.close();
+    await pg.close();
+  });
+
   await step('no JavaScript errors', async () => assert.deepEqual(errors, []));
 
   await step('pages fit a 375px phone without horizontal scroll', async () => {

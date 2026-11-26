@@ -1,9 +1,11 @@
 ---
 // Shared <head>: meta, palette tokens, pre-paint preferences, game config.
 import { paletteCss, palettesFor } from '@portfolio/tokens';
-import { site, gameConfig, pageUrl, photo } from '../lib/content';
+import { site, gameConfig, pageUrl } from '../lib/content';
 import '@portfolio/game/game.css';
 import Analytics from './Analytics.astro';
+import { seoFor, ldJson } from '../lib/seo';
+import { ogVariant } from '../lib/images';
 import missionsRaw from '../../../../content/missions.json';
 const sourceFlag = missionsRaw.missions.find((m) => m.kind === 'page-source')?.flag;
 
@@ -24,6 +26,11 @@ const defaultPalette = site.defaultPalettes[theme] ?? palettes[0];
 // A first visit follows the system's dark mode where the theme has a dark palette
 const darkPalette = palettes.includes('dark') ? 'dark' : null;
 const config = { ...(await gameConfig(pageIdent)), theme };
+const seo = await seoFor(slug, title, description, image ?? null, canonical);
+// Share cards: the page's own image (project cover, banner, post cover), else the branded card
+const ogImage = new URL(image ? ogVariant(image) : '/images/og-default.jpg', site.siteUrl).href;
+const isProfile = slug === '' || slug === 'about';
+const [firstName, ...rest] = site.name.split(' ');
 ---
 <head>
   {sourceFlag && <Fragment set:html={`<!-- psst. you found the source. ${sourceFlag} — submit it in the terminal. -->`} />}
@@ -32,12 +39,22 @@ const config = { ...(await gameConfig(pageIdent)), theme };
   <title>{fullTitle}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
+  <meta property="og:site_name" content={site.name} />
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
-  <meta property="og:type" content="website" />
+  <meta property="og:type" content={seo.article ? 'article' : isProfile ? 'profile' : 'website'} />
   <meta property="og:url" content={canonical} />
-  {(image || photo) && <meta property="og:image" content={new URL(image || photo!.src, site.siteUrl).href} />}
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content={ogImage} />
+  {!image && <><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" /></>}
+  <meta property="og:image:alt" content={image ? title : `${site.name} — ${site.role}`} />
+  {isProfile && <><meta property="profile:first_name" content={firstName} /><meta property="profile:last_name" content={rest.join(' ')} /></>}
+  {seo.article && <meta property="article:published_time" content={seo.article.published} />}
+  {seo.article?.tags.map((t) => <meta property="article:tag" content={t} />)}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={fullTitle} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
+  {seo.ld.map((x) => <script type="application/ld+json" set:html={ldJson(x)} />)}
   <meta name="theme-color" content="#111111" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />

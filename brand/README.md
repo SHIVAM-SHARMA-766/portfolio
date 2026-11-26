@@ -12,3 +12,4 @@ The mark is a bold "S" with an orange dot ("S."), on a rounded dark tile.
 Colours: tile `#18181b`, S `#ffffff`, dot `#f97316`. On the site the mark is
 `apps/site/src/components/Logo.astro`, recoloured per theme with `--logo-bg`,
 `--logo-fg` and `--logo-dot`.
+- `og-card.html` — the 1200×630 share card; render with `node scripts/og-card.mjs`.
