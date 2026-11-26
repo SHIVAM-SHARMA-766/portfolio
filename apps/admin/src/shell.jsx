@@ -11,6 +11,7 @@ import { useRoute, navigate, registerToast, registerPublish, lastSave, editHref 
 import { FileEditor, Edit } from './editor.jsx';
 import { Pages, Blog } from './content.jsx';
 import { Media } from './media.jsx';
+import { Inbox, useUnread } from './inbox.jsx';
 
 export const Logo = ({ size = 28 }) => (
   <svg class="logo" viewBox="0 0 32 32" width={size} height={size} aria-hidden="true">
@@ -125,13 +126,13 @@ function Login({ onDone }) {
 
 /** @type {[string, string[][]][]} */
 const NAV = [
-  ['', [['#/dashboard', 'Dashboard', 'dashboard'], ['#/contacts', 'Contacts', 'contacts'], ['#/history', 'History', 'activity']]],
+  ['', [['#/dashboard', 'Dashboard', 'dashboard'], ['#/inbox', 'Inbox', 'mail'], ['#/contacts', 'Contacts', 'contacts'], ['#/history', 'History', 'activity']]],
   ['Profile', [['#/intro', 'Intro', 'user'], ['#/about-me', 'About', 'note'], ['#/experience', 'Experience', 'briefcase'], ['#/education', 'Education', 'book'], ['#/certifications', 'Licenses & certifications', 'trophy'], ['#/projects', 'Projects', 'projects'], ['#/skills', 'Skills', 'check'], ['#/languages', 'Languages', 'globe'], ['#/awards', 'Honors & awards', 'star'], ['#/volunteering', 'Volunteering', 'contacts']]],
   ['Website', [['#/pages', 'Pages', 'pages'], ['#/blog', 'Blog', 'pen'], ['#/media', 'Media library', 'image']]],
   ['Game', [[editHref('content/shop.json'), 'Shop', 'store'], [editHref('content/missions.json'), 'Terminal missions', 'flag'], [editHref('content/achievements.json'), 'Achievements', 'trophy']]],
   ['Settings', [[editHref('content/site.json'), 'Site settings', 'settings']]],
 ];
-const TITLES = { '/history': 'History', '/intro': 'Intro', '/about-me': 'About', '/education': 'Education', '/certifications': 'Licenses & certifications', '/skills': 'Skills', '/languages': 'Languages', '/awards': 'Honors & awards', '/volunteering': 'Volunteering', '/dashboard': 'Dashboard', '/contacts': 'Contacts', '/contact': 'Contact', '/pages': 'Pages', '/projects': 'Projects', '/project': 'Project', '/experience': 'Experience', '/job': 'Role', '/blog': 'Blog', '/courses': 'Courses', '/course': 'Course', '/media': 'Media', '/edit': 'Editor' };
+const TITLES = { '/inbox': 'Inbox', '/history': 'History', '/intro': 'Intro', '/about-me': 'About', '/education': 'Education', '/certifications': 'Licenses & certifications', '/skills': 'Skills', '/languages': 'Languages', '/awards': 'Honors & awards', '/volunteering': 'Volunteering', '/dashboard': 'Dashboard', '/contacts': 'Contacts', '/contact': 'Contact', '/pages': 'Pages', '/projects': 'Projects', '/project': 'Project', '/experience': 'Experience', '/job': 'Role', '/blog': 'Blog', '/courses': 'Courses', '/course': 'Course', '/media': 'Media', '/edit': 'Editor' };
 
 function isOn(current, href) {
   if (current === href) return true;
@@ -174,6 +175,7 @@ export function App() {
     return () => removeEventListener('keydown', k);
   }, []);
   const items = usePaletteItems(palette);
+  const unread = useUnread();
 
   if (me === undefined) return <p class="muted center">Loading…</p>;
   if (me === null) return <><Login onDone={check} /><Toast /></>;
@@ -195,6 +197,7 @@ export function App() {
     case '/edit': page = <Edit params={route.params} />; break;
     case '/media': page = <Media />; break;
     case '/history': page = <HistoryPage />; break;
+    case '/inbox': page = <Inbox />; break;
     default: page = <Dashboard />;
   }
   return (
@@ -206,7 +209,7 @@ export function App() {
           <nav>
             {group && <h3>{group}</h3>}
             {links.map(([href, label, icon]) => (
-              <a href={href} class={isOn(current, href) ? 'on' : ''} onClick={(e) => { e.preventDefault(); navigate(href); }}><Icon name={icon} />{label}</a>
+              <a href={href} class={isOn(current, href) ? 'on' : ''} onClick={(e) => { e.preventDefault(); navigate(href); }}><Icon name={icon} />{label}{href === '#/inbox' && unread > 0 && <span class="nav-badge" aria-label={`${unread} unread`}>{unread}</span>}</a>
             ))}
           </nav>
         ))}

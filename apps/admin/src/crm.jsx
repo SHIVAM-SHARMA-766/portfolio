@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'preact/hooks';
 import { api } from './api.js';
 import { notify } from './fields.jsx';
+import { ContactMessages, useUnread } from './inbox.jsx';
 import { Icon, Avatar, StagePill, StageSelect, STAGES, stageLabel, ago, date, dateTime, BarChart, Delta, lastDays, ask } from './ui.jsx';
 
 const go = (hash) => (e) => { e?.preventDefault?.(); location.hash = hash; };
@@ -12,6 +13,7 @@ const go = (hash) => (e) => { e?.preventDefault?.(); location.hash = hash; };
 const pretty = (s) => s.replace(/[-_]/g, ' ');
 export function describe(a) {
   if (a.kind === 'achievement') return { icon: 'trophy', text: <>Unlocked the achievement <b>{pretty(a.id)}</b></> };
+  if (a.kind === 'message') return { icon: 'mail', text: <>Sent a message through the contact form{a.id ? <> (<b>{a.id}</b>)</> : null}</> };
   if (a.kind === 'purchase') {
     const [, what] = a.id.split(':');
     return { icon: 'store', text: <>Bought <b>{pretty(what ?? a.id)}</b> for {a.points} coins</> };
@@ -47,6 +49,7 @@ export function Dashboard() {
   const [failed, setFailed] = useState(false);
   const [people, setPeople] = useState(null);
   const [health, setHealth] = useState(null);
+  const unread = useUnread();
   useEffect(() => {
     let stop = false;
     const load = async () => {
@@ -70,6 +73,7 @@ export function Dashboard() {
   const recent = (people ?? []).slice(0, 6);
   return (
     <>
+      {unread > 0 && <a class="banner banner--info" href="#/inbox" onClick={go('#/inbox')}><Icon name="mail" />{unread} unread message{unread > 1 ? 's' : ''} from the contact form <b>Open inbox →</b></a>}
       {failed && <div class="banner banner--warn"><Icon name="alert" />Some numbers couldn't be loaded and may be missing. They refresh every 15 seconds.</div>}
       <header class="page-head">
         <div><h1>Dashboard</h1><p class="muted">How the site is doing, who signed in, and what needs attention.</p></div>
@@ -343,7 +347,7 @@ export function Contact({ id }) {
             <div class="panel-head"><h2>Details</h2></div>
             <dl class="facts">
               <div><dt>Stage</dt><dd><StagePill stage={c.stage ?? 'new'} /></dd></div>
-              <div><dt>Signed in with</dt><dd>{(c.providers ?? []).join(', ') || '—'}</dd></div>
+              <div><dt>Signed in with</dt><dd>{(c.providers ?? []).join(', ') || (c.messages ? 'Not signed in (contact form)' : '—')}</dd></div>
               <div><dt>XP · coins</dt><dd>{c.xp ?? 0} · {c.coins ?? 0}</dd></div>
               <div><dt>Achievements</dt><dd>{c.achievements}</dd></div>
               <div><dt>Bought</dt><dd>{c.purchases.length ? c.purchases.map((p) => p.split(':')[1] ?? p).join(', ') : '—'}</dd></div>
@@ -372,6 +376,8 @@ export function Contact({ id }) {
             </ul>
           </section>
         </div>
+        <div class="contact-main">
+        <ContactMessages messages={c.messageList} />
         <section class="panel">
           <div class="panel-head"><h2>Activity</h2><span class="muted">What they did on the site</span></div>
           {!groups.length ? <Empty icon="activity" title="No activity yet" text="Pages they visit and things they do show up here." /> : (
@@ -388,6 +394,7 @@ export function Contact({ id }) {
             </div>
           )}
         </section>
+        </div>
       </div>
     </>
   );

@@ -95,7 +95,7 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1) // one writer; avoids SQLITE_BUSY under load
-	if _, err := db.Exec(schema); err != nil {
+	if _, err := db.Exec(schema + messagesSchema); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 	return &Store{db: db}, nil
@@ -122,6 +122,8 @@ type User struct {
 	Tags       []string `json:"tags,omitempty"`
 	Starred    bool     `json:"starred,omitempty"`
 	Notes      int      `json:"notes,omitempty"`
+	Messages   int      `json:"messages,omitempty"`
+	Unread     int      `json:"unread,omitempty"`
 	Events     int      `json:"events,omitempty"`
 	LastActive int64    `json:"lastActive,omitempty"`
 }
@@ -214,6 +216,8 @@ func (s *Store) Users(ctx context.Context, bonus map[string]int) ([]User, error)
 			COALESCE((SELECT group_concat(ach_id) FROM achievements WHERE user_id=u.id),''),
 			COALESCE(c.stage,'new'), COALESCE(c.tags,''), COALESCE(c.starred,0),
 			(SELECT COUNT(*) FROM notes WHERE user_id=u.id),
+			(SELECT COUNT(*) FROM messages WHERE user_id=u.id),
+			(SELECT COUNT(*) FROM messages WHERE user_id=u.id AND read_at=0),
 			(SELECT COUNT(*) FROM events WHERE user_id=u.id),
 			COALESCE((SELECT MAX(created_at) FROM events WHERE user_id=u.id),0)
 		FROM users u LEFT JOIN crm c ON c.user_id=u.id ORDER BY u.created_at DESC`)
@@ -227,7 +231,7 @@ func (s *Store) Users(ctx context.Context, bonus map[string]int) ([]User, error)
 		var providers, achs, tags string
 		var pts, spent, starred int
 		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Avatar, &u.CreatedAt, &u.LastSeen, &providers, &pts, &spent, &achs,
-			&u.Stage, &tags, &starred, &u.Notes, &u.Events, &u.LastActive); err != nil {
+			&u.Stage, &tags, &starred, &u.Notes, &u.Messages, &u.Unread, &u.Events, &u.LastActive); err != nil {
 			return nil, err
 		}
 		u.Starred = starred == 1

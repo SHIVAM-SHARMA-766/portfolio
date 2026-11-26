@@ -19,7 +19,8 @@
     {
       "type": "contact",
       "heading": null,
-      "body": null
+      "body": null,
+      "form": true
     }
   ]
 }

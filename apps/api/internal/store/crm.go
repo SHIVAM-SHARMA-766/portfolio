@@ -35,7 +35,7 @@ type Note struct {
 
 // Activity is one thing a contact did: an awarded event, an achievement or a purchase.
 type Activity struct {
-	Kind   string `json:"kind"` // event | achievement | purchase
+	Kind   string `json:"kind"` // event | achievement | purchase | message
 	ID     string `json:"id"`
 	Points int    `json:"points,omitempty"`
 	At     int64  `json:"at"`
@@ -46,6 +46,7 @@ type Contact struct {
 	Achievements int        `json:"achievements"`
 	Purchases    []string   `json:"purchases"`
 	NotesList    []Note     `json:"notesList"`
+	MessageList  []Message  `json:"messageList"`
 	Activity     []Activity `json:"activity"`
 }
 
@@ -122,6 +123,12 @@ func (s *Store) Contact(ctx context.Context, id int64, bonus map[string]int) (*C
 	}); err != nil {
 		return nil, err
 	}
+	if c.MessageList, err = s.Messages(ctx, id, 200); err != nil {
+		return nil, err
+	}
+	for _, m := range c.MessageList {
+		c.Activity = append(c.Activity, Activity{Kind: "message", ID: m.Topic, At: m.CreatedAt})
+	}
 	sort.SliceStable(c.Activity, func(i, j int) bool { return c.Activity[i].At > c.Activity[j].At })
 	return c, nil
 }
@@ -186,15 +193,17 @@ func (s *Store) DeleteNote(ctx context.Context, userID, noteID int64) error {
 
 // Insights are the dashboard numbers beyond Stats.
 type Insights struct {
-	Active7d       int            `json:"active7d"`
-	ActivePrev7d   int            `json:"activePrev7d"`
-	UsersPrev7d    int            `json:"usersPrev7d"`
-	Users7d        int            `json:"users7d"`
-	ViewsPrev7d    int            `json:"viewsPrev7d"`
-	SignupsPerDay  []PathCount    `json:"signupsPerDay"` // path holds the day
-	ViewsPerDay30  []PathCount    `json:"viewsPerDay30"`
-	Stages         map[string]int `json:"stages"`
-	TopEvents7d    []PathCount    `json:"topEvents7d"` // most common actions
+	Active7d      int            `json:"active7d"`
+	ActivePrev7d  int            `json:"activePrev7d"`
+	UsersPrev7d   int            `json:"usersPrev7d"`
+	Users7d       int            `json:"users7d"`
+	ViewsPrev7d   int            `json:"viewsPrev7d"`
+	SignupsPerDay []PathCount    `json:"signupsPerDay"` // path holds the day
+	ViewsPerDay30 []PathCount    `json:"viewsPerDay30"`
+	Stages        map[string]int `json:"stages"`
+	TopEvents7d   []PathCount    `json:"topEvents7d"` // most common actions
+	Unread        int            `json:"unread"`      // contact-form messages not yet read
+	Messages7d    int            `json:"messages7d"`
 }
 
 func (s *Store) Insights(ctx context.Context) (*Insights, error) {
@@ -224,6 +233,8 @@ func (s *Store) Insights(ctx context.Context) (*Insights, error) {
 	in.SignupsPerDay = collect(`SELECT strftime('%Y-%m-%d', created_at, 'unixepoch') d, COUNT(*) FROM users WHERE created_at>=? GROUP BY d ORDER BY d`, d30.Unix())
 	in.ViewsPerDay30 = collect(`SELECT day,SUM(views) FROM page_views WHERE day>=? GROUP BY day ORDER BY day`, d30.Format("2006-01-02"))
 	in.TopEvents7d = collect(`SELECT substr(event_id,1,instr(event_id,':')-1) k, COUNT(*) n FROM events WHERE created_at>=? AND instr(event_id,':')>0 GROUP BY k ORDER BY n DESC LIMIT 8`, d7)
+	in.Unread = s.UnreadMessages(ctx)
+	s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM messages WHERE created_at>=?`, d7).Scan(&in.Messages7d)
 	for _, st := range Stages {
 		in.Stages[st] = 0
 	}

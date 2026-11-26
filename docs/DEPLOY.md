@@ -59,6 +59,8 @@ Run these once, in order. Values are filled in for the current host.
    Contents: Read and write) and the sign-in providers' client IDs and secrets. It prints the
    callback URLs to register:
    `https://<site>/api/auth/{github,google,linkedin}/callback`.
+   Optional: an SMTP account for contact-form email notices (e.g. Gmail `smtp.gmail.com:587`
+   with an app password). Without it, messages still arrive in the admin's Inbox.
    **Repository secrets** for CI (once):
    ```sh
    gh secret set DEPLOY_HOST --body 80.225.217.150

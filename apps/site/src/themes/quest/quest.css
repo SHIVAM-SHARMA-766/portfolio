@@ -290,3 +290,6 @@ body { display: flex; flex-direction: column; }
 .q-entries .q-badge { margin-left: .5rem; }
 .q-entry__body { font-size: .92rem; }
 .q-levels-list { list-style: none; margin: .4rem 0 .8rem; padding: 0; display: grid; gap: .3rem; }
+.q-form { margin-top: 1.5rem; }
+.q-form-h { font-family: 'Press Start 2P', monospace; font-size: .7rem; line-height: 1.8; margin: 0; }
+.q-form .cf :is(input, select, textarea) { border-width: 2px; }

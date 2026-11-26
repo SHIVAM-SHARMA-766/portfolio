@@ -1,0 +1,87 @@
+---
+// The contact form. Messages go to the API, which files them in the admin CRM
+// (and emails a notice when that is set up). Every theme uses this component
+// and passes its own button class; the fields take the theme's colours.
+import { site } from '../lib/content';
+interface Props { btnClass?: string; label?: string; sent?: string }
+const { btnClass = '', label = 'Send message', sent = 'Thanks! Your message is on its way. I usually reply within two days.' } = Astro.props;
+const api = site.apiUrl?.replace(/\/$/, '');
+const topics = [['job', 'A job opportunity'], ['freelance', 'Freelance or contract work'], ['collaboration', 'Collaboration or open source'], ['question', 'A question'], ['other', 'Something else']];
+---
+{api && (
+  <form class="cf" data-contact-form data-api={api} data-sent={sent} novalidate>
+    <div class="cf-row">
+      <label class="cf-field"><span>Name</span><input name="name" autocomplete="name" required maxlength="100" /></label>
+      <label class="cf-field"><span>Email</span><input name="email" type="email" autocomplete="email" required maxlength="200" /></label>
+    </div>
+    <label class="cf-field"><span>What is it about?</span>
+      <select name="topic">{topics.map(([v, l]) => <option value={v}>{l}</option>)}</select>
+    </label>
+    <label class="cf-field"><span>Message</span><textarea name="message" rows="6" required minlength="10" maxlength="5000" /></label>
+    <label class="cf-hp" aria-hidden="true">Leave this empty<input name="website" tabindex="-1" autocomplete="off" /></label>
+    <div class="cf-foot">
+      <button type="submit" class={btnClass}>{label}</button>
+      <p class="cf-status" role="status" aria-live="polite"></p>
+    </div>
+    <p class="cf-note">Your name, email and message are stored so I can reply. Nothing else, and never shared. <a href="/privacy/">Privacy</a></p>
+  </form>
+)}
+
+<style>
+  .cf { display: grid; gap: .9rem; max-width: 40rem; margin-top: 1.5rem; }
+  .cf-row { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+  .cf-field { display: grid; gap: .35rem; font-size: .9rem; }
+  .cf-field > span { color: var(--muted); }
+  .cf input, .cf select, .cf textarea {
+    font: inherit; color: var(--fg); background: var(--surface, transparent);
+    border: 1px solid var(--border); border-radius: var(--cf-radius, .5rem); padding: .65rem .8rem; width: 100%; box-sizing: border-box;
+  }
+  .cf textarea { resize: vertical; min-height: 8rem; }
+  .cf :is(input, select, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  .cf [aria-invalid='true'] { border-color: #e5484d; }
+  .cf-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .cf-foot { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .cf-status { margin: 0; font-size: .9rem; }
+  .cf-status.is-ok { color: var(--accent); }
+  .cf-status.is-err { color: #e5484d; }
+  .cf-note { margin: 0; font-size: .8rem; color: var(--muted); }
+  .cf-note a { color: inherit; }
+  .cf button[disabled] { opacity: .6; cursor: progress; }
+  .cf.is-sent .cf-row, .cf.is-sent .cf-field, .cf.is-sent button { display: none; }
+</style>
+
+<script>
+  for (const form of document.querySelectorAll<HTMLFormElement>('[data-contact-form]')) {
+    const shown = Date.now();
+    const status = form.querySelector<HTMLElement>('.cf-status')!;
+    const button = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    const say = (msg: string, kind: 'ok' | 'err' | '') => { status.textContent = msg; status.className = `cf-status ${kind ? `is-${kind}` : ''}`; };
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const data = Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
+      // Check in the browser first, with the same rules as the server.
+      const bad: string[] = [];
+      if (!data.name.trim()) bad.push('name');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) bad.push('email');
+      if (data.message.trim().length < 10) bad.push('message');
+      for (const el of form.querySelectorAll<HTMLInputElement>('input, textarea')) el.setAttribute('aria-invalid', String(bad.includes(el.name)));
+      if (bad.length) { say(`Please check: ${bad.join(', ')}.`, 'err'); form.querySelector<HTMLElement>(`[name=${bad[0]}]`)?.focus(); return; }
+      button.disabled = true; say('Sending…', '');
+      try {
+        const res = await fetch(`${form.dataset.api}/contact`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ ...data, page: location.pathname, elapsed: Date.now() - shown }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(out.error || 'Could not send right now. Please use email instead.');
+        form.classList.add('is-sent');
+        say(form.dataset.sent!, 'ok');
+        dispatchEvent(new CustomEvent('contact-sent'));
+      } catch (err) {
+        say((err as Error).message || 'Could not send. Please use email instead.', 'err');
+        button.disabled = false;
+      }
+    });
+  }
+</script>

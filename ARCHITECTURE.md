@@ -171,12 +171,13 @@ page-view counter for the admin dashboard. Touch devices see counts but no curso
 | `DELETE /api/me` | delete account and progress |
 | `GET /api/auth/{provider}/start`, `/callback` | OAuth / OpenID Connect sign-in |
 | `GET /api/live` | WebSocket presence and cursors |
-| `/api/admin/*` | admin sign-in, stats and insights, contacts (+CSV, stage, tags, notes, activity), content files, history and restore, deploy status |
+| `POST /api/contact` | contact form → CRM inbox (+ optional email notice) |
+| `/api/admin/*` | admin sign-in, stats and insights, inbox (messages), contacts (+CSV, stage, tags, notes, activity), content files, history and restore, deploy status |
 
 - **Storage:** SQLite (WAL, one connection) at `/var/lib/portfolio-api/portfolio.db`:
   users, identities (one user can sign in with several providers; linked only on a
   verified matching email), sessions (only token hashes stored), events, achievements,
-  purchases, page_views.
+  purchases, page_views, messages.
 - **Sessions:** `pf_session` cookie on the parent domain (`cookieDomain`), HttpOnly,
   Secure, SameSite=Lax, 180 days. The learn subdomain calls the API with CORS + credentials.
 - **CSRF:** state-changing requests must carry an allowed `Origin` (site or learn).
@@ -242,6 +243,18 @@ A Preact SPA styled like a CRM: a sidebar with icons, breadcrumbs, a **command p
 CRM data lives in the API's SQLite (`crm`: stage, tags, star per user; `notes`), served by
 `GET/PATCH /api/admin/visitors/{id}`, `POST/DELETE …/notes`, and `GET /api/admin/insights`.
 Stages: new, contacted, engaged, opportunity, archived.
+
+**Contact form.** The `contact` block with `form: true` renders `components/ContactForm.astro`
+in every theme. `POST /api/contact` (package `internal/contact`) validates name, email, topic
+and message, and files the message in `messages` under the contact with the same email
+(case-insensitive) or a new contact tagged `contact-form` (no sign-in identity). Spam
+defences: the CORS origin check, a hidden honeypot field, a 3-second minimum fill time
+(answered with "send again"; a filled honeypot gets a fake success and nothing is stored), 5 messages per IP per hour and 100 per day
+overall. With `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` (`SMTP_FROM`) and `NOTIFY_EMAIL` set, a
+plain-text notice is mailed (STARTTLS, e.g. Gmail on port 587 with an app password;
+headers are stripped of CR/LF). The admin's Inbox (`GET /api/admin/messages`,
+`PATCH`/`DELETE /api/admin/messages/{id}`) shows them with an unread badge; the contact page
+shows each person's messages.
 
 ## Learn site
 

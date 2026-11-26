@@ -560,3 +560,29 @@ button.is-active { background: var(--accent-soft); border-color: var(--accent); 
 .hist-page section + section { margin-top: 1rem; }
 .drawer-head small { display: block; font-size: .8rem; }
 @media (max-width: 1100px) { .editor-grid--preview { grid-template-columns: 1fr; } .preview { position: static; height: 70vh; } }
+
+/* ---- inbox ---- */
+.nav-badge { margin-left: auto; min-width: 1.3rem; padding: 0 .4rem; border-radius: 99px; background: var(--accent); color: var(--accent-fg); font-size: .72rem; font-weight: 600; line-height: 1.3rem; text-align: center; }
+.banner--info { background: var(--accent-soft); color: var(--fg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); text-decoration: none; }
+.banner--info:hover { text-decoration: none; border-color: var(--accent); }
+.banner--info b { margin-left: auto; color: var(--accent); }
+.contact-main { display: grid; gap: 1rem; min-width: 0; }
+.inbox { list-style: none; padding: 0; margin: 0; overflow: hidden; }
+.msg + .msg { border-top: 1px solid var(--border); }
+.msg-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: .8rem; width: 100%; padding: .8rem 1rem; cursor: pointer; }
+.msg-row:hover { background: var(--surface-2); }
+.msg-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.msg-main { display: grid; gap: .15rem; min-width: 0; flex: 1; }
+.msg-top { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.msg-top b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-preview { color: var(--muted); font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-when { color: var(--muted); white-space: nowrap; }
+.msg.is-unread .msg-top b { font-weight: 700; }
+.msg.is-unread .msg-preview { color: var(--fg); }
+.msg.is-unread .msg-row { box-shadow: inset 3px 0 0 var(--accent); }
+.msg.is-open .msg-preview { display: none; }
+.msg-body { padding: 0 1rem 1rem calc(1rem + 34px + .8rem); }
+.msg-body > p { margin: 0 0 .6rem; }
+.msg-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
+.msg-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+@media (max-width: 600px) { .msg-body { padding-left: 1rem; } }

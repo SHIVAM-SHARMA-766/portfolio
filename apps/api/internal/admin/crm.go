@@ -147,3 +147,47 @@ func (a *Admin) insights(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.JSON(w, http.StatusOK, in)
 }
+
+// ---- contact-form messages ----
+
+func (a *Admin) messages(w http.ResponseWriter, r *http.Request) {
+	list, err := a.store.Messages(r.Context(), 0, 500)
+	if err != nil {
+		storeError(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"messages": list, "unread": a.store.UnreadMessages(r.Context())})
+}
+
+func (a *Admin) markMessage(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(r, "id")
+	if !ok {
+		httpx.Error(w, http.StatusBadRequest, "bad id")
+		return
+	}
+	var body struct {
+		Read bool `json:"read"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<10)).Decode(&body); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "bad json")
+		return
+	}
+	if err := a.store.MarkMessage(r.Context(), id, body.Read); err != nil {
+		storeError(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true, "unread": a.store.UnreadMessages(r.Context())})
+}
+
+func (a *Admin) deleteMessage(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(r, "id")
+	if !ok {
+		httpx.Error(w, http.StatusBadRequest, "bad id")
+		return
+	}
+	if err := a.store.DeleteMessage(r.Context(), id); err != nil {
+		storeError(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true, "unread": a.store.UnreadMessages(r.Context())})
+}

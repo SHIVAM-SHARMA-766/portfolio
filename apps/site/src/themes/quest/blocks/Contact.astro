@@ -3,6 +3,7 @@ import Panel from '../Panel.astro';
 import { site, mdInline, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 import CopyEmail from '../../../components/CopyEmail.astro';
+import ContactForm from '../../../components/ContactForm.astro';
 const { block } = Astro.props as { block: BlockOf<'contact'> };
 ---
 <Panel title={block.heading ?? 'Post office'} icon="✉️">
@@ -14,4 +15,5 @@ const { block } = Astro.props as { block: BlockOf<'contact'> };
     {site.socials.map((s) => <a class="q-btn" href={s.url} target="_blank" rel="noopener" data-xp={rewards.contact} data-xp-id={ids.contact(s.label)} data-xp-label="Following along">{s.label} ↗</a>)}
   </div>
   {site.location && <p class="q-muted">📍 Based in {site.location}</p>}
+  {block.form && <div class="q-form" style="--cf-radius:0"><p class="q-form-h">📨 Or leave a scroll at the post office</p><ContactForm btnClass="q-btn" label="🕊️ Send scroll" /></div>}
 </Panel>

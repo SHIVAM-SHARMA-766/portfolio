@@ -22,6 +22,12 @@ type Config struct {
 	AuthLog       string
 	OAuth         map[string]OAuthApp // github, google, linkedin
 	Dev           bool                // allow http://localhost origins and insecure cookies
+	// Contact-form notices (optional; without them messages only land in the admin)
+	SMTPHost    string // host:port, STARTTLS, e.g. smtp.gmail.com:587
+	SMTPUser    string
+	SMTPPass    string
+	SMTPFrom    string // defaults to SMTPUser
+	NotifyEmail string // where notices go
 }
 
 func env(k, def string) string {
@@ -43,6 +49,11 @@ func Load() (*Config, error) {
 		AuthLog:      env("AUTH_LOG", ""),
 		Dev:          env("DEV", "") == "1",
 		OAuth:        map[string]OAuthApp{},
+		SMTPHost:     env("SMTP_HOST", ""),
+		SMTPUser:     env("SMTP_USER", ""),
+		SMTPPass:     env("SMTP_PASS", ""),
+		SMTPFrom:     env("SMTP_FROM", ""),
+		NotifyEmail:  env("NOTIFY_EMAIL", ""),
 	}
 	secret := env("SESSION_SECRET", "")
 	if len(secret) < 32 {

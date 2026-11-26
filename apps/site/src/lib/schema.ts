@@ -43,7 +43,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('awards'), heading: z.string().nullish() }),
   z.object({ type: z.literal('languages'), heading: z.string().nullish() }),
   z.object({ type: z.literal('certifications'), heading: z.string().nullish() }),
-  z.object({ type: z.literal('contact'), heading: z.string().nullish(), body: z.string().nullish() }),
+  z.object({ type: z.literal('contact'), heading: z.string().nullish(), body: z.string().nullish(), form: z.boolean().nullish() }),
   z.object({ type: z.literal('cta'), heading: z.string(), body: z.string().nullish(), label: z.string(), href: z.string() }),
   z.object({ type: z.literal('posts'), heading: z.string().nullish(), limit: z.number().int().positive().nullish() }),
 ]);

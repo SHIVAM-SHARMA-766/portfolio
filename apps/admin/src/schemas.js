@@ -52,7 +52,7 @@ export const blockTypes = {
   languages: { label: 'Languages (from profile)', icon: 'globe', desc: 'Languages you speak, from the profile.', fields: [heading] },
   awards: { label: 'Honors & awards (from profile)', icon: 'star', desc: 'Honors & awards, from the profile.', fields: [heading] },
   volunteering: { label: 'Volunteering (from profile)', icon: 'contacts', desc: 'Volunteering, from the profile.', fields: [heading] },
-  contact: { label: 'Contact', icon: 'mail', desc: 'Email, copy button and social links.', fields: [heading, text('body', 'Text')] },
+  contact: { label: 'Contact', icon: 'mail', desc: 'Email, social links and an optional contact form.', fields: [heading, text('body', 'Text'), bool('form', 'Show the contact form', { help: 'Messages arrive in Inbox (and by email if set up).' })] },
   cta: { label: 'Call to action', icon: 'arrowUp', desc: 'A highlighted box with one button.', fields: [s('heading', 'Heading', { required: true }), text('body', 'Text'), s('label', 'Button label'), s('href', 'Button link')] },
   posts: { label: 'Blog posts', icon: 'pen', desc: 'Your latest blog posts.', fields: [heading, num('limit', 'Maximum')] },
 };

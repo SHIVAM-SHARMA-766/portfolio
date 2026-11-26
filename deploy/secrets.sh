@@ -52,6 +52,16 @@ for p in GITHUB GOOGLE LINKEDIN; do
   [ -n "${SET[OAUTH_${p}_ID]:-}" ] && ask "OAUTH_${p}_SECRET" "$p client secret" secret
 done
 
+echo
+echo "== Contact-form email notices (optional; blank skips — messages still reach the admin Inbox)"
+echo "   e.g. Gmail: host smtp.gmail.com:587, user = your Gmail, password = an app password"
+ask SMTP_HOST "SMTP host:port"
+if [ -n "${SET[SMTP_HOST]:-}" ]; then
+  ask SMTP_USER "SMTP username"
+  ask SMTP_PASS "SMTP password" secret
+  ask NOTIFY_EMAIL "Send notices to (email)"
+fi
+
 b64() { printf '%s' "$1" | base64 -w0; }
 {
   echo "declare -A SET=()"

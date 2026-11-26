@@ -389,6 +389,38 @@ try {
     await a.close();
   });
 
+  await step('contact form: a message lands in the admin inbox', async () => {
+    const c = await ctx.newPage();
+    c.on('pageerror', (e) => errors.push('contact: ' + e.message));
+    await c.goto(`${S}/contact/`);
+    await c.waitForSelector('[data-contact-form]');
+    await c.click('[data-contact-form] button[type=submit]'); // empty: checked in the browser
+    assert.match(await c.locator('.cf-status').innerText(), /check: name, email, message/);
+    await c.fill('[name=name]', 'Asha Recruiter');
+    await c.fill('[name=email]', 'asha@example.com');
+    await c.selectOption('[name=topic]', 'job');
+    await c.fill('[name=message]', 'Hi Shivam, we have a DevSecOps role that fits your profile.');
+    await c.waitForTimeout(3100); // the server refuses forms sent within 3 seconds
+    await c.click('[data-contact-form] button[type=submit]');
+    await c.waitForSelector('.cf.is-sent');
+    assert.match(await c.locator('.cf-status').innerText(), /Thanks/);
+    await shot(c, 'contact-sent');
+    // The admin sees it: badge, inbox, and on the contact page
+    await c.goto(`${S}/admin/#/inbox`);
+    await c.waitForSelector('.msg.is-unread');
+    assert.equal(await c.locator('.nav-badge').innerText(), '1');
+    await c.click('.msg-row');
+    await c.waitForSelector('.msg-body');
+    assert.match(await c.locator('.msg-body').innerText(), /DevSecOps role/);
+    await c.waitForFunction(() => !document.querySelector('.nav-badge'));
+    await shot(c, 'admin-inbox');
+    await c.click('.msg-actions >> text=Open contact');
+    await c.waitForSelector('.contact-head');
+    assert.match(await c.locator('.contact-main').innerText(), /Messages\s*1[\s\S]*DevSecOps role/);
+    assert.match(await c.locator('.tags-edit').innerText(), /contact-form/);
+    await c.close();
+  });
+
   await step('no JavaScript errors', async () => assert.deepEqual(errors, []));
 
   await step('pages fit a 375px phone without horizontal scroll', async () => {

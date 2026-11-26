@@ -3,6 +3,7 @@ import Cmd from '../Cmd.astro';
 import { site, mdInline, rewards, ids } from '../../../lib/content';
 import type { BlockOf } from '../../../lib/schema';
 import CopyEmail from '../../../components/CopyEmail.astro';
+import ContactForm from '../../../components/ContactForm.astro';
 const { block } = Astro.props as { block: BlockOf<'contact'> };
 ---
 <Cmd cmd="./contact.sh">
@@ -14,5 +15,6 @@ const { block } = Astro.props as { block: BlockOf<'contact'> };
     {site.socials.map((s) => <li>{s.label.toLowerCase()} → <a href={s.url} target="_blank" rel="noopener" data-xp={rewards.contact} data-xp-id={ids.contact(s.label)} data-xp-label="Following along">{s.url.replace(/^https?:\/\//, '')}</a></li>)}
     {site.location && <li>where &nbsp;→ {site.location}</li>}
   </ul>
+  {block.form && <div class="t-form" style="--cf-radius:0"><p class="t-h">$ ./send-message</p><ContactForm btnClass="t-btn t-btn--send" label="[ send ]" /></div>}
   <p class="t-dim">tip: there's a command that gets you hired faster. try the prompt below.</p>
 </Cmd>

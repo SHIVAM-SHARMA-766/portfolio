@@ -257,3 +257,6 @@ a.t-entry:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accen
 .t-entries p { margin: .1rem 0; }
 .t-entry__body { color: var(--muted); }
 .t-positions b { color: var(--fg); }
+.t-form { margin-top: 1.5rem; }
+.t-form .cf-field > span::before { content: '> '; color: var(--accent); }
+.t-btn--send { color: var(--accent); border-style: solid; border-color: var(--accent); font-size: .9rem; padding: .45rem 1rem; }
