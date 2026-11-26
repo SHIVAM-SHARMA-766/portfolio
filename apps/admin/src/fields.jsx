@@ -133,11 +133,37 @@ function move(arr, i, d) {
   return a;
 }
 
-function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen, extraTools, removeLabel = 'this item' }) {
+/** Drag to reorder: grab the ⋮⋮ handle, drop on another item. Events from a
+ *  nested list are handled there and don't reach the outer one. */
+function useReorder(value, onChange) {
+  const [from, setFrom] = useState(null);
+  const [over, setOver] = useState(null);
+  return (i) => ({
+    dragging: from === i,
+    over: from !== null && over === i && from !== i,
+    target: {
+      onDragOver: (e) => { if (from === null) return; e.preventDefault(); e.stopPropagation(); if (over !== i) setOver(i); },
+      onDrop: (e) => {
+        if (from === null) return;
+        e.preventDefault(); e.stopPropagation();
+        if (from !== i) { const a = [...value]; const [x] = a.splice(from, 1); a.splice(i, 0, x); onChange(a); }
+        setFrom(null); setOver(null);
+      },
+    },
+    handle: {
+      draggable: true,
+      onDragStart: (e) => { e.stopPropagation(); setFrom(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); const card = e.currentTarget.closest('.item'); if (card) e.dataTransfer.setDragImage(card, 24, 18); },
+      onDragEnd: () => { setFrom(null); setOver(null); },
+    },
+  });
+}
+
+function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen, extraTools, removeLabel = 'this item', drag }) {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
-    <div class={`item ${open ? 'is-open' : ''}`}>
+    <div class={`item ${open ? 'is-open' : ''} ${drag?.dragging ? 'is-dragging' : ''} ${drag?.over ? 'is-over' : ''}`} {...(drag?.target ?? {})}>
       <div class="item-head">
+        {drag && <span class="drag-handle" title="Drag to reorder" aria-hidden="true" {...drag.handle}>⋮⋮</span>}
         <button type="button" class="item-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
           <span class="chev">{open ? '▾' : '▸'}</span> {title || <em>Untitled</em>}
         </button>
@@ -155,12 +181,13 @@ function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen
 
 function ListField({ field, value, onChange }) {
   const [added, setAdded] = useState(-1);
+  const drag = useReorder(value, onChange);
   return (
     <fieldset class="group">
       <legend>{field.label} <span class="count">{value.length}</span></legend>
       {field.help && <small class="field-help">{field.help}</small>}
       {value.map((item, i) => (
-        <ItemCard key={i} index={i} count={value.length} defaultOpen={i === added} removeLabel={`“${(field.summary && item?.[field.summary]) || 'this item'}”`}
+        <ItemCard key={i} index={i} count={value.length} defaultOpen={i === added} drag={value.length > 1 ? drag(i) : null} removeLabel={`“${(field.summary && item?.[field.summary]) || 'this item'}”`}
           title={field.summary ? item?.[field.summary] : `${field.label} ${i + 1}`}
           onMove={(d) => onChange(move(value, i, d))}
           onRemove={() => onChange(value.filter((_, j) => j !== i))}>
@@ -201,6 +228,7 @@ function BlocksField({ field, value, onChange }) {
   const [picking, setPicking] = useState(null); // index to insert at
   const insert = (type, at) => { const next = [...value]; next.splice(at, 0, { type }); onChange(next); setAdded(at); setPicking(null); };
   const duplicate = (i) => { const next = [...value]; next.splice(i + 1, 0, structuredClone(value[i])); onChange(next); };
+  const drag = useReorder(value, onChange);
   return (
     <fieldset class="group blocks">
       <legend>{field.label} <span class="count">{value.length}</span></legend>
@@ -208,7 +236,7 @@ function BlocksField({ field, value, onChange }) {
       {value.map((block, i) => {
         const def = field.types[block.type];
         return (
-          <ItemCard key={`${i}-${block.type}`} index={i} count={value.length} defaultOpen={i === added} removeLabel="this block"
+          <ItemCard key={`${i}-${block.type}`} index={i} count={value.length} defaultOpen={i === added} removeLabel="this block" drag={value.length > 1 ? drag(i) : null}
             title={<><span class="badge">{def?.icon && <Icon name={def.icon} size={12} />}{def?.label.replace(/ \(.*\)/, '') ?? block.type}</span> {block.heading ?? ''}</>}
             extraTools={<>
               <button type="button" class="icon-btn" title="Duplicate" onClick={() => duplicate(i)}><Icon name="copy" /></button>

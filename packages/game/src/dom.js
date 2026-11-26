@@ -374,7 +374,7 @@ async function buyItem(id) {
 
 function welcome() {
   const prefs = readPrefs();
-  if (prefs.welcomed || document.documentElement.dataset.game === 'off' || config.pageId == null) return;
+  if (prefs.welcomed || document.documentElement.dataset.game === 'off' || config.pageId == null || window.top !== window) return; // not inside the admin preview
   // Not on arrival: the visitor sees the page first. The card comes after the
   // first real scroll, or after 8 seconds.
   let shown = false;

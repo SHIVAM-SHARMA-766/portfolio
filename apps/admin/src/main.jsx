@@ -5,6 +5,7 @@ import { Form, MarkdownEditor, uploadFile, publicUrl } from './fields.jsx';
 import * as S from './schemas.js';
 import { Dashboard, Contacts, Contact } from './crm.jsx';
 import { ProfileSection, SECTIONS } from './profile.jsx';
+import { HistoryDrawer, HistoryPage } from './history.jsx';
 import { Icon, Avatar, CommandPalette, DialogHost, ShortcutsHelp, Menu, ask, askText } from './ui.jsx';
 import './style.css';
 
@@ -88,6 +89,7 @@ function PublishTracker() {
         const run = (d.runs ?? []).find((r) => new Date(r.created_at).getTime() >= w.since - 60000);
         if (run && run.status === 'completed' && !stop) {
           setW((x) => x && { ...x, state: run.conclusion === 'success' ? 'live' : 'failed', link: run.html_url });
+          if (run.conclusion === 'success') dispatchEvent(new CustomEvent('admin-live'));
           return;
         }
       } catch {}
@@ -174,10 +176,12 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
   const [busy, setBusy] = useState(false);
   const [changed, setChanged] = useState(false);
   const [error, setError] = useState('');
+  const [history, setHistory] = useState(false);
+  const [preview, setPreview] = useState(() => { try { return localStorage.getItem('admin.preview') === '1'; } catch { return false; } });
   const isNew = !!initial;
   const publishable = fields.some((f) => f.name === 'draft');
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setState(null); setChanged(false); setDirty(false); setError('');
     if (initial) { setState({ ...initial, sha: '' }); setChanged(true); setDirty(true); return; }
     api.file(path).then((f) => {
@@ -185,6 +189,8 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
       else setState({ data: JSON.parse(f.content), sha: f.sha });
     }).catch((e) => setError(e.message));
   }, [path]);
+  useEffect(load, [path]);
+  const togglePreview = () => { const v = !preview; setPreview(v); try { localStorage.setItem('admin.preview', v ? '1' : '0'); } catch {} };
 
   const edit = (patch) => { setState((s) => ({ ...s, ...patch })); setChanged(true); setDirty(true); };
   useEffect(() => () => setDirty(false), []); // leaving the editor clears the flag
@@ -225,8 +231,10 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
   const main = fields.filter((f) => !f.side && !f.hidden);
   const groups = [...new Set(fields.filter((f) => f.side && !f.hidden).map((f) => f.side))];
   const url = viewUrl?.(state.data);
+  const showPreview = preview && !isNew && url && !draft;
   return (
     <div class="editor">
+      {history && <HistoryDrawer path={path} title={state.data?.title || title} onClose={() => setHistory(false)} onRestored={load} />}
       <div class="editor-bar">
         <div class="editor-title">
           {back && <a class="back" href={back[0]} onClick={(e) => { e.preventDefault(); navigate(back[0]); }}>← {back[1]}</a>}
@@ -238,9 +246,10 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
           </span>
         </div>
         <div class="actions">
-          {!isNew && url && !draft && <a class="button" href={url} target="_blank" rel="noopener"><Icon name="external" />View</a>}
+          {!isNew && url && !draft && <button type="button" class={preview ? 'is-active' : ''} onClick={togglePreview} title="Show the live page next to the editor"><Icon name="eye" />Preview</button>}
           {!isNew && <Menu items={[
             url && !draft && { label: 'View on site', icon: 'external', href: url, external: true },
+            { label: 'Version history', icon: 'activity', onClick: () => setHistory(true) },
             publishable && !draft && { label: 'Switch to draft', icon: 'eye', onClick: () => save({ draft: true }) },
             { label: 'Copy file path', icon: 'copy', onClick: () => { navigator.clipboard?.writeText(path); toast('Path copied.'); } },
             onDeleted && { label: 'Delete', icon: 'trash', danger: true, onClick: del },
@@ -255,14 +264,18 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
           )}
         </div>
       </div>
-      <div class={groups.length ? 'editor-grid' : ''}>
+      <div class={showPreview ? 'editor-grid editor-grid--preview' : groups.length ? 'editor-grid' : ''}>
         <div class="editor-main">
           <Form fields={main} value={state.data} onChange={(data) => edit({ data })} />
           {kind === 'md' && (
             <div class="field"><span class="field-label">{bodyLabel ?? 'Content'}</span><MarkdownEditor tall value={state.body ?? ''} onChange={(body) => edit({ body })} /></div>
           )}
+          {showPreview && groups.map((g) => (
+            <section class="panel side-panel side-panel--inline"><h2>{g}</h2><Form fields={fields.filter((f) => f.side === g && !f.hidden)} value={state.data} onChange={(data) => edit({ data })} /></section>
+          ))}
         </div>
-        {groups.length > 0 && (
+        {showPreview && <LivePreview url={url} changed={changed} onClose={togglePreview} />}
+        {!showPreview && groups.length > 0 && (
           <aside class="editor-side">
             {groups.map((g) => (
               <section class="panel side-panel">
@@ -274,6 +287,36 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
         )}
       </div>
     </div>
+  );
+}
+
+/** The live page next to the editor. It reloads by itself when a save goes live. */
+function LivePreview({ url, changed, onClose }) {
+  const [device, setDevice] = useState('desktop');
+  const [key, setKey] = useState(0);
+  const [fresh, setFresh] = useState(false);
+  useEffect(() => {
+    const live = () => { setKey((k) => k + 1); setFresh(true); setTimeout(() => setFresh(false), 4000); };
+    addEventListener('admin-live', live);
+    return () => removeEventListener('admin-live', live);
+  }, []);
+  return (
+    <aside class="preview">
+      <div class="preview-bar">
+        <span class="seg">
+          <button type="button" class={device === 'desktop' ? 'is-on' : ''} onClick={() => setDevice('desktop')}>Desktop</button>
+          <button type="button" class={device === 'mobile' ? 'is-on' : ''} onClick={() => setDevice('mobile')}>Phone</button>
+        </span>
+        <span class="spacer" />
+        <button type="button" class="icon-btn" title="Reload" onClick={() => setKey((k) => k + 1)}>↻</button>
+        <a class="icon-btn" href={url} target="_blank" rel="noopener" title="Open in a new tab"><Icon name="external" /></a>
+        <button type="button" class="icon-btn" title="Close preview" onClick={onClose}><Icon name="x" /></button>
+      </div>
+      <p class={`preview-note ${fresh ? 'is-fresh' : ''}`}>{fresh ? '✓ Updated with your latest change.' : changed ? 'Showing the live page. Your unsaved edits appear here about a minute after you save.' : 'Showing the live page.'}</p>
+      <div class={`preview-frame preview-frame--${device}`}>
+        <iframe key={key} src={url} title="Live preview" loading="lazy" />
+      </div>
+    </aside>
   );
 }
 
@@ -532,13 +575,13 @@ function MediaDetails({ file, isImage, onClose, onCopy, onDelete }) {
 // ---- app shell -------------------------------------------------------------
 
 const NAV = [
-  ['', [['#/dashboard', 'Dashboard', 'dashboard'], ['#/contacts', 'Contacts', 'contacts']]],
+  ['', [['#/dashboard', 'Dashboard', 'dashboard'], ['#/contacts', 'Contacts', 'contacts'], ['#/history', 'History', 'activity']]],
   ['Profile', [['#/intro', 'Intro', 'user'], ['#/about-me', 'About', 'note'], ['#/experience', 'Experience', 'briefcase'], ['#/education', 'Education', 'book'], ['#/certifications', 'Licenses & certifications', 'trophy'], ['#/projects', 'Projects', 'projects'], ['#/skills', 'Skills', 'check'], ['#/languages', 'Languages', 'globe'], ['#/awards', 'Honors & awards', 'star'], ['#/volunteering', 'Volunteering', 'contacts']]],
   ['Website', [['#/pages', 'Pages', 'pages'], ['#/blog', 'Blog', 'pen'], ['#/media', 'Media library', 'image']]],
   ['Game', [[editHref('content/shop.json'), 'Shop', 'store'], [editHref('content/missions.json'), 'Terminal missions', 'flag'], [editHref('content/achievements.json'), 'Achievements', 'trophy']]],
   ['Settings', [[editHref('content/site.json'), 'Site settings', 'settings']]],
 ];
-const TITLES = { '/intro': 'Intro', '/about-me': 'About', '/education': 'Education', '/certifications': 'Licenses & certifications', '/skills': 'Skills', '/languages': 'Languages', '/awards': 'Honors & awards', '/volunteering': 'Volunteering', '/dashboard': 'Dashboard', '/contacts': 'Contacts', '/contact': 'Contact', '/pages': 'Pages', '/projects': 'Projects', '/project': 'Project', '/experience': 'Experience', '/job': 'Role', '/blog': 'Blog', '/courses': 'Courses', '/course': 'Course', '/media': 'Media', '/edit': 'Editor' };
+const TITLES = { '/history': 'History', '/intro': 'Intro', '/about-me': 'About', '/education': 'Education', '/certifications': 'Licenses & certifications', '/skills': 'Skills', '/languages': 'Languages', '/awards': 'Honors & awards', '/volunteering': 'Volunteering', '/dashboard': 'Dashboard', '/contacts': 'Contacts', '/contact': 'Contact', '/pages': 'Pages', '/projects': 'Projects', '/project': 'Project', '/experience': 'Experience', '/job': 'Role', '/blog': 'Blog', '/courses': 'Courses', '/course': 'Course', '/media': 'Media', '/edit': 'Editor' };
 
 function isOn(current, href) {
   if (current === href) return true;
@@ -601,6 +644,7 @@ function App() {
     case '/about-me': page = <FileEditor key="about" path="content/profile.json" kind="json" fields={S.aboutFields} title="About" viewUrl={() => '/about/'} />; break;
     case '/edit': page = <Edit params={route.params} />; break;
     case '/media': page = <Media />; break;
+    case '/history': page = <HistoryPage />; break;
     default: page = <Dashboard />;
   }
   return (

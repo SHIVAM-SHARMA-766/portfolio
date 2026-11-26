@@ -171,7 +171,7 @@ page-view counter for the admin dashboard. Touch devices see counts but no curso
 | `DELETE /api/me` | delete account and progress |
 | `GET /api/auth/{provider}/start`, `/callback` | OAuth / OpenID Connect sign-in |
 | `GET /api/live` | WebSocket presence and cursors |
-| `/api/admin/*` | admin sign-in, stats and insights, contacts (+CSV, stage, tags, notes, activity), content files, deploy status |
+| `/api/admin/*` | admin sign-in, stats and insights, contacts (+CSV, stage, tags, notes, activity), content files, history and restore, deploy status |
 
 - **Storage:** SQLite (WAL, one connection) at `/var/lib/portfolio-api/portfolio.db`:
   users, identities (one user can sign in with several providers; linked only on a
@@ -222,7 +222,16 @@ A Preact SPA styled like a CRM: a sidebar with icons, breadcrumbs, a **command p
   row actions (view, duplicate, delete). Confirmations and prompts are in-app dialogs
   (`ask`, `askText`); deleting a profile item offers Undo. After every save a publish
   tracker follows the GitHub Actions run until the change is live (or failed). `?` lists
-  keyboard shortcuts.
+  keyboard shortcuts. Blocks, list items and profile cards reorder by drag and drop (the
+  ⋮⋮ handle; ↑↓ stay for keyboards).
+- **Preview**: page and post editors can show the live page beside the form (desktop or
+  phone width); it reloads by itself when a save goes live. The site's CSP allows framing
+  by its own origin only (`frame-ancestors 'self'`), and the game skips the welcome card
+  inside the frame.
+- **History**: `GET /api/admin/history?path=` lists a file's commits (or all of
+  `content/`), `POST /api/admin/restore {path, commit}` writes that version back as a new
+  commit. Every editor has "Version history" (restore in one click), profile sections a
+  History button, and the History screen lists all recent changes, from the admin or code.
 - **Content**: schema-driven editors (`schemas.js` + `fields.jsx`): pages and blocks,
   projects and experience (each item its own editor inside `profile.json`), blog, courses
   → chapters → lessons, about & skills, media (multi-upload, drag and drop, delete), shop,

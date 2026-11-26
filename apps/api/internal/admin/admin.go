@@ -65,6 +65,8 @@ func (a *Admin) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/admin/file", a.auth(a.putFile))
 	mux.HandleFunc("DELETE /api/admin/file", a.auth(a.deleteFile))
 	mux.HandleFunc("GET /api/admin/deploys", a.auth(a.deploys))
+	mux.HandleFunc("GET /api/admin/history", a.auth(a.history))
+	mux.HandleFunc("POST /api/admin/restore", a.auth(a.restore))
 }
 
 // ---- sign-in ---------------------------------------------------------------

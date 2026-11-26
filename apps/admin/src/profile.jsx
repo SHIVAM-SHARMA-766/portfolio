@@ -7,6 +7,7 @@ import { api, toJSON, slugify } from './api.js';
 import { Form, notify } from './fields.jsx';
 import { Icon, ask } from './ui.jsx';
 import * as S from './schemas.js';
+import { HistoryDrawer } from './history.jsx';
 
 const PROFILE = 'content/profile.json';
 const go = (hash) => (e) => { e?.preventDefault?.(); location.hash = hash; };
@@ -102,6 +103,9 @@ export function ProfileSection({ kind, params = {} }) {
   const coll = kind;
   const [p, save] = useProfile();
   const [editing, setEditing] = useState(null); // { index, item } — index -1 for a new item
+  const [history, setHistory] = useState(false);
+  const [dragFrom, setDragFrom] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
   const items = p?.data[coll] ?? null;
 
   // deep links: ?new=1 opens an empty form, ?edit=3 opens item 3
@@ -112,6 +116,11 @@ export function ProfileSection({ kind, params = {} }) {
   }, [!!items, params.new, params.edit]);
 
   const close = () => { setEditing(null); if (params.new || params.edit != null) history.replaceState(null, '', `#/${kind}`); };
+  const reorder = async (from, to) => {
+    if (from === to) return;
+    const a = [...items]; const [x] = a.splice(from, 1); a.splice(to, 0, x);
+    try { await save({ ...p.data, [coll]: a }, `Reorder ${sec.title.toLowerCase()} (admin)`); notify('Order saved.'); } catch (e) { notify(e.message, 'err'); }
+  };
   const move = async (i, d) => {
     const a = [...items]; const j = i + d;
     if (j < 0 || j >= a.length) return;
@@ -140,7 +149,10 @@ export function ProfileSection({ kind, params = {} }) {
     <>
       <header class="page-head">
         <div><h1>{sec.title} <span class="count">{items?.length ?? ''}</span></h1><p class="muted">{sec.intro}</p></div>
-        <div class="actions"><button class="primary" onClick={() => setEditing({ index: -1, item: sec.blank() })} disabled={!items}><Icon name="plus" />{sec.add}</button></div>
+        <div class="actions">
+          <button onClick={() => setHistory(true)} title="Version history of the profile"><Icon name="activity" />History</button>
+          <button class="primary" onClick={() => setEditing({ index: -1, item: sec.blank() })} disabled={!items}><Icon name="plus" />{sec.add}</button>
+        </div>
       </header>
       {!items ? <div class="sk sk--table" /> : !items.length ? (
         <div class="panel pf-empty">
@@ -155,7 +167,12 @@ export function ProfileSection({ kind, params = {} }) {
             const c = sec.card(x);
             const url = sec.url?.(x);
             return (
-              <div class="pf-item">
+              <div class={`pf-item ${dragFrom === i ? 'is-dragging' : ''} ${dragFrom !== null && dragOver === i && dragFrom !== i ? 'is-over' : ''}`}
+                onDragOver={(e) => { if (dragFrom === null) return; e.preventDefault(); setDragOver(i); }}
+                onDrop={(e) => { e.preventDefault(); if (dragFrom !== null) reorder(dragFrom, i); setDragFrom(null); setDragOver(null); }}>
+                {items.length > 1 && <span class="drag-handle" title="Drag to reorder" aria-hidden="true" draggable
+                  onDragStart={(e) => { setDragFrom(i); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); const row = e.currentTarget.closest('.pf-item'); if (row) e.dataTransfer.setDragImage(row, 24, 24); }}
+                  onDragEnd={() => { setDragFrom(null); setDragOver(null); }}>⋮⋮</span>}
                 {!sec.noLogo && <span class={sec.wide ? 'pf-media' : ''}><Logo src={sec.logo?.(x)} name={sec.initials?.(x) ?? c.title} /></span>}
                 <button type="button" class="pf-main" onClick={() => setEditing({ index: i, item: structuredClone(x) })}>
                   <b>{c.title || <em>Untitled</em>}{c.badge && <span class="pill pill--warn">{c.badge}</span>}{(c.flags ?? []).map(([k, t]) => <span class={`pill ${k ? `pill--${k}` : ''}`}>{t}</span>)}</b>
@@ -176,6 +193,7 @@ export function ProfileSection({ kind, params = {} }) {
           })}
         </div>
       )}
+      {history && <HistoryDrawer path={PROFILE} title="Profile (experience, education, projects…)" onClose={() => setHistory(false)} onRestored={() => location.reload()} />}
       {editing && <Drawer key={editing.index} title={`${editing.index < 0 ? sec.add : `Edit ${sec.title.toLowerCase().replace(/s$/, '')}`}`} wide={kind === 'projects' || kind === 'experience'}
         item={editing.item} fields={sec.fields()} onSave={commit} onDelete={editing.index < 0 ? null : remove} onClose={close} />}
     </>

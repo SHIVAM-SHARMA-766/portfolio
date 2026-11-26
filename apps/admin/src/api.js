@@ -36,6 +36,8 @@ export const api = {
   upload: (path, base64) => call('PUT', '/file', { path, content: base64, binary: true }),
   remove: (path, sha) => call('DELETE', `/file?path=${encodeURIComponent(path)}&sha=${encodeURIComponent(sha)}`),
   deploys: () => call('GET', '/deploys'),
+  history: (path) => call('GET', `/history${path ? `?path=${encodeURIComponent(path)}` : ''}`),
+  restore: (path, commit) => call('POST', '/restore', { path, commit }),
 };
 
 // ---- formats ----------------------------------------------------------------

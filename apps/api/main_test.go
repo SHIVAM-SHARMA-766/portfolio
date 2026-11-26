@@ -218,3 +218,22 @@ func TestAdminCRM(t *testing.T) {
 		t.Fatalf("insights without admin: %d", rec.Code)
 	}
 }
+
+func TestAdminHistoryValidation(t *testing.T) {
+	e := setup(t)
+	rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
+	c := rec.Result().Cookies()[0]
+	admin := c.Name + "=" + c.Value
+	if rec, _ := e.do("GET", "/api/admin/history?path=../etc/passwd", "", admin, false); rec.Code != 400 {
+		t.Fatalf("history with a bad path: %d", rec.Code)
+	}
+	if rec, _ := e.do("POST", "/api/admin/restore", `{"path":"content/site.json","commit":"abc"}`, admin, true); rec.Code != 400 {
+		t.Fatalf("restore with a short sha: %d", rec.Code)
+	}
+	if rec, _ := e.do("POST", "/api/admin/restore", `{"path":"/etc/passwd","commit":"`+strings.Repeat("a", 40)+`"}`, admin, true); rec.Code != 400 {
+		t.Fatalf("restore outside content: %d", rec.Code)
+	}
+	if rec, _ := e.do("GET", "/api/admin/history", "", "", false); rec.Code != 401 {
+		t.Fatalf("history without admin: %d", rec.Code)
+	}
+}
