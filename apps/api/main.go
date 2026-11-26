@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/admin"
+	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/analytics"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/auth"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/config"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/contact"
@@ -72,7 +73,8 @@ func buildHandler(cfg *config.Config, st *store.Store) (http.Handler, *server) {
 	origins := httpx.NewOrigins(originURLs...)
 
 	s := &server{store: st, auth: auth.New(cfg, st, cat.SiteURL, cat.CookieDomain, origins)}
-	hub := live.NewHub(origins, func(p string) { st.CountView(context.Background(), p) })
+	// Page views are counted by the analytics beacon, not by live connections.
+	hub := live.NewHub(origins, func(string) {})
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) { httpx.JSON(w, 200, map[string]string{"status": "ok"}) })
@@ -86,6 +88,7 @@ func buildHandler(cfg *config.Config, st *store.Store) (http.Handler, *server) {
 	mux.Handle("GET /api/live", hub)
 	admin.New(cfg, st, hub).Routes(mux)
 	contact.New(cfg, st, cat.SiteURL).Routes(mux)
+	analytics.New(st, cat.SiteURL).Routes(mux)
 	if cfg.Dev {
 		// Local testing only: sign in without an OAuth provider. Never enabled in
 		// production (DEV is unset in /etc/portfolio-api/env).

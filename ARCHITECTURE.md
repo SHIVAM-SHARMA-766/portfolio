@@ -158,8 +158,8 @@ and send pointer moves at ≤ ~16/s as `x` = fraction of `<main>` width and `y` 
 `<main>` top, so pointers land on the same content across window sizes. The server relays
 moves only to others on the same path, sends `{site, page}` counts once a second when
 something changed, and caps connections (500 total, 8 per IP, 20 moves/s each). No names
-or ids are shared beyond a random per-connection id and colour. Joins also bump a daily
-page-view counter for the admin dashboard. Touch devices see counts but no cursors.
+or ids are shared beyond a random per-connection id and colour.
+Touch devices see counts but no cursors.
 
 ## API (`apps/api`)
 
@@ -172,12 +172,13 @@ page-view counter for the admin dashboard. Touch devices see counts but no curso
 | `GET /api/auth/{provider}/start`, `/callback` | OAuth / OpenID Connect sign-in |
 | `GET /api/live` | WebSocket presence and cursors |
 | `POST /api/contact` | contact form → CRM inbox (+ optional email notice) |
+| `POST /api/collect` | cookie-free analytics beacon (page view or event); always 204 |
 | `/api/admin/*` | admin sign-in, stats and insights, inbox (messages), contacts (+CSV, stage, tags, notes, activity), content files, history and restore, deploy status |
 
 - **Storage:** SQLite (WAL, one connection) at `/var/lib/portfolio-api/portfolio.db`:
   users, identities (one user can sign in with several providers; linked only on a
   verified matching email), sessions (only token hashes stored), events, achievements,
-  purchases, page_views, messages.
+  purchases, page_views, messages, hits (analytics).
 - **Sessions:** `pf_session` cookie on the parent domain (`cookieDomain`), HttpOnly,
   Secure, SameSite=Lax, 180 days. The learn subdomain calls the API with CORS + credentials.
 - **CSRF:** state-changing requests must carry an allowed `Origin` (site or learn).
@@ -243,6 +244,22 @@ A Preact SPA styled like a CRM: a sidebar with icons, breadcrumbs, a **command p
 CRM data lives in the API's SQLite (`crm`: stage, tags, star per user; `notes`), served by
 `GET/PATCH /api/admin/visitors/{id}`, `POST/DELETE …/notes`, and `GET /api/admin/insights`.
 Stages: new, contacted, engaged, opportunity, archived.
+
+**Analytics** (package `internal/analytics`, store `analytics.go`). `components/Analytics.astro`
+in the shared head sends one beacon per page load (`sendBeacon`, text/plain JSON) and on
+clicks: CV (`site.resume` or any PDF), `mailto:`, copy-email, outbound links, and a sent
+contact form. No cookies or storage. The API drops bots (user-agent pattern, empty UA),
+`/admin` and `/api` paths, unknown events, and more than 300 hits per IP per 10 minutes.
+Paths lose the query and any theme prefix. A visitor id is `sha256(salt, day, IP, UA)`; the
+salt is random, kept only in memory and replaced daily, so ids can't be reversed or linked
+across days, and "visitors" are counted per day. The first view of a visitor on a day is the
+entry and keeps the source (utm_source / `?ref=`, else the referrer host, with common hosts
+named: Google, LinkedIn, GitHub…) and utm_campaign. Views also bump `page_views` for the
+dashboard. Hits are kept 400 days. The admin's Analytics screen (`GET /api/admin/analytics?days=1|7|30|90|365`)
+shows visitors, views, pages per visit, bounce rate against the previous period, per-day
+charts, goals, top and landing pages, sources, campaigns, outbound links, devices and
+themes. Signing in to the admin sets `localStorage['pf.noTrack']` so your own visits on that
+browser are not counted; the live preview iframe never counts.
 
 **Contact form.** The `contact` block with `form: true` renders `components/ContactForm.astro`
 in every theme. `POST /api/contact` (package `internal/contact`) validates name, email, topic

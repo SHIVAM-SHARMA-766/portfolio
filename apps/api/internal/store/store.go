@@ -95,7 +95,7 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1) // one writer; avoids SQLITE_BUSY under load
-	if _, err := db.Exec(schema + messagesSchema); err != nil {
+	if _, err := db.Exec(schema + messagesSchema + analyticsSchema); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 	return &Store{db: db}, nil

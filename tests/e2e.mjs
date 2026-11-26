@@ -421,6 +421,35 @@ try {
     await c.close();
   });
 
+  await step('analytics: cookie-free page views, sources and goals reach the admin', async () => {
+    // Headless Chrome is filtered out as a bot, so look like a normal browser.
+    const v = await browser.newContext({ userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
+    await blockFonts(v);
+    const pg = await v.newPage();
+    pg.on('pageerror', (e) => errors.push('analytics: ' + e.message));
+    await pg.goto(`${S}/projects/?utm_source=LinkedIn&utm_campaign=e2e`);
+    await pg.waitForTimeout(300);
+    await pg.goto(`${S}/contact/`);
+    await pg.locator('a[href^="mailto:"]').first().dispatchEvent('click'); // counted without opening a mail app
+    await pg.waitForTimeout(500);
+    assert.deepEqual(await v.cookies(), [], 'no cookies set by analytics');
+    await v.close();
+    const a = await (await ctx.request.get(`${S}/api/admin/analytics?days=7`)).json();
+    assert.ok(a.totals.visitors >= 1 && a.totals.views >= 2, JSON.stringify(a.totals));
+    assert.ok(a.sources.some((x) => x.key === 'linkedin'), JSON.stringify(a.sources));
+    assert.ok(a.campaigns.some((x) => x.key === 'e2e'));
+    assert.ok(a.events.some((x) => x.key === 'email' && x.n === 1), JSON.stringify(a.events));
+    assert.ok(a.pages.some((x) => x.key === '/projects/'));
+    const ad = await ctx.newPage();
+    await ad.setViewportSize({ width: 1440, height: 900 });
+    await ad.goto(`${S}/admin/#/analytics`);
+    await ad.waitForSelector('.goals');
+    assert.match(await ad.locator('.content').innerText(), /linkedin/);
+    assert.match(await ad.locator('.goals').innerText(), /1\s*Email link clicks/);
+    await shot(ad, 'admin-analytics');
+    await ad.close();
+  });
+
   await step('no JavaScript errors', async () => assert.deepEqual(errors, []));
 
   await step('pages fit a 375px phone without horizontal scroll', async () => {

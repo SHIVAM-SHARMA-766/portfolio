@@ -86,7 +86,7 @@ export function Dashboard() {
         <div class="kpi kpi--live"><span class="kpi-label"><i class="pulse" />Online now</span><b>{d.live}</b><small>{live.length ? `on ${live.length} page${live.length > 1 ? 's' : ''}` : 'nobody right now'}</small></div>
         <a class="kpi" href="#/contacts" onClick={go('#/contacts')}><span class="kpi-label">Contacts</span><b>{d.stats.users}</b><small>+{ins.users7d} this week <Delta now={ins.users7d} prev={ins.usersPrev7d} /></small></a>
         <div class="kpi"><span class="kpi-label">Active contacts · 7 days</span><b>{ins.active7d}</b><small>vs {ins.activePrev7d} the week before <Delta now={ins.active7d} prev={ins.activePrev7d} /></small></div>
-        <div class="kpi"><span class="kpi-label">Page views · 7 days</span><b>{d.stats.views7d}</b><small>vs {ins.viewsPrev7d} <Delta now={d.stats.views7d} prev={ins.viewsPrev7d} /></small></div>
+        <a class="kpi" href="#/analytics" onClick={go('#/analytics')}><span class="kpi-label">Page views · 7 days</span><b>{d.stats.views7d}</b><small>vs {ins.viewsPrev7d} <Delta now={d.stats.views7d} prev={ins.viewsPrev7d} /></small></a>
         <div class="kpi"><span class="kpi-label">Page views today</span><b>{d.stats.viewsToday}</b><small>{d.stats.usersToday} new contact{d.stats.usersToday === 1 ? '' : 's'} today</small></div>
       </div>
       <div class="grid-2">

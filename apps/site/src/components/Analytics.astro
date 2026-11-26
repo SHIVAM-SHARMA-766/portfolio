@@ -1,0 +1,34 @@
+---
+// Cookie-free analytics beacon: one page view per load, plus a few events
+// (CV download, email, outbound link, contact form). Nothing is stored in the
+// browser; the API counts visitors with a hash that changes daily.
+import { site } from '../lib/content';
+const api = site.apiUrl?.replace(/\/$/, '');
+---
+{api && <meta name="pf-collect" content={`${api}/collect`} />}
+
+<script>
+  const url = document.querySelector<HTMLMetaElement>('meta[name=pf-collect]')?.content;
+  let off = !url || window.top !== window; // not inside the admin's live preview
+  try { off ||= localStorage.getItem('pf.noTrack') === '1'; } catch {}
+  if (!off) {
+    const send = (data: Record<string, unknown>) => {
+      const body = JSON.stringify({ p: location.pathname, t: document.documentElement.dataset.theme, ...data });
+      if (!navigator.sendBeacon?.(url!, body)) fetch(url!, { method: 'POST', body, keepalive: true }).catch(() => {});
+    };
+    const q = new URLSearchParams(location.search);
+    send({ k: 'view', r: document.referrer, s: q.get('utm_source') || q.get('ref') || '', c: q.get('utm_campaign') || '', w: innerWidth });
+    const cv = document.querySelector<HTMLMetaElement>('meta[name=pf-cv]')?.content;
+    document.addEventListener('click', (e) => {
+      const el = (e.target as Element).closest?.('a[href], [data-copy-email]');
+      if (!el) return;
+      if (el.matches('[data-copy-email]')) return send({ k: 'copy-email' });
+      const href = el.getAttribute('href')!;
+      if (href.startsWith('mailto:')) return send({ k: 'email' });
+      const u = new URL(href, location.href);
+      if ((cv && u.pathname === cv) || /\.pdf$/i.test(u.pathname)) return send({ k: 'cv', l: u.pathname });
+      if (/^https?:$/.test(u.protocol) && u.host !== location.host) send({ k: 'outbound', l: (u.host + u.pathname).replace(/\/$/, '') });
+    }, { capture: true });
+    addEventListener('contact-sent', () => send({ k: 'contact' }));
+  }
+</script>

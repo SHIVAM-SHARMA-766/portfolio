@@ -191,3 +191,19 @@ func (a *Admin) deleteMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true, "unread": a.store.UnreadMessages(r.Context())})
 }
+
+// ---- analytics ----
+
+func (a *Admin) analytics(w http.ResponseWriter, r *http.Request) {
+	days, _ := strconv.Atoi(r.URL.Query().Get("days"))
+	if days != 1 && days != 7 && days != 30 && days != 90 && days != 365 {
+		days = 30
+	}
+	out, err := a.store.Analytics(r.Context(), days)
+	if err != nil {
+		storeError(w, err)
+		return
+	}
+	out.Live, _ = a.hub.Snapshot()
+	httpx.JSON(w, http.StatusOK, out)
+}

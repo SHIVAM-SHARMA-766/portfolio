@@ -586,3 +586,17 @@ button.is-active { background: var(--accent-soft); border-color: var(--accent); 
 .msg-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
 .msg-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
 @media (max-width: 600px) { .msg-body { padding-left: 1rem; } }
+
+/* ---- analytics ---- */
+.rank td:first-child { position: relative; width: 100%; max-width: 0; }
+.rank-bar { position: absolute; inset: 3px auto 3px 0; background: var(--accent-soft); border-radius: 4px; z-index: 0; }
+.rank-key { position: relative; z-index: 1; display: block; padding-left: .4rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-key a { color: inherit; }
+.rank th { font-weight: 500; color: var(--muted); font-size: .78rem; }
+.rank-url { font-size: .85rem; }
+.rank-empty { margin: .5rem 0; font-size: .88rem; }
+.goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .75rem; }
+.goal { display: grid; gap: .15rem; padding: .7rem .8rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.goal b { font-size: 1.4rem; }
+.goal span { color: var(--muted); font-size: .8rem; }
+.small-print { font-size: .8rem; display: flex; align-items: center; gap: .4rem; }

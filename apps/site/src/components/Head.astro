@@ -3,6 +3,7 @@
 import { paletteCss, palettesFor } from '@portfolio/tokens';
 import { site, gameConfig, pageUrl, photo } from '../lib/content';
 import '@portfolio/game/game.css';
+import Analytics from './Analytics.astro';
 import missionsRaw from '../../../../content/missions.json';
 const sourceFlag = missionsRaw.missions.find((m) => m.kind === 'page-source')?.flag;
 
@@ -40,6 +41,8 @@ const config = { ...(await gameConfig(pageIdent)), theme };
   <meta name="theme-color" content="#111111" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+  {site.resume && <meta name="pf-cv" content={site.resume} />}
+  <Analytics />
   <link rel="alternate" type="application/rss+xml" title={`${site.name} — Blog`} href="/rss.xml" />
   {fonts && <link rel="preconnect" href="https://fonts.googleapis.com" />}
   {fonts && <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />}

@@ -305,3 +305,80 @@ func TestContactForm(t *testing.T) {
 		t.Fatalf("inbox without admin: %d", rec.Code)
 	}
 }
+
+func TestAnalytics(t *testing.T) {
+	e := setup(t)
+	hit := func(body, ua, ip string) int {
+		req := httptest.NewRequest("POST", "/api/collect", strings.NewReader(body))
+		req.Header.Set("Content-Type", "text/plain;charset=UTF-8") // what sendBeacon sends
+		req.Header.Set("Origin", e.origin)
+		req.Header.Set("User-Agent", ua)
+		req.RemoteAddr = ip + ":1234"
+		rec := httptest.NewRecorder()
+		e.h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	chrome := "Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36"
+	// Visitor 1 lands from LinkedIn on the terminal theme, reads two more pages, downloads the CV
+	if c := hit(`{"k":"view","p":"/terminal/projects/vault","r":"https://www.linkedin.com/feed/","w":1400,"t":"terminal"}`, chrome, "10.0.0.1"); c != 204 {
+		t.Fatalf("collect: %d", c)
+	}
+	hit(`{"k":"view","p":"/about/","r":"https://www.linkedin.com/feed/","w":1400,"t":"studio"}`, chrome, "10.0.0.1")
+	hit(`{"k":"view","p":"/experience/?x=1","w":1400}`, chrome, "10.0.0.1")
+	hit(`{"k":"cv","p":"/about/","l":"/uploads/cv.pdf"}`, chrome, "10.0.0.1")
+	// Visitor 2: one page from a campaign link, on a phone
+	hit(`{"k":"view","p":"/","s":"Newsletter","c":"Nov-Launch","w":390}`, chrome, "10.0.0.2")
+	// Ignored: bots, unknown events, admin pages, junk
+	hit(`{"k":"view","p":"/"}`, "Googlebot/2.1 (+http://www.google.com/bot.html)", "10.0.0.3")
+	hit(`{"k":"view","p":"/"}`, "", "10.0.0.3")
+	hit(`{"k":"purchase","p":"/"}`, chrome, "10.0.0.3")
+	hit(`{"k":"view","p":"/admin/"}`, chrome, "10.0.0.3")
+	hit(`{"k":"view","p":"https://evil.example/"}`, chrome, "10.0.0.3")
+	hit(`not json`, chrome, "10.0.0.3")
+
+	rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
+	c := rec.Result().Cookies()[0]
+	admin := c.Name + "=" + c.Value
+	if rec, _ := e.do("GET", "/api/admin/analytics", "", "", false); rec.Code != 401 {
+		t.Fatalf("analytics without admin: %d", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/admin/analytics?days=7", nil)
+	req.Header.Set("Cookie", admin)
+	e.h.ServeHTTP(rec, req)
+	var a store.Analytics
+	if err := json.Unmarshal(rec.Body.Bytes(), &a); err != nil || rec.Code != 200 {
+		t.Fatalf("analytics: %d %s", rec.Code, rec.Body.String())
+	}
+	if a.Totals.Visitors != 2 || a.Totals.Views != 4 || a.Totals.Events != 1 || a.Totals.Bounce != 0.5 {
+		t.Fatalf("totals: %+v", a.Totals)
+	}
+	if len(a.Series) != 7 || a.Series[6].Views != 4 {
+		t.Fatalf("series: %+v", a.Series)
+	}
+	find := func(list []store.Count, key string) int {
+		for _, x := range list {
+			if x.Key == key {
+				return x.N
+			}
+		}
+		return 0
+	}
+	if find(a.Pages, "/projects/vault/") != 1 || find(a.Pages, "/experience/") != 1 || a.Pages[0].V != 1 {
+		t.Fatalf("paths not cleaned: %+v", a.Pages)
+	}
+	if find(a.Sources, "LinkedIn") != 1 || find(a.Sources, "newsletter") != 1 || len(a.Sources) != 2 {
+		t.Fatalf("sources (entry only): %+v", a.Sources)
+	}
+	if find(a.Campaign, "nov-launch") != 1 || find(a.Devices, "mobile") != 1 || find(a.Themes, "terminal") != 1 {
+		t.Fatalf("campaign/devices/themes: %+v %+v %+v", a.Campaign, a.Devices, a.Themes)
+	}
+	if len(a.Events) != 1 || a.Events[0].Key != "cv" || a.Events[0].Label != "/uploads/cv.pdf" || a.Events[0].N != 1 {
+		t.Fatalf("events: %+v", a.Events)
+	}
+	// The dashboard's daily counter follows the beacon
+	_, st := e.do("GET", "/api/admin/stats", "", admin, false)
+	if st["stats"].(map[string]any)["viewsToday"].(float64) != 4 {
+		t.Fatalf("page_views: %v", st["stats"])
+	}
+}
