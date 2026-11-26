@@ -214,6 +214,15 @@ A Preact SPA styled like a CRM: a sidebar with icons, breadcrumbs, a **command p
 - **Media while editing**: the Markdown editor's Image button uploads or picks from the
   library, and images pasted or dropped into the text upload and insert themselves; image
   fields upload directly. The Media library page lists, copies and deletes uploads.
+- **Editing UX**: page and post editors put content in the main column and settings
+  (URL, menu, SEO, date, tags, cover) in a side panel (`side:` on a field); a hidden
+  `draft` field turns into Save draft / Publish / Update. A sticky bar shows status and
+  unsaved changes. Blocks are added from a searchable picker (icon + description per type),
+  inserted anywhere and duplicated. Pages and Blog are tables with status tabs, search and
+  row actions (view, duplicate, delete). Confirmations and prompts are in-app dialogs
+  (`ask`, `askText`); deleting a profile item offers Undo. After every save a publish
+  tracker follows the GitHub Actions run until the change is live (or failed). `?` lists
+  keyboard shortcuts.
 - **Content**: schema-driven editors (`schemas.js` + `fields.jsx`): pages and blocks,
   projects and experience (each item its own editor inside `profile.json`), blog, courses
   → chapters → lessons, about & skills, media (multi-upload, drag and drop, delete), shop,

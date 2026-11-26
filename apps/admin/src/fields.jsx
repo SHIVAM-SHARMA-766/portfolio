@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { marked } from 'marked';
 import { api, slugify } from './api.js';
+import { ask, Icon } from './ui.jsx';
 
 // The shell listens for these (toasts, deploy watching) so fields stay standalone.
 export const notify = (msg, kind = 'ok') => dispatchEvent(new CustomEvent('admin-toast', { detail: { msg, kind } }));
@@ -26,7 +27,7 @@ const update = (obj, key, val) => ({ ...(obj ?? {}), [key]: val });
 export function Form({ fields, value, onChange }) {
   return (
     <div class="form">
-      {fields.map((f) => (
+      {fields.filter((f) => !f.hidden).map((f) => (
         <Field key={f.name} field={f} value={value?.[f.name]} onChange={(v) => onChange(update(value, f.name, v))} />
       ))}
     </div>
@@ -52,6 +53,8 @@ export function Field({ field, value, onChange }) {
           {field.suggest && <datalist id={`dl-${field.name}`}>{(typeof field.suggest === 'function' ? field.suggest() : field.suggest).map((o) => <option value={o} />)}</datalist>}
         </Label>
       );
+    case 'section':
+      return <div class="form-section"><h3>{field.label}</h3>{field.help && <p class="muted">{field.help}</p>}</div>;
     case 'month':
       return <MonthField field={field} value={value} onChange={onChange} />;
     case 'tags':
@@ -130,7 +133,7 @@ function move(arr, i, d) {
   return a;
 }
 
-function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen }) {
+function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen, extraTools, removeLabel = 'this item' }) {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
     <div class={`item ${open ? 'is-open' : ''}`}>
@@ -139,9 +142,10 @@ function ItemCard({ title, index, count, onMove, onRemove, children, defaultOpen
           <span class="chev">{open ? '▾' : '▸'}</span> {title || <em>Untitled</em>}
         </button>
         <div class="item-tools">
-          <button type="button" title="Move up" disabled={index === 0} onClick={() => onMove(-1)}>↑</button>
-          <button type="button" title="Move down" disabled={index === count - 1} onClick={() => onMove(1)}>↓</button>
-          <button type="button" title="Remove" class="danger" onClick={() => confirm('Remove this item?') && onRemove()}>✕</button>
+          {extraTools}
+          <button type="button" class="icon-btn" title="Move up" disabled={index === 0} onClick={() => onMove(-1)}>↑</button>
+          <button type="button" class="icon-btn" title="Move down" disabled={index === count - 1} onClick={() => onMove(1)}>↓</button>
+          <button type="button" class="icon-btn danger" title="Remove" onClick={async () => { if (await ask({ title: `Remove ${removeLabel}?`, body: 'It disappears when you save.', confirm: 'Remove', danger: true })) onRemove(); }}><Icon name="trash" /></button>
         </div>
       </div>
       {open && <div class="item-body">{children}</div>}
@@ -154,30 +158,62 @@ function ListField({ field, value, onChange }) {
   return (
     <fieldset class="group">
       <legend>{field.label} <span class="count">{value.length}</span></legend>
+      {field.help && <small class="field-help">{field.help}</small>}
       {value.map((item, i) => (
-        <ItemCard key={i} index={i} count={value.length} defaultOpen={i === added}
+        <ItemCard key={i} index={i} count={value.length} defaultOpen={i === added} removeLabel={`“${(field.summary && item?.[field.summary]) || 'this item'}”`}
           title={field.summary ? item?.[field.summary] : `${field.label} ${i + 1}`}
           onMove={(d) => onChange(move(value, i, d))}
           onRemove={() => onChange(value.filter((_, j) => j !== i))}>
           <Form fields={field.fields} value={item} onChange={(v) => onChange(value.map((x, j) => (j === i ? v : x)))} />
         </ItemCard>
       ))}
-      <button type="button" class="add" onClick={() => { onChange([...value, {}]); setAdded(value.length); }}>+ Add</button>
+      <button type="button" class="add" onClick={() => { onChange([...value, {}]); setAdded(value.length); }}><Icon name="plus" />Add</button>
     </fieldset>
+  );
+}
+
+/** Pick a block type: a searchable grid with icons and one-line descriptions. */
+function BlockPicker({ types, onPick, onClose }) {
+  const [q, setQ] = useState('');
+  const ref = useRef(null);
+  useEffect(() => { ref.current?.focus(); const k = (e) => e.key === 'Escape' && onClose(); addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
+  const list = Object.entries(types).filter(([, d]) => `${d.label} ${d.desc ?? ''}`.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <div class="modal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div class="picker" role="dialog" aria-label="Add a block">
+        <div class="cmdk-input"><Icon name="search" size={18} /><input ref={ref} value={q} onInput={(e) => setQ(e.currentTarget.value)} placeholder="Search blocks…" onKeyDown={(e) => { if (e.key === 'Enter' && list[0]) onPick(list[0][0]); }} /><kbd>esc</kbd></div>
+        <div class="picker-grid">
+          {list.map(([type, d]) => (
+            <button type="button" class="picker-item" onClick={() => onPick(type)}>
+              <span class="picker-icon"><Icon name={d.icon ?? 'pages'} size={18} /></span>
+              <span><b>{d.label.replace(/ \(.*\)/, '')}</b><small>{d.desc}</small></span>
+            </button>
+          ))}
+          {!list.length && <p class="muted">No block matches “{q}”.</p>}
+        </div>
+      </div>
+    </div>
   );
 }
 
 function BlocksField({ field, value, onChange }) {
   const [added, setAdded] = useState(-1);
-  const add = (type) => { onChange([...value, { type }]); setAdded(value.length); };
+  const [picking, setPicking] = useState(null); // index to insert at
+  const insert = (type, at) => { const next = [...value]; next.splice(at, 0, { type }); onChange(next); setAdded(at); setPicking(null); };
+  const duplicate = (i) => { const next = [...value]; next.splice(i + 1, 0, structuredClone(value[i])); onChange(next); };
   return (
     <fieldset class="group blocks">
       <legend>{field.label} <span class="count">{value.length}</span></legend>
+      {!value.length && <p class="muted">No blocks yet. Add the first one.</p>}
       {value.map((block, i) => {
         const def = field.types[block.type];
         return (
-          <ItemCard key={i} index={i} count={value.length} defaultOpen={i === added}
-            title={<><span class="badge">{def?.label ?? block.type}</span> {block.heading ?? ''}</>}
+          <ItemCard key={`${i}-${block.type}`} index={i} count={value.length} defaultOpen={i === added} removeLabel="this block"
+            title={<><span class="badge">{def?.icon && <Icon name={def.icon} size={12} />}{def?.label.replace(/ \(.*\)/, '') ?? block.type}</span> {block.heading ?? ''}</>}
+            extraTools={<>
+              <button type="button" class="icon-btn" title="Duplicate" onClick={() => duplicate(i)}><Icon name="copy" /></button>
+              <button type="button" class="icon-btn" title="Add a block below" onClick={() => setPicking(i + 1)}><Icon name="plus" /></button>
+            </>}
             onMove={(d) => onChange(move(value, i, d))}
             onRemove={() => onChange(value.filter((_, j) => j !== i))}>
             {def ? <Form fields={def.fields} value={block} onChange={(v) => onChange(value.map((x, j) => (j === i ? { ...v, type: block.type } : x)))} />
@@ -185,10 +221,8 @@ function BlocksField({ field, value, onChange }) {
           </ItemCard>
         );
       })}
-      <div class="add-block">
-        <span>Add block:</span>
-        {Object.entries(field.types).map(([type, def]) => <button type="button" onClick={() => add(type)}>{def.label.replace(/ \(.*\)/, '')}</button>)}
-      </div>
+      <button type="button" class="add add--block" onClick={() => setPicking(value.length)}><Icon name="plus" />Add block</button>
+      {picking !== null && <BlockPicker types={field.types} onPick={(t) => insert(t, picking)} onClose={() => setPicking(null)} />}
     </fieldset>
   );
 }

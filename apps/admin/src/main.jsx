@@ -1,11 +1,11 @@
 import { render } from 'preact';
-import { useEffect, useMemo, useState, useCallback } from 'preact/hooks';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'preact/hooks';
 import { api, parseFrontmatter, stringifyFrontmatter, toJSON, slugify } from './api.js';
 import { Form, MarkdownEditor, uploadFile, publicUrl } from './fields.jsx';
 import * as S from './schemas.js';
 import { Dashboard, Contacts, Contact } from './crm.jsx';
 import { ProfileSection, SECTIONS } from './profile.jsx';
-import { Icon, Avatar, CommandPalette } from './ui.jsx';
+import { Icon, Avatar, CommandPalette, DialogHost, ShortcutsHelp, Menu, ask, askText } from './ui.jsx';
 import './style.css';
 
 // ---- tiny router & shared state ---------------------------------------------
@@ -21,8 +21,11 @@ function useRoute() {
     const on = () => {
       // Back/forward or a typed URL while an editor has unsaved changes.
       if (dirty && location.hash !== last) {
-        if (!confirm('You have unsaved changes. Leave without saving?')) { history.replaceState(null, '', last); return; }
-        dirty = false;
+        // Stay put, then ask; leave only if confirmed
+        const target = location.hash;
+        history.replaceState(null, '', last);
+        ask({ title: 'Leave without saving?', body: 'Your changes on this page will be lost.', confirm: 'Leave', danger: true }).then((yes) => { if (yes) { dirty = false; location.hash = target; } });
+        return;
       }
       last = location.hash;
       setRoute(get());
@@ -36,17 +39,19 @@ function useRoute() {
 let dirty = false;
 const setDirty = (v) => { dirty = v; };
 addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
-const navigate = (hash) => {
-  if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return;
+const navigate = async (hash) => {
+  if (dirty && !(await ask({ title: 'Leave without saving?', body: 'Your changes on this page will be lost.', confirm: 'Leave', danger: true }))) return;
   dirty = false;
   location.hash = hash;
 };
 
 let toastSet = () => {};
-const toast = (msg, kind = 'ok') => toastSet({ msg, kind, id: Date.now() });
+const toast = (msg, kind = 'ok', action) => toastSet({ msg, kind, action, id: Date.now() });
 let savedAt = 0; // last save, to watch the deploy
-addEventListener('admin-toast', (e) => toast(e.detail.msg, e.detail.kind));
-addEventListener('admin-saved', () => { savedAt = Date.now(); });
+let publishSet = () => {};
+addEventListener('admin-toast', (e) => toast(e.detail.msg, e.detail.kind, e.detail.action));
+addEventListener('admin-saved', (e) => { savedAt = Date.now(); publishSet({ since: savedAt, url: e.detail?.url ?? null }); });
+const published = (url) => dispatchEvent(new CustomEvent('admin-saved', { detail: { url } }));
 
 const Logo = ({ size = 28 }) => (
   <svg class="logo" viewBox="0 0 32 32" width={size} height={size} aria-hidden="true">
@@ -61,8 +66,46 @@ const View = ({ url }) => url ? <a class="button" href={url} target="_blank" rel
 function Toast() {
   const [t, setT] = useState(null);
   toastSet = setT;
-  useEffect(() => { if (t) { const h = setTimeout(() => setT(null), 4500); return () => clearTimeout(h); } }, [t]);
-  return t ? <div class={`toast toast--${t.kind}`} role="status">{t.msg}</div> : null;
+  useEffect(() => { if (t) { const h = setTimeout(() => setT(null), t.action ? 8000 : 4500); return () => clearTimeout(h); } }, [t]);
+  return t ? (
+    <div class={`toast toast--${t.kind}`} role="status">
+      <span>{t.msg}</span>
+      {t.action && <button type="button" class="toast-action" onClick={() => { t.action.run(); setT(null); }}>{t.action.label}</button>}
+    </div>
+  ) : null;
+}
+
+/** After a save: follows the deploy until the change is live (or failed). */
+function PublishTracker() {
+  const [w, setW] = useState(null); // { since, url, state, link }
+  publishSet = (x) => setW({ ...x, state: 'building' });
+  useEffect(() => {
+    if (!w || w.state !== 'building') return;
+    let stop = false;
+    const tick = async () => {
+      try {
+        const d = await api.deploys();
+        const run = (d.runs ?? []).find((r) => new Date(r.created_at).getTime() >= w.since - 60000);
+        if (run && run.status === 'completed' && !stop) {
+          setW((x) => x && { ...x, state: run.conclusion === 'success' ? 'live' : 'failed', link: run.html_url });
+          return;
+        }
+      } catch {}
+      if (!stop) setTimeout(tick, 6000);
+    };
+    const h = setTimeout(tick, 4000);
+    return () => { stop = true; clearTimeout(h); };
+  }, [w?.since]);
+  useEffect(() => { if (w?.state === 'live') { const h = setTimeout(() => setW(null), 12000); return () => clearTimeout(h); } }, [w?.state]);
+  if (!w) return null;
+  return (
+    <div class={`publish publish--${w.state}`} role="status">
+      {w.state === 'building' && <><span class="spinner" /><span><b>Publishing your change…</b><small>The site updates in about a minute.</small></span></>}
+      {w.state === 'live' && <><span class="publish-ok"><Icon name="check" size={14} /></span><span><b>Live</b><small>Your change is on the site.</small></span>{w.url && <a class="button" href={w.url} target="_blank" rel="noopener">View ↗</a>}</>}
+      {w.state === 'failed' && <><span class="publish-bad"><Icon name="alert" size={14} /></span><span><b>Publishing failed</b><small>The site was not changed.</small></span>{w.link && <a class="button" href={w.link} target="_blank" rel="noopener">See why ↗</a>}</>}
+      <button type="button" class="icon-btn" aria-label="Dismiss" onClick={() => setW(null)}><Icon name="x" size={14} /></button>
+    </div>
+  );
 }
 
 const fmt = (unix) => new Date(unix * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -123,41 +166,47 @@ function Login({ onDone }) {
 
 // ---- file editors ----------------------------------------------------------
 
-/** Loads a content file, edits it with a form, and commits on save. */
+/** Loads a content file, edits it with a form, and commits on save. Fields with
+ *  `side: '<Group>'` go to the settings panel; a hidden `draft` field becomes the
+ *  Save draft / Publish / Update buttons. */
 function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, onDeleted, back, viewUrl }) {
   const [state, setState] = useState(null); // { data, body, sha }
   const [busy, setBusy] = useState(false);
   const [changed, setChanged] = useState(false);
+  const [error, setError] = useState('');
   const isNew = !!initial;
+  const publishable = fields.some((f) => f.name === 'draft');
 
   useEffect(() => {
-    setState(null); setChanged(false); setDirty(false);
+    setState(null); setChanged(false); setDirty(false); setError('');
     if (initial) { setState({ ...initial, sha: '' }); setChanged(true); setDirty(true); return; }
     api.file(path).then((f) => {
       if (kind === 'md') { const { data, body } = parseFrontmatter(f.content); setState({ data, body, sha: f.sha }); }
       else setState({ data: JSON.parse(f.content), sha: f.sha });
-    }).catch((e) => toast(e.message, 'err'));
+    }).catch((e) => setError(e.message));
   }, [path]);
 
   const edit = (patch) => { setState((s) => ({ ...s, ...patch })); setChanged(true); setDirty(true); };
   useEffect(() => () => setDirty(false), []); // leaving the editor clears the flag
 
-  const save = useCallback(async () => {
+  const missing = state ? fields.filter((f) => f.required && !String(state.data?.[f.name] ?? '').trim()).map((f) => f.label) : [];
+  const save = useCallback(async (overrides = {}) => {
     if (!state || busy) return;
+    if (missing.length) { toast(`Fill in: ${missing.join(', ')}`, 'err'); return; }
     setBusy(true);
     try {
-      const content = kind === 'md' ? stringifyFrontmatter(state.data, state.body) : toJSON(state.data);
+      const data = { ...state.data, ...overrides };
+      const content = kind === 'md' ? stringifyFrontmatter(data, state.body) : toJSON(data);
       const r = await api.save(path, content, state.sha);
-      setState((s) => ({ ...s, sha: r.sha }));
+      setState((s) => ({ ...s, data, sha: r.sha }));
       setChanged(false); setDirty(false);
-      savedAt = Date.now();
-      toast('Saved. The site will update in about a minute.');
+      published(data.draft ? null : viewUrl?.(data) ?? null);
       onSaved?.();
     } catch (e) {
-      toast(e.message, 'err');
+      toast(/sha|conflict|409/i.test(e.message) ? 'Someone changed this file since you opened it. Reload to get the latest version.' : e.message, 'err');
     }
     setBusy(false);
-  }, [state, busy, path]);
+  }, [state, busy, path, missing.join()]);
 
   useEffect(() => {
     const onKey = (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); save(); } };
@@ -166,29 +215,64 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
   }, [save]);
 
   const del = async () => {
-    if (!confirm(`Delete ${path}? It disappears from the site after the next deploy.`)) return;
+    if (!(await ask({ title: `Delete “${state.data?.title ?? title}”?`, body: 'It disappears from the site after the next deploy. Git history keeps a copy.', confirm: 'Delete', danger: true }))) return;
     try { await api.remove(path, state.sha); setDirty(false); savedAt = Date.now(); toast('Deleted.'); onDeleted?.(); } catch (e) { toast(e.message, 'err'); }
   };
 
-  if (!state) return <p class="muted">Loading…</p>;
+  if (error) return <div class="panel"><p class="error">Couldn't open {path}: {error}</p><button onClick={() => location.reload()}>Try again</button></div>;
+  if (!state) return <div class="skeleton-page"><div class="sk sk--title" /><div class="sk sk--table" /></div>;
+  const draft = !!state.data?.draft;
+  const main = fields.filter((f) => !f.side && !f.hidden);
+  const groups = [...new Set(fields.filter((f) => f.side && !f.hidden).map((f) => f.side))];
+  const url = viewUrl?.(state.data);
   return (
     <div class="editor">
-      <div class="head-row sticky">
-        <div>
+      <div class="editor-bar">
+        <div class="editor-title">
           {back && <a class="back" href={back[0]} onClick={(e) => { e.preventDefault(); navigate(back[0]); }}>← {back[1]}</a>}
-          <h1>{title}</h1>
-          <code class="path">{path}</code>
+          <h1>{state.data?.title || title}</h1>
+          <span class="editor-meta">
+            {publishable && <span class={`pill ${draft ? 'pill--warn' : 'pill--ok'}`}>{isNew ? 'New' : draft ? 'Draft' : 'Published'}</span>}
+            {changed && !isNew && <span class="unsaved"><i />Unsaved changes</span>}
+            {!changed && <code class="path">{path}</code>}
+          </span>
         </div>
         <div class="actions">
-          {!isNew && <View url={viewUrl?.(state.data)} />}
-          {onDeleted && !isNew && <button class="danger" onClick={del}>Delete</button>}
-          <button class="primary" onClick={save} disabled={busy || !changed}>{busy ? 'Saving…' : changed ? (isNew ? 'Create' : 'Save') : 'Saved'}</button>
+          {!isNew && url && !draft && <a class="button" href={url} target="_blank" rel="noopener"><Icon name="external" />View</a>}
+          {!isNew && <Menu items={[
+            url && !draft && { label: 'View on site', icon: 'external', href: url, external: true },
+            publishable && !draft && { label: 'Switch to draft', icon: 'eye', onClick: () => save({ draft: true }) },
+            { label: 'Copy file path', icon: 'copy', onClick: () => { navigator.clipboard?.writeText(path); toast('Path copied.'); } },
+            onDeleted && { label: 'Delete', icon: 'trash', danger: true, onClick: del },
+          ]} />}
+          {publishable ? (
+            draft || isNew ? <>
+              <button onClick={() => save({ draft: true })} disabled={busy || (!changed && draft)}>{busy ? 'Saving…' : 'Save draft'}</button>
+              <button class="primary" onClick={() => save({ draft: false })} disabled={busy}>Publish</button>
+            </> : <button class="primary" onClick={() => save()} disabled={busy || !changed}>{busy ? 'Saving…' : changed ? 'Update' : 'Up to date'}</button>
+          ) : (
+            <button class="primary" onClick={() => save()} disabled={busy || !changed}>{busy ? 'Saving…' : changed ? (isNew ? 'Create' : 'Save changes') : 'Saved'}</button>
+          )}
         </div>
       </div>
-      <Form fields={fields} value={state.data} onChange={(data) => edit({ data })} />
-      {kind === 'md' && (
-        <div class="field"><span class="field-label">{bodyLabel ?? 'Content'}</span><MarkdownEditor tall value={state.body ?? ''} onChange={(body) => edit({ body })} /></div>
-      )}
+      <div class={groups.length ? 'editor-grid' : ''}>
+        <div class="editor-main">
+          <Form fields={main} value={state.data} onChange={(data) => edit({ data })} />
+          {kind === 'md' && (
+            <div class="field"><span class="field-label">{bodyLabel ?? 'Content'}</span><MarkdownEditor tall value={state.body ?? ''} onChange={(body) => edit({ body })} /></div>
+          )}
+        </div>
+        {groups.length > 0 && (
+          <aside class="editor-side">
+            {groups.map((g) => (
+              <section class="panel side-panel">
+                <h2>{g}</h2>
+                <Form fields={fields.filter((f) => f.side === g && !f.hidden)} value={state.data} onChange={(data) => edit({ data })} />
+              </section>
+            ))}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
@@ -197,80 +281,131 @@ function FileEditor({ path, kind, fields, title, initial, bodyLabel, onSaved, on
 
 function useFiles() {
   const [files, setFiles] = useState(null);
-  const load = useCallback(() => api.files().then((d) => setFiles(d.files.map((f) => f.path))).catch((e) => toast(e.message, 'err')), []);
+  const load = useCallback(() => api.files().then((d) => setFiles(d.files)).catch((e) => toast(e.message, 'err')), []);
   useEffect(load, []);
   return [files, load];
-}
-
-function ListPage({ title, intro, items, onNew, newLabel }) {
-  return (
-    <>
-      <div class="head-row">
-        <h1>{title}</h1>
-        {onNew && <button class="primary" onClick={onNew}>{newLabel ?? '+ New'}</button>}
-      </div>
-      {intro && <p class="muted">{intro}</p>}
-      {!items ? <p class="muted">Loading…</p> : (
-        <ul class="list">
-          {items.map((it) => (
-            <li class="row"><a href={it.href} onClick={(e) => { e.preventDefault(); navigate(it.href); }}><b>{it.label}</b>{it.sub && <small>{it.sub}</small>}</a>{it.view && <a class="row-view" href={it.view} target="_blank" rel="noopener" title="View on site">↗</a>}</li>
-          ))}
-          {!items.length && <li class="muted">Nothing here yet.</li>}
-        </ul>
-      )}
-    </>
-  );
 }
 
 const editHref = (path, extra = '') => `#/edit?path=${encodeURIComponent(path)}${extra}`;
 
 /** Reads several content files (for list screens that show titles). */
-function useContents(paths, parse) {
+function useContents(files, parse) {
   const [out, setOut] = useState(null);
-  const key = (paths ?? []).join('|');
+  const key = (files ?? []).map((f) => f.sha).join('|');
   useEffect(() => {
-    if (!paths) return;
-    Promise.all(paths.map((p) => api.file(p).then((f) => ({ path: p, ...parse(f.content) })).catch(() => ({ path: p }))))
+    if (!files) return;
+    Promise.all(files.map((f) => api.file(f.path).then((x) => ({ path: f.path, sha: f.sha, raw: x.content, ...parse(x.content) })).catch(() => ({ path: f.path, sha: f.sha }))))
       .then(setOut);
   }, [key]);
   return out;
 }
 
+/** A content list as a table: search, status tabs, row actions. */
+function ContentTable({ title, intro, rows, columns, onNew, newLabel, empty }) {
+  const [q, setQ] = useState('');
+  const [tab, setTab] = useState('all');
+  const counts = { all: rows?.length ?? 0, published: rows?.filter((r) => !r.draft).length ?? 0, draft: rows?.filter((r) => r.draft).length ?? 0 };
+  const shown = (rows ?? []).filter((r) => (tab === 'all' || (tab === 'draft') === !!r.draft) && `${r.title} ${r.url}`.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <>
+      <header class="page-head">
+        <div><h1>{title} <span class="count">{rows?.length ?? ''}</span></h1><p class="muted">{intro}</p></div>
+        <div class="actions"><button class="primary" onClick={onNew}><Icon name="plus" />{newLabel}</button></div>
+      </header>
+      <div class="tabs">
+        {[['all', 'All'], ['published', 'Published'], ['draft', 'Drafts']].map(([id, label]) => <button type="button" class={`tab ${tab === id ? 'is-on' : ''}`} onClick={() => setTab(id)}>{label}<span>{counts[id]}</span></button>)}
+      </div>
+      <div class="toolbar"><label class="search"><Icon name="search" /><input type="search" placeholder={`Search ${title.toLowerCase()}`} value={q} onInput={(e) => setQ(e.currentTarget.value)} /></label></div>
+      {!rows ? <div class="sk sk--table" /> : !shown.length ? (
+        <div class="panel"><div class="empty"><span class="empty-icon"><Icon name="pages" size={20} /></span><b>{rows.length ? 'Nothing matches' : empty}</b>{!rows.length && <button class="primary" onClick={onNew}><Icon name="plus" />{newLabel}</button>}</div></div>
+      ) : (
+        <div class="table-wrap">
+          <table class="table table--crm">
+            <thead><tr><th>Title</th>{columns.map((c) => <th class={c.num ? 'num' : ''}>{c.label}</th>)}<th class="actions-col" /></tr></thead>
+            <tbody>
+              {shown.map((r) => (
+                <tr onClick={() => navigate(r.href)}>
+                  <td><span class="row-title"><b>{r.title}</b><small>{r.url}</small></span></td>
+                  {columns.map((c) => <td class={c.num ? 'num' : ''}>{c.render(r)}</td>)}
+                  <td class="actions-col"><Menu items={r.actions} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
+
 function Pages() {
-  const [files] = useFiles();
-  const paths = files?.filter((p) => /^content\/pages\/[^/]+\.json$/.test(p));
-  const pages = useContents(paths, (c) => JSON.parse(c));
-  const items = pages && [...pages].sort((x, y) => (x.order ?? 100) - (y.order ?? 100)).map((pg) => ({
-    label: pg.title ?? pg.path, href: editHref(pg.path),
-    sub: <>{`/${pg.slug ? `${pg.slug}/` : ''}`} · {pg.blocks?.length ?? 0} blocks{pg.draft && <span class="pill pill--warn">Draft</span>}{pg.inNav === false && <span class="pill">Not in menu</span>}</>,
-    view: pg.draft ? null : `/${pg.slug ? `${pg.slug}/` : ''}`,
-  }));
-  const create = () => {
-    const title = prompt('Page title');
+  const [files, reload] = useFiles();
+  const list = files?.filter((f) => /^content\/pages\/[^/]+\.json$/.test(f.path));
+  const pages = useContents(list, (c) => JSON.parse(c));
+  const create = async () => {
+    const title = await askText({ title: 'New page', label: 'Page title', placeholder: 'e.g. Uses', confirm: 'Create page', help: (t) => (t ? `Its address will be /${slugify(t)}/` : 'You can change the address later.') });
     if (!title) return;
     const slug = slugify(title);
-    sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, slug, navLabel: title, order: 10, inNav: true, draft: true, blocks: [{ type: 'banner', heading: title, body: '' }, { type: 'text', heading: title, body: 'Write something here.' }] } }));
+    if ((pages ?? []).some((p) => p.slug === slug)) return toast(`A page already uses /${slug}/.`, 'err');
+    sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, slug, navLabel: title, order: 10, inNav: true, draft: true, blocks: [{ type: 'banner', heading: title, body: '' }, { type: 'text', heading: null, body: 'Write something here.' }] } }));
     navigate(editHref(`content/pages/${slug}.json`, '&new=1'));
   };
-  return <ListPage title="Pages" intro="Each page is a list of blocks. All three themes render the same blocks in their own style. Start inner pages with a Banner." items={items} onNew={create} newLabel="+ New page" />;
+  const duplicate = async (p) => {
+    const slug = `${p.slug || 'home'}-copy`;
+    const copy = { ...JSON.parse(p.raw), title: `${p.title} (copy)`, slug, draft: true, inNav: false };
+    try { await api.save(`content/pages/${slug}.json`, toJSON(copy)); published(null); toast('Copy created as a draft.'); reload(); } catch (e) { toast(e.message, 'err'); }
+  };
+  const remove = async (p) => {
+    if (!(await ask({ title: `Delete “${p.title}”?`, body: 'It disappears from the site after the next deploy. Git history keeps a copy.', confirm: 'Delete page', danger: true }))) return;
+    try { await api.remove(p.path, p.sha); published(null); toast('Page deleted.'); reload(); } catch (e) { toast(e.message, 'err'); }
+  };
+  const rows = pages && [...pages].sort((x, y) => (x.order ?? 100) - (y.order ?? 100)).map((p) => {
+    const url = `/${p.slug ? `${p.slug}/` : ''}`;
+    return { ...p, title: p.title ?? p.path, url, href: editHref(p.path), actions: [
+      { label: 'Edit', icon: 'pen', onClick: () => navigate(editHref(p.path)) },
+      !p.draft && { label: 'View on site', icon: 'external', href: url, external: true },
+      { label: 'Duplicate', icon: 'copy', onClick: () => duplicate(p) },
+      p.slug !== '' && { label: 'Delete', icon: 'trash', danger: true, onClick: () => remove(p) },
+    ] };
+  });
+  return <ContentTable title="Pages" intro="Each page is a list of blocks. All three themes render the same blocks in their own style." rows={rows} onNew={create} newLabel="New page" empty="No pages yet"
+    columns={[
+      { label: 'Status', render: (r) => <span class={`pill ${r.draft ? 'pill--warn' : 'pill--ok'}`}>{r.draft ? 'Draft' : 'Published'}</span> },
+      { label: 'Menu', render: (r) => (r.inNav === false ? <span class="muted">Hidden</span> : `#${r.order ?? '—'} · ${r.navLabel ?? r.title}`) },
+      { label: 'Blocks', num: true, render: (r) => r.blocks?.length ?? 0 },
+    ]} />;
 }
 
 function Blog({ params = {} }) {
-  const [files] = useFiles();
-  const paths = files?.filter((p) => /^content\/blog\/[^/]+\.md$/.test(p));
-  const posts = useContents(paths, (c) => parseFrontmatter(c).data);
-  const items = posts && [...posts].sort((x, y) => String(y.date ?? '').localeCompare(String(x.date ?? ''))).map((p) => {
-    const slug = p.path.split('/').pop().replace('.md', '');
-    return { label: p.title ?? slug, href: editHref(p.path), sub: <>{String(p.date ?? '').slice(0, 10)} · /blog/{slug}/{p.draft && <span class="pill pill--warn">Draft</span>}</>, view: p.draft ? null : `/blog/${slug}/` };
-  });
-  const create = () => {
-    const title = prompt('Post title');
+  const [files, reload] = useFiles();
+  const list = files?.filter((f) => /^content\/blog\/[^/]+\.md$/.test(f.path));
+  const posts = useContents(list, (c) => parseFrontmatter(c).data);
+  const create = async () => {
+    const title = await askText({ title: 'New post', label: 'Post title', placeholder: 'e.g. How I cut our AWS bill', confirm: 'Start writing', help: (t) => (t ? `Its address will be /blog/${slugify(t)}/` : 'It starts as a draft.') });
     if (!title) return;
-    sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, description: '', date: new Date().toISOString().slice(0, 10), tags: [], draft: true }, body: 'Start writing…' }));
+    sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, description: '', date: new Date().toISOString().slice(0, 10), tags: [], draft: true }, body: '' }));
     navigate(editHref(`content/blog/${slugify(title)}.md`, '&new=1'));
   };
+  const remove = async (p) => {
+    if (!(await ask({ title: `Delete “${p.title}”?`, body: 'It disappears from the site after the next deploy. Git history keeps a copy.', confirm: 'Delete post', danger: true }))) return;
+    try { await api.remove(p.path, p.sha); published(null); toast('Post deleted.'); reload(); } catch (e) { toast(e.message, 'err'); }
+  };
   useEffect(() => { if (params.new) { history.replaceState(null, '', '#/blog'); create(); } }, []);
-  return <ListPage title="Blog" intro="Posts start as drafts; switch off “Draft” to publish." items={items} onNew={create} newLabel="+ New post" />;
+  const rows = posts && [...posts].sort((x, y) => String(y.date ?? '').localeCompare(String(x.date ?? ''))).map((p) => {
+    const slug = p.path.split('/').pop().replace('.md', '');
+    const url = `/blog/${slug}/`;
+    return { ...p, title: p.title ?? slug, url, href: editHref(p.path), actions: [
+      { label: 'Edit', icon: 'pen', onClick: () => navigate(editHref(p.path)) },
+      !p.draft && { label: 'View on site', icon: 'external', href: url, external: true },
+      { label: 'Delete', icon: 'trash', danger: true, onClick: () => remove(p) },
+    ] };
+  });
+  return <ContentTable title="Blog" intro="Posts start as drafts. Publish when they're ready." rows={rows} onNew={create} newLabel="New post" empty="No posts yet"
+    columns={[
+      { label: 'Status', render: (r) => <span class={`pill ${r.draft ? 'pill--warn' : 'pill--ok'}`}>{r.draft ? 'Draft' : 'Published'}</span> },
+      { label: 'Date', render: (r) => String(r.date ?? '').slice(0, 10) || '—' },
+      { label: 'Tags', render: (r) => (r.tags ?? []).slice(0, 3).map((t) => <span class="tag">{t}</span>) },
+    ]} />;
 }
 
 /** Chooses the right schema for a content path. */
@@ -309,6 +444,8 @@ function Media() {
   const [all, setAll] = useState(null);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(null);
   const load = useCallback(() => api.files().then((d) => setAll(d.files.filter((f) => f.path.startsWith('apps/site/public/uploads/') && !f.path.split('/').pop().startsWith('.')).reverse())).catch((e) => toast(e.message, 'err')), []);
   useEffect(load, []);
   const send = async (list) => {
@@ -316,42 +453,78 @@ function Media() {
     setBusy(true);
     let n = 0;
     for (const file of list) { try { await uploadFile(file); n++; } catch (x) { toast(x.message, 'err'); } }
-    if (n) toast(`Uploaded ${n} file${n > 1 ? 's' : ''}. Live after the next deploy (about a minute).`);
+    if (n) toast(`Uploaded ${n} file${n > 1 ? 's' : ''}.`);
     setBusy(false); load();
   };
-  const copy = (text, what) => { navigator.clipboard?.writeText(text); toast(`Copied ${what}`); };
+  const copy = (text, what) => { navigator.clipboard?.writeText(text); toast(`Copied ${what}.`); };
   const del = async (f) => {
-    if (!confirm(`Delete ${f.path.split('/').pop()}? Pages that use it will show a broken image.`)) return;
-    try { await api.remove(f.path, f.sha); savedAt = Date.now(); toast('Deleted.'); load(); } catch (e) { toast(e.message, 'err'); }
+    if (!(await ask({ title: `Delete ${f.path.split('/').pop()}?`, body: 'Pages that use it will show a broken image after the next deploy.', confirm: 'Delete file', danger: true }))) return;
+    try { await api.remove(f.path, f.sha); published(null); toast('File deleted.'); setOpen(null); load(); } catch (e) { toast(e.message, 'err'); }
   };
+  const isImage = (p) => /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(p);
+  const shown = (all ?? []).filter((f) => f.path.toLowerCase().includes(q.toLowerCase()));
   return (
     <div onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); send([...e.dataTransfer.files]); }}>
-      <div class="head-row">
-        <h1>Media <span class="count">{all?.length ?? ''}</span></h1>
-        <label class="button primary">{busy ? 'Uploading…' : '+ Upload'}<input type="file" multiple accept="image/*,application/pdf" hidden onChange={(e) => { send([...e.currentTarget.files]); e.currentTarget.value = ''; }} disabled={busy} /></label>
-      </div>
-      <p class="muted">Images and PDFs for pages, projects, posts and lessons (max 8 MB each). Drop files anywhere here. Image fields in the editors can also upload directly.</p>
+      <header class="page-head">
+        <div><h1>Media library <span class="count">{all?.length ?? ''}</span></h1><p class="muted">Every uploaded image and PDF. You can also add media while editing: the Image button, paste, or drop into the text.</p></div>
+        <div class="actions"><label class="button primary"><Icon name="plus" />{busy ? 'Uploading…' : 'Upload'}<input type="file" multiple accept="image/*,application/pdf" hidden onChange={(e) => { send([...e.currentTarget.files]); e.currentTarget.value = ''; }} disabled={busy} /></label></div>
+      </header>
+      <div class="toolbar"><label class="search"><Icon name="search" /><input type="search" placeholder="Search files" value={q} onInput={(e) => setQ(e.currentTarget.value)} /></label><span class="muted">Max 8 MB each · drop files anywhere here</span></div>
       <div class={`dropzone ${over ? 'is-over' : ''}`}>Drop files to upload</div>
-      {!all ? <p class="muted">Loading…</p> : (
+      {!all ? <div class="sk sk--table" /> : !shown.length ? (
+        <div class="panel"><div class="empty"><span class="empty-icon"><Icon name="image" size={20} /></span><b>{all.length ? 'No file matches' : 'No uploads yet'}</b><small>Upload images for covers, banners and posts.</small></div></div>
+      ) : (
         <div class="media">
-          {all.map((f) => {
+          {shown.map((f) => {
             const url = publicUrl(f.path);
-            const image = /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(f.path);
             return (
-              <div class="media-item">
-                <a href={url} target="_blank" rel="noopener">{image ? <img src={url} alt="" loading="lazy" /> : <span class="pdf">{f.path.split('.').pop().toUpperCase()}</span>}</a>
+              <button type="button" class={`media-item ${open?.path === f.path ? 'is-on' : ''}`} onClick={() => setOpen(f)}>
+                {isImage(f.path) ? <img src={url} alt="" loading="lazy" /> : <span class="pdf">{f.path.split('.').pop().toUpperCase()}</span>}
                 <small title={f.path}>{f.path.split('/').pop()}</small>
-                <div class="media-tools">
-                  <button onClick={() => copy(url, 'the path')}>Copy path</button>
-                  {image && <button onClick={() => copy(`![](${url})`, 'the Markdown')}>Markdown</button>}
-                  <button class="danger" onClick={() => del(f)} title="Delete">✕</button>
-                </div>
-              </div>
+              </button>
             );
           })}
-          {!all.length && <p class="muted">No uploads yet.</p>}
         </div>
       )}
+      {open && <MediaDetails file={open} isImage={isImage(open.path)} onClose={() => setOpen(null)} onCopy={copy} onDelete={() => del(open)} />}
+    </div>
+  );
+}
+
+function MediaDetails({ file, isImage, onClose, onCopy, onDelete }) {
+  const url = publicUrl(file.path);
+  const [dims, setDims] = useState(null);
+  const [size, setSize] = useState(null);
+  const img = useRef(null);
+  // A cached image can finish loading before onLoad is attached, so measure on mount too
+  const measure = () => { const i = img.current; if (i?.naturalWidth) setDims(`${i.naturalWidth} × ${i.naturalHeight}`); };
+  useEffect(() => {
+    setDims(null); setSize(null);
+    requestAnimationFrame(measure);
+    fetch(url, { method: 'HEAD' }).then((r) => setSize(Number(r.headers.get('content-length')) || null)).catch(() => {});
+  }, [file.path]);
+  useEffect(() => { const k = (e) => e.key === 'Escape' && onClose(); addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
+  const kb = size ? (size > 1048576 ? `${(size / 1048576).toFixed(1)} MB` : `${Math.round(size / 1024)} KB`) : '—';
+  return (
+    <div class="drawer-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div class="drawer" role="dialog" aria-label="File details">
+        <header class="drawer-head"><h2>File details</h2><button type="button" class="icon-btn" onClick={onClose} aria-label="Close"><Icon name="x" size={18} /></button></header>
+        <div class="drawer-body">
+          <div class="media-preview">{isImage ? <img ref={img} src={url} alt="" onLoad={measure} /> : <span class="pdf">{file.path.split('.').pop().toUpperCase()}</span>}</div>
+          <dl class="facts">
+            <div><dt>Name</dt><dd>{file.path.split('/').pop()}</dd></div>
+            <div><dt>Dimensions</dt><dd>{dims ?? (isImage ? '…' : '—')}</dd></div>
+            <div><dt>Size</dt><dd>{kb}</dd></div>
+            <div><dt>Address</dt><dd><code>{url}</code></dd></div>
+          </dl>
+          <div class="actions media-actions">
+            <button onClick={() => onCopy(url, 'the address')}><Icon name="copy" />Copy address</button>
+            {isImage && <button onClick={() => onCopy(`![](${url})`, 'the Markdown')}><Icon name="copy" />Copy Markdown</button>}
+            <a class="button" href={url} target="_blank" rel="noopener"><Icon name="external" />Open</a>
+          </div>
+        </div>
+        <footer class="drawer-foot"><button type="button" class="danger" onClick={onDelete}><Icon name="trash" />Delete file</button><span class="spacer" /><button type="button" onClick={onClose}>Close</button></footer>
+      </div>
     </div>
   );
 }
@@ -459,11 +632,15 @@ function App() {
           <span class="spacer" />
           <button type="button" class="top-search" onClick={() => setPalette(true)}><Icon name="search" /><span>Search or jump to…</span><kbd>Ctrl K</kbd></button>
           {!me.contentEditing && <span class="pill pill--warn">Content editing is not configured</span>}
+          <button type="button" class="icon-btn" title="Keyboard shortcuts (?)" onClick={() => dispatchEvent(new KeyboardEvent('keydown', { key: '?' }))}>?</button>
           <DeployBadge />
         </header>
         <main class="content">{page}</main>
       </div>
       <CommandPalette open={palette} onClose={() => setPalette(false)} items={items} onPick={(it) => navigate(it.href)} />
+      <DialogHost />
+      <ShortcutsHelp />
+      <PublishTracker />
       <Toast />
     </div>
   );

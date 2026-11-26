@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'preact/hooks';
 import { api } from './api.js';
 import { notify } from './fields.jsx';
-import { Icon, Avatar, StagePill, StageSelect, STAGES, stageLabel, ago, date, dateTime, BarChart, Delta, lastDays } from './ui.jsx';
+import { Icon, Avatar, StagePill, StageSelect, STAGES, stageLabel, ago, date, dateTime, BarChart, Delta, lastDays, ask } from './ui.jsx';
 
 const go = (hash) => (e) => { e?.preventDefault?.(); location.hash = hash; };
 
@@ -36,6 +36,7 @@ export function describe(a) {
     default: return { icon: 'activity', text: <>{a.id}</> };
   }
 }
+const EMPTY_INSIGHTS = { active7d: 0, activePrev7d: 0, users7d: 0, usersPrev7d: 0, viewsPrev7d: 0, signupsPerDay: [], viewsPerDay30: [], stages: { new: 0, contacted: 0, engaged: 0, opportunity: 0, archived: 0 }, topEvents7d: [] };
 const ACTION_NAMES = { visit: 'Page visits', read: 'Pages read', project: 'Projects opened', exp: 'Experience read', contact: 'Contact links', terminal: 'Terminal commands', flag: 'Flags captured', theme: 'Themes tried', palette: 'Palettes tried', lesson: 'Lessons', quiz: 'Quizzes', course: 'Courses', secret: 'Secrets', click: 'Clicks' };
 
 // ---- dashboard ------------------------------------------------------------------
@@ -43,12 +44,18 @@ const ACTION_NAMES = { visit: 'Page visits', read: 'Pages read', project: 'Proje
 export function Dashboard() {
   const [d, setD] = useState(null);
   const [ins, setIns] = useState(null);
+  const [failed, setFailed] = useState(false);
   const [people, setPeople] = useState(null);
   const [health, setHealth] = useState(null);
   useEffect(() => {
     let stop = false;
     const load = async () => {
-      try { const [s, i] = await Promise.all([api.stats(), api.insights()]); if (!stop) { setD(s); setIns(i); } } catch {}
+      const [s, i] = await Promise.allSettled([api.stats(), api.insights()]);
+      if (!stop) {
+        if (s.status === 'fulfilled') setD(s.value);
+        setIns(i.status === 'fulfilled' ? i.value : (x) => x ?? EMPTY_INSIGHTS);
+        setFailed(s.status === 'rejected' || i.status === 'rejected');
+      }
       if (!stop) setTimeout(load, 15000);
     };
     load();
@@ -56,12 +63,14 @@ export function Dashboard() {
     contentHealth().then(setHealth).catch(() => setHealth('error'));
     return () => { stop = true; };
   }, []);
+  if (failed && !d) return <div class="panel"><Empty icon="alert" title="Couldn't load the dashboard" text="The API didn't answer. It may be restarting after a deploy." /><p style="text-align:center"><button onClick={() => location.reload()}>Try again</button></p></div>;
   if (!d || !ins) return <div class="skeleton-page"><div class="sk sk--title" /><div class="kpis">{[1, 2, 3, 4, 5].map(() => <div class="sk sk--card" />)}</div></div>;
   const live = Object.entries(d.livePages ?? {}).sort((a, b) => b[1] - a[1]);
   const totalStage = Object.values(ins.stages).reduce((a, b) => a + b, 0) || 1;
   const recent = (people ?? []).slice(0, 6);
   return (
     <>
+      {failed && <div class="banner banner--warn"><Icon name="alert" />Some numbers couldn't be loaded and may be missing. They refresh every 15 seconds.</div>}
       <header class="page-head">
         <div><h1>Dashboard</h1><p class="muted">How the site is doing, who signed in, and what needs attention.</p></div>
         <div class="actions">
@@ -294,11 +303,11 @@ export function Contact({ id }) {
     setBusy(false);
   };
   const delNote = async (n) => {
-    if (!confirm('Delete this note?')) return;
+    if (!(await ask({ title: 'Delete this note?', confirm: 'Delete', danger: true }))) return;
     try { await api.deleteNote(c.id, n.id); load(); } catch (x) { notify(x.message, 'err'); }
   };
   const del = async () => {
-    if (!confirm(`Delete ${c.email || c.name} and all their progress? This cannot be undone.`)) return;
+    if (!(await ask({ title: `Delete ${c.name || c.email}?`, body: 'Their account, progress, notes and activity are removed for good. This cannot be undone.', confirm: 'Delete contact', danger: true }))) return;
     try { await api.deleteVisitor(c.id); notify('Contact deleted.'); location.hash = '#/contacts'; } catch (x) { notify(x.message, 'err'); }
   };
   const copy = () => { navigator.clipboard?.writeText(c.email); notify('Email copied.'); };

@@ -177,3 +177,99 @@ export function CommandPalette({ open, onClose, items, onPick }) {
     </div>
   );
 }
+
+// ---- dialogs: confirm and text prompts (instead of window.confirm/prompt) ------
+
+let openDialog = null;
+/** Ask for confirmation. Resolves true/false. */
+export const ask = (opts) => new Promise((resolve) => openDialog ? openDialog({ kind: 'confirm', ...opts, resolve }) : resolve(window.confirm(opts.title)));
+/** Ask for a line of text. Resolves the text, or null when cancelled. */
+export const askText = (opts) => new Promise((resolve) => openDialog ? openDialog({ kind: 'text', ...opts, resolve }) : resolve(window.prompt(opts.title)));
+
+export function DialogHost() {
+  const [d, setD] = useState(null);
+  const [text, setText] = useState('');
+  const input = useRef(null);
+  const btn = useRef(null);
+  openDialog = (x) => { setText(x.value ?? ''); setD(x); };
+  useEffect(() => { if (d) setTimeout(() => (d.kind === 'text' ? input.current : btn.current)?.focus(), 20); }, [d]);
+  if (!d) return null;
+  const close = (v) => { d.resolve(v); setD(null); };
+  const ok = () => (d.kind === 'text' ? (text.trim() ? close(text.trim()) : null) : close(true));
+  return (
+    <div class="modal" onMouseDown={(e) => e.target === e.currentTarget && close(d.kind === 'text' ? null : false)}
+      onKeyDown={(e) => { if (e.key === 'Escape') close(d.kind === 'text' ? null : false); if (e.key === 'Enter' && d.kind === 'text') { e.preventDefault(); ok(); } }}>
+      <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlg-title">
+        {d.danger && <span class="dialog-icon"><Icon name="alert" size={20} /></span>}
+        <div class="dialog-main">
+          <h2 id="dlg-title">{d.title}</h2>
+          {d.body && <p class="muted">{d.body}</p>}
+          {d.kind === 'text' && (
+            <label class="field"><span class="field-label">{d.label ?? 'Name'}</span>
+              <input ref={input} value={text} placeholder={d.placeholder} onInput={(e) => setText(e.currentTarget.value)} />
+              {d.help && <small class="field-help">{d.help(text)}</small>}
+            </label>
+          )}
+        </div>
+        <div class="dialog-foot">
+          <button type="button" onClick={() => close(d.kind === 'text' ? null : false)}>Cancel</button>
+          <button type="button" ref={btn} class={d.danger ? 'danger-solid' : 'primary'} onClick={ok} disabled={d.kind === 'text' && !text.trim()}>{d.confirm ?? (d.kind === 'text' ? 'Create' : 'Confirm')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- dropdown menu ---------------------------------------------------------------
+
+/** A "…" button with a list of actions. items: [{ label, icon, onClick, href, danger }] */
+export function Menu({ items, label = 'More actions' }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const off = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    const esc = (e) => e.key === 'Escape' && setOpen(false);
+    addEventListener('mousedown', off); addEventListener('keydown', esc);
+    return () => { removeEventListener('mousedown', off); removeEventListener('keydown', esc); };
+  }, [open]);
+  return (
+    <span class="menu" ref={ref} onClick={(e) => e.stopPropagation()}>
+      <button type="button" class="icon-btn" aria-label={label} aria-expanded={open} onClick={() => setOpen(!open)}>⋯</button>
+      {open && (
+        <span class="menu-list" role="menu">
+          {items.filter(Boolean).map((it) => it.href
+            ? <a role="menuitem" class={`menu-item ${it.danger ? 'danger' : ''}`} href={it.href} target={it.external ? '_blank' : undefined} rel="noopener" onClick={() => setOpen(false)}>{it.icon && <Icon name={it.icon} />}{it.label}</a>
+            : <button type="button" role="menuitem" class={`menu-item ${it.danger ? 'danger' : ''}`} onClick={() => { setOpen(false); it.onClick(); }}>{it.icon && <Icon name={it.icon} />}{it.label}</button>)}
+        </span>
+      )}
+    </span>
+  );
+}
+
+// ---- keyboard shortcuts help -------------------------------------------------------
+
+export function ShortcutsHelp() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const k = (e) => {
+      const typing = e.target.closest?.('input, textarea, select, [contenteditable]');
+      if (e.key === '?' && !typing) { e.preventDefault(); setOpen((o) => !o); }
+      if (e.key === 'Escape') setOpen(false);
+    };
+    addEventListener('keydown', k);
+    return () => removeEventListener('keydown', k);
+  }, []);
+  if (!open) return null;
+  const rows = [['Ctrl K', 'Search and jump anywhere'], ['Ctrl S', 'Save the open editor or drawer'], ['Ctrl Enter', 'Add a note (contact page)'], ['Esc', 'Close a dialog, drawer or menu'], ['?', 'Show this help']];
+  return (
+    <div class="modal" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
+      <div class="dialog dialog--wide" role="dialog" aria-label="Keyboard shortcuts">
+        <div class="dialog-main"><h2>Keyboard shortcuts</h2>
+          <table class="table table--plain"><tbody>{rows.map(([k, v]) => <tr><td><kbd>{k}</kbd></td><td>{v}</td></tr>)}</tbody></table>
+        </div>
+        <div class="dialog-foot"><button type="button" class="primary" onClick={() => setOpen(false)}>Done</button></div>
+      </div>
+    </div>
+  );
+}

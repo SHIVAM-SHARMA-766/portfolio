@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { api, toJSON, slugify } from './api.js';
 import { Form, notify } from './fields.jsx';
-import { Icon } from './ui.jsx';
+import { Icon, ask } from './ui.jsx';
 import * as S from './schemas.js';
 
 const PROFILE = 'content/profile.json';
@@ -124,15 +124,16 @@ export function ProfileSection({ kind, params = {} }) {
     const list = [...items];
     if (editing.index < 0) list.push(it); else list[editing.index] = it;
     await save({ ...p.data, [coll]: list }, `${editing.index < 0 ? 'Add' : 'Update'} ${sec.title.toLowerCase()}: ${sec.card(it).title ?? ''} (admin)`);
-    notify('Saved. The site updates in about a minute.');
     close();
   };
   const remove = async () => {
     const label = sec.card(editing.item).title;
-    if (!confirm(`Delete “${label}”? It disappears from the site after the next deploy.`)) return;
+    if (!(await ask({ title: `Delete “${label}”?`, body: 'It disappears from the site after the next deploy.', confirm: 'Delete', danger: true }))) return;
+    const before = p.data;
     await save({ ...p.data, [coll]: items.filter((_, i) => i !== editing.index) }, `Delete from ${sec.title.toLowerCase()}: ${label} (admin)`);
-    notify('Deleted.');
     close();
+    // Undo puts the old list back (one more commit)
+    dispatchEvent(new CustomEvent('admin-toast', { detail: { msg: `Deleted “${label}”.`, kind: 'ok', action: { label: 'Undo', run: () => save(before, `Restore ${label} (admin)`).then(() => notify('Restored.')).catch((e) => notify(e.message, 'err')) } } }));
   };
 
   return (
@@ -187,7 +188,7 @@ function Drawer({ title, item, fields, onSave, onDelete, onClose, wide }) {
   const [changed, setChanged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const close = () => { if (!changed || confirm('Discard your changes?')) onClose(); };
+  const close = async () => { if (!changed || (await ask({ title: 'Discard your changes?', body: 'What you typed in this form will be lost.', confirm: 'Discard', danger: true }))) onClose(); };
   const submit = async (e) => {
     e?.preventDefault();
     setBusy(true); setErr('');

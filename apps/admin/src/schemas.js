@@ -14,6 +14,8 @@ const doc = (name, label, extra = {}) => ({ name, label, type: 'file', ...extra 
 const month = (name, label, extra = {}) => ({ name, label, type: 'month', ...extra });
 const tags = (name, label, extra = {}) => ({ name, label, type: 'tags', ...extra });
 const url = (name, label, extra = {}) => ({ name, label, type: 'url', ...extra });
+// A heading that groups the fields after it
+const section = (label, help) => ({ name: `section:${label}`, label, help, type: 'section' });
 
 // Suggestions shared by the profile forms (filled when profile.json loads)
 export const pool = { skills: [], companies: [] };
@@ -36,42 +38,46 @@ const card = [s('title', 'Title'), text('body', 'Text'), s('href', 'Link'), s('m
 const subPages = list('pages', 'Detail pages', [s('slug', 'Slug', { pattern: '^[a-z0-9-]+$' }), s('title', 'Title'), text('summary', 'Summary'), md('body', 'Content')], { summary: 'title' });
 
 export const blockTypes = {
-  banner: { label: 'Banner (page header)', fields: [s('eyebrow', 'Small line above'), s('heading', 'Heading', { required: true }), text('body', 'Text'), img('image', 'Image (optional)'), strs('tags', 'Tags'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link')], { summary: 'label' })] },
-  glance: { label: 'At a glance', fields: [heading, list('facts', 'Facts', [s('label', 'Label'), s('value', 'Value'), s('href', 'Link (optional)')], { summary: 'label' }), strs('points', 'Key points')] },
-  timeline: { label: 'Timeline', fields: [heading, text('body', 'Intro'), list('items', 'Milestones', [s('date', 'When (e.g. Jul 2025)'), s('title', 'Title'), text('body', 'Text'), s('href', 'Link (optional)'), s('tag', 'Tag (e.g. Work, Project, Learning)')], { summary: 'title' })] },
-  cards: { label: 'Cards', fields: [heading, text('body', 'Intro'), num('columns', 'Columns (1–4)'), list('items', 'Cards', card, { summary: 'title' })] },
-  hero: { label: 'Hero', fields: [s('heading', 'Heading', { required: true }), s('subheading', 'Subheading'), text('body', 'Intro (markdown)'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link — "projects/" stays inside the theme, or a full URL')], { summary: 'label' })] },
-  text: { label: 'Text', fields: [heading, md('body', 'Body', { required: true })] },
-  stats: { label: 'Stats', fields: [heading, list('items', 'Numbers', [s('value', 'Value'), s('label', 'Label')], { summary: 'value' })] },
-  experience: { label: 'Experience (from profile)', fields: [heading, bool('compact', 'Compact (one card per client, for the home page)')] },
-  projects: { label: 'Projects (from profile)', fields: [heading, sel('filter', 'Show', ['all', 'featured']), num('limit', 'Maximum')] },
-  skills: { label: 'Skills (from profile)', fields: [heading] },
-  education: { label: 'Education & certifications (from profile)', fields: [heading] },
-  contact: { label: 'Contact', fields: [heading, text('body', 'Text')] },
-  cta: { label: 'Call to action', fields: [s('heading', 'Heading', { required: true }), text('body', 'Text'), s('label', 'Button label'), s('href', 'Button link')] },
-  posts: { label: 'Blog posts', fields: [heading, num('limit', 'Maximum')] },
+  banner: { label: 'Banner (page header)', icon: 'pages', desc: 'The header of an inner page: title, intro, image, buttons.', fields: [s('eyebrow', 'Small line above'), s('heading', 'Heading', { required: true }), text('body', 'Text'), img('image', 'Image (optional)'), strs('tags', 'Tags'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link')], { summary: 'label' })] },
+  glance: { label: 'At a glance', icon: 'check', desc: 'Key facts on the left, key points on the right.', fields: [heading, list('facts', 'Facts', [s('label', 'Label'), s('value', 'Value'), s('href', 'Link (optional)')], { summary: 'label' }), strs('points', 'Key points')] },
+  timeline: { label: 'Timeline', icon: 'activity', desc: 'Dated milestones, like a journey.', fields: [heading, text('body', 'Intro'), list('items', 'Milestones', [s('date', 'When (e.g. Jul 2025)'), s('title', 'Title'), text('body', 'Text'), s('href', 'Link (optional)'), s('tag', 'Tag (e.g. Work, Project, Learning)')], { summary: 'title' })] },
+  cards: { label: 'Cards', icon: 'dashboard', desc: 'A grid of cards with images, text and links.', fields: [heading, text('body', 'Intro'), num('columns', 'Columns (1–4)'), list('items', 'Cards', card, { summary: 'title' })] },
+  hero: { label: 'Hero', icon: 'star', desc: 'The big introduction at the top of the home page.', fields: [s('heading', 'Heading', { required: true }), s('subheading', 'Subheading'), text('body', 'Intro (markdown)'), list('ctas', 'Buttons', [s('label', 'Label'), s('href', 'Link — "projects/" stays inside the theme, or a full URL')], { summary: 'label' })] },
+  text: { label: 'Text', icon: 'note', desc: 'A heading and Markdown text.', fields: [heading, md('body', 'Body', { required: true })] },
+  stats: { label: 'Stats', icon: 'activity', desc: 'A row of big numbers with labels.', fields: [heading, list('items', 'Numbers', [s('value', 'Value'), s('label', 'Label')], { summary: 'value' })] },
+  experience: { label: 'Experience (from profile)', icon: 'briefcase', desc: 'Your roles and clients, from the profile.', fields: [heading, bool('compact', 'Compact (one card per client, for the home page)')] },
+  projects: { label: 'Projects (from profile)', icon: 'projects', desc: 'Project cards, from the profile.', fields: [heading, sel('filter', 'Show', ['all', 'featured']), num('limit', 'Maximum')] },
+  skills: { label: 'Skills (from profile)', icon: 'check', desc: 'Your skill groups, from the profile.', fields: [heading] },
+  education: { label: 'Education (from profile)', icon: 'book', desc: 'Schools and degrees, from the profile.', fields: [heading] },
+  certifications: { label: 'Licenses & certifications (from profile)', icon: 'trophy', desc: 'Licenses & certifications, from the profile.', fields: [heading] },
+  languages: { label: 'Languages (from profile)', icon: 'globe', desc: 'Languages you speak, from the profile.', fields: [heading] },
+  awards: { label: 'Honors & awards (from profile)', icon: 'star', desc: 'Honors & awards, from the profile.', fields: [heading] },
+  volunteering: { label: 'Volunteering (from profile)', icon: 'contacts', desc: 'Volunteering, from the profile.', fields: [heading] },
+  contact: { label: 'Contact', icon: 'mail', desc: 'Email, copy button and social links.', fields: [heading, text('body', 'Text')] },
+  cta: { label: 'Call to action', icon: 'arrowUp', desc: 'A highlighted box with one button.', fields: [s('heading', 'Heading', { required: true }), text('body', 'Text'), s('label', 'Button label'), s('href', 'Button link')] },
+  posts: { label: 'Blog posts', icon: 'pen', desc: 'Your latest blog posts.', fields: [heading, num('limit', 'Maximum')] },
 };
 
 export const pageFields = [
   s('title', 'Title', { required: true }),
-  s('slug', 'URL slug', { help: 'lowercase-with-dashes. Empty only for the home page.', pattern: '^[a-z0-9-]*$' }),
-  s('navLabel', 'Menu label'),
-  s('icon', 'Icon (emoji, shown in the Quest theme)'),
-  num('order', 'Menu order'),
-  bool('inNav', 'Show in menu'),
-  bool('draft', 'Draft (hidden from the site)'),
-  s('description', 'Description (for search engines)'),
+  s('slug', 'URL slug', { side: 'Page', help: 'lowercase-with-dashes. Empty only for the home page.', pattern: '^[a-z0-9-]*$' }),
+  bool('inNav', 'Show in the menu', { side: 'Menu' }),
+  s('navLabel', 'Menu label', { side: 'Menu' }),
+  num('order', 'Menu order', { side: 'Menu', help: 'Lower comes first.' }),
+  s('icon', 'Icon (emoji, Quest theme)', { side: 'Menu' }),
+  text('description', 'Description', { side: 'Search engines', help: 'One or two sentences shown in Google results and link previews.' }),
+  bool('draft', 'Draft', { hidden: true }),
   { name: 'blocks', label: 'Blocks', type: 'blocks', types: blockTypes },
 ];
 
 export const postFields = [
   s('title', 'Title', { required: true }),
-  s('description', 'Description'),
-  { name: 'date', label: 'Date', type: 'date' },
-  strs('tags', 'Tags'),
-  img('cover', 'Cover image', { help: '1600×840 works best. Shown on the post, on its card, and when the link is shared.' }),
-  s('coverAlt', 'Cover description (for screen readers)'),
-  bool('draft', 'Draft'),
+  text('description', 'Summary', { help: 'Shown on the post card and in search results.' }),
+  { name: 'date', label: 'Publish date', type: 'date', side: 'Post' },
+  tags('tags', 'Tags', { side: 'Post' }),
+  img('cover', 'Cover image', { side: 'Cover', help: '1600×840 works best. Also used when the link is shared.' }),
+  s('coverAlt', 'Cover description (screen readers)', { side: 'Cover' }),
+  bool('draft', 'Draft', { hidden: true }),
 ];
 
 export const engagementFields = [
@@ -147,13 +153,17 @@ export const introFields = [
 ];
 
 export const siteFields = [
-  text('description', 'Description (search engines)'),
+  section('Search engines and sharing'),
+  text('description', 'Site description', { help: 'Used by search engines and link previews when a page has none of its own.' }),
   s('photoPosition', 'Photo crop focus', { help: 'Which part stays in frame, e.g. "50% 25%". First number moves left/right, second up/down.' }),
-  s('siteUrl', 'Site URL'), s('learnUrl', 'Learn site URL'), s('apiUrl', 'API URL'),
-  s('cookieDomain', 'Cookie domain (shares progress across subdomains)'),
+  section('Addresses', 'Change these only when the domain changes.'),
+  url('siteUrl', 'Site URL'), url('learnUrl', 'Learning platform URL'), url('apiUrl', 'API URL'),
+  s('cookieDomain', 'Cookie domain', { help: 'Leave empty to keep sign-in on this site only.' }),
+  section('Themes'),
   sel('defaultTheme', 'Default theme', ['terminal', 'quest', 'studio']),
   obj('defaultPalettes', 'Default palettes', [s('terminal', 'Terminal'), s('quest', 'Quest'), s('studio', 'Studio')]),
-  obj('game', 'Game', [
+  section('Game'),
+  obj('game', 'Rewards and levels', [
     obj('rewards', 'XP per action', ['visit', 'read', 'theme', 'palette', 'project', 'experience', 'contact', 'contactEmail', 'terminalCommand', 'flag'].map((k) => num(k, k))),
     list('levels', 'Levels', [num('xp', 'XP needed'), s('name', 'Name')], { summary: 'name' }),
   ]),
