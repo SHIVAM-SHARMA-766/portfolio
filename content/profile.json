@@ -240,6 +240,42 @@
       "associatedWith": "Personal project"
     },
     {
+      "slug": "dev2ops-learn",
+      "name": "dev2ops learn — free DevOps courses",
+      "year": "2026",
+      "featured": false,
+      "role": "Solo — design, build and write",
+      "start": "2026-11",
+      "associatedWith": "Personal project",
+      "cover": "/uploads/proj-learn-home.webp",
+      "summary": "A free learning platform for DevOps: courses split into chapters and short lessons, real commands, and a quiz at the end of each lesson. Progress is saved in the browser, no sign-up needed.",
+      "highlights": [
+        "Courses → chapters → lessons in Markdown; the sidebar is generated from each course's chapter list",
+        "Quizzes with explanations; passing one completes the lesson",
+        "Progress, course progress bars and “continue where you left off”, kept in the browser and synced across tabs",
+        "Static site on the same always-free VM as this portfolio, with its own deploy user, directory and Caddy config"
+      ],
+      "tags": [
+        "Astro",
+        "Starlight",
+        "Markdown",
+        "GitHub Actions",
+        "Caddy"
+      ],
+      "links": [
+        {
+          "label": "Open the courses",
+          "url": "https://learn.dev2ops.in"
+        },
+        {
+          "label": "Source",
+          "url": "https://github.com/SHIVAM-SHARMA-766/dev2ops-learn"
+        }
+      ],
+      "body": "## Why\n\nI learn best by doing, so the courses are short lessons with real commands to run, and a quiz at the end of each one to check the idea stuck. It started inside this portfolio and now runs as its own project at [learn.dev2ops.in](https://learn.dev2ops.in).\n\n![The home page with the Docker course](/uploads/proj-learn-home.webp)\n\n## How it works\n\nEach course is a folder of Markdown files: a `course.json` with the chapters, an overview page, and one file per lesson. Adding a lesson is adding a file; the sidebar, the course page and the progress bars pick it up on the next build.\n\n![A lesson with the chapter sidebar](/uploads/proj-learn-lesson.webp)\n\nThere are no accounts. Completed lessons and passed quizzes are saved in the learner's own browser, so the site stays a fast static site with nothing to store or protect.\n\n## The first course: Docker from zero\n\nContainers explained from first principles: what an image and a container really are, running and inspecting containers, writing a Dockerfile, and running real applications with Docker Compose.",
+      "pages": []
+    },
+    {
       "slug": "assessment-platform",
       "name": "DevOps Assessment Platform",
       "year": "2026",

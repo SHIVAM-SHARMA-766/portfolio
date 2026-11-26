@@ -1,10 +1,9 @@
 # Portfolio
 
 The personal site of Shivam Sharma: a portfolio that plays like a game, written once and
-rendered in three entirely different themes, with a learning site for free courses beside it.
+rendered in three entirely different themes.
 
 - **Portfolio** at the site root: home, about, experience, projects, blog and contact
-- **Learn** at `learn.` on the same domain: courses → chapters → lessons, with quizzes and progress
 
 ## Highlights
 
@@ -13,8 +12,7 @@ rendered in three entirely different themes, with a learning site for free cours
 - **A terminal CTF.** Explore a filesystem built from the portfolio (`ls -a`, `cat`, `grep -r`, `tree`), find five flags hidden in dotfiles, base64, logs, page source and a port-scan mini-game, and `submit` them.
 - **Accounts.** Visitors sign in with Google, GitHub or LinkedIn to save progress across devices; everything earned as a guest comes along. They can delete their account at any time.
 - **Live presence.** See how many people are online and on the same page, with their pointers moving in real time, anonymously.
-- **Learn site** at `learn.`: courses → chapters → lessons with quizzes, progress and search.
-- **Custom admin panel** at `/admin/`: a dashboard of who's online and where, the list of signed-up visitors (with CSV export), and editors for pages and blocks, blog, courses and lessons, profile, media, shop, missions, achievements and settings. Every save is a Git commit that deploys itself in about a minute.
+- **Custom admin panel** at `/admin/`: a dashboard of who's online and where, the list of signed-up visitors (with CSV export), and editors for pages and blocks, blog, a LinkedIn-style profile, media, shop, missions, achievements and settings. Every save is a Git commit that deploys itself in about a minute.
 - **Zero cost.** Static sites plus a single Go binary and SQLite on an always-free VM, served by Caddy with automatic HTTPS.
 
 ## Quick start
@@ -23,12 +21,11 @@ rendered in three entirely different themes, with a learning site for free cours
 nvm use                 # Node 22.23+
 npm install
 npm run dev             # portfolio at http://localhost:4321
-npm run dev:learn       # learn site at http://localhost:4322
 ```
 
 | Command | Does |
 |---|---|
-| `npm run build` | Generate game data, build site, learn and admin into `apps/*/dist` |
+| `npm run build` | Generate game data, build the site and admin into `apps/*/dist` |
 | `npm run build:api` | Build the API binary into `dist/portfolio-api` (needs Go 1.26) |
 | `npm test` / `npm run test:api` | Game-engine unit tests / Go API tests |
 | `npm run test:e2e` | Browser tests of everything against the real API (needs Chromium; `CHROME_PATH`) |
@@ -43,6 +40,8 @@ stays as it was. You can also edit [`content/`](content/) directly and push.
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): how it fits together, and how to add a theme, block, course or achievement
+- [ARCHITECTURE.md](ARCHITECTURE.md): how it fits together, and how to add a theme, block or achievement
 - [docs/DEPLOY.md](docs/DEPLOY.md): hosting, first-time server setup and the release pipeline
 - [docs/ROADMAP.md](docs/ROADMAP.md): what's next
+
+Free courses live in their own project: [dev2ops learn](https://github.com/SHIVAM-SHARMA-766/dev2ops-learn) at https://learn.dev2ops.in.

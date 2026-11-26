@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
 import { palettes } from '@portfolio/tokens';
 import { z } from 'astro/zod';
-import { siteSchema, profileSchema, achievementSchema, courseSchema, shopSchema, type Page } from './schema';
+import { siteSchema, profileSchema, achievementSchema, shopSchema, type Page } from './schema';
 import siteRaw from '../../../../content/site.json';
 import profileRaw from '../../../../content/profile.json';
 import achievementsRaw from '../../../../content/achievements.json';
@@ -82,23 +82,6 @@ export async function getPosts() {
   return all
     .filter((e) => !e.data.draft)
     .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
-}
-
-// Courses are owned by the learn site; the portfolio only lists them.
-const courseFiles = import.meta.glob('../../../../content/courses/*/course.json', { eager: true, import: 'default' });
-const lessonFiles = import.meta.glob('../../../../content/courses/*/*/*.{md,mdx}');
-
-export function getCourses() {
-  return Object.entries(courseFiles)
-    .map(([path, raw]) => {
-      const slug = path.split('/').at(-2)!;
-      const course = parse(courseSchema, raw, `content/courses/${slug}/course.json`);
-      const lessons = Object.keys(lessonFiles).filter((p) => p.includes(`/courses/${slug}/`)).length;
-      const url = site.learnUrl ? `${site.learnUrl.replace(/\/$/, '')}/${slug}/` : '#';
-      return { slug, ...course, lessons, url };
-    })
-    .filter((c) => c.status === 'published')
-    .sort((a, b) => a.order - b.order);
 }
 
 /**

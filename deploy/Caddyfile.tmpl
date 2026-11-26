@@ -97,13 +97,9 @@ __SITE_HOST__ {
 	}
 }
 
-__LEARN_HOST__ {
-	import common
-	import notfound /srv/portfolio/learn
-	root * /srv/portfolio/learn
-	import static
-	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://__SITE_HOST__ wss://__SITE_HOST__; frame-ancestors 'none'"
-}
+
+# Other projects on this host (e.g. dev2ops learn) put their sites here.
+import /etc/caddy/sites/*.caddy
 
 # Previous hostnames (content/site.json previousHosts) redirect here.
 __REDIRECTS__

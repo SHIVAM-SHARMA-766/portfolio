@@ -37,25 +37,6 @@ const posts = readdirSync(join(root, 'content/blog'))
   .filter((f) => f.endsWith('.md') && !isDraft(readFileSync(join(root, 'content/blog', f), 'utf8')))
   .map((f) => `blog/${f.replace(/\.md$/, '')}`);
 
-const courses = [];
-const lessons = [];
-for (const d of readdirSync(join(root, 'content/courses'), { withFileTypes: true })) {
-  if (!d.isDirectory()) continue;
-  const metaPath = join(root, 'content/courses', d.name, 'course.json');
-  if (!existsSync(metaPath)) continue;
-  const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
-  if (meta.status !== 'published') continue;
-  courses.push(d.name);
-  for (const ch of meta.chapters) {
-    const dir = join(root, 'content/courses', d.name, ch.slug);
-    if (!existsSync(dir)) continue;
-    for (const f of readdirSync(dir)) {
-      if (!/\.mdx?$/.test(f) || isDraft(readFileSync(join(dir, f), 'utf8'))) continue;
-      lessons.push(`${d.name}/${ch.slug}/${f.replace(/\.mdx?$/, '')}`);
-    }
-  }
-}
-
 const events = {};
 const add = (id, pts) => { events[id] = pts ?? 0; };
 for (const p of [...pages, ...posts]) { add(ids.visit(p), r.visit); add(ids.read(p), r.read); }
@@ -66,8 +47,6 @@ for (const job of profile.experience) for (const e of job.engagements ?? []) add
 add(ids.contact('email'), r.contactEmail);
 for (const s of site.socials) add(ids.contact(s.label), r.contact);
 for (const c of TERMINAL_COMMANDS) add(ids.terminal(c), r.terminalCommand);
-for (const l of lessons) { add(ids.lesson(l), r.lesson); add(ids.quiz(l), r.quiz); }
-for (const c of courses) add(ids.course(c), r.course);
 for (const s of SECRETS) add(ids.secret(s), 0);
 for (const m of missions) add(ids.flag(m.id), m.reward ?? r.flag);
 // Clicking anywhere earns a point, for the first clickCap clicks.

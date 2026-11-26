@@ -8,7 +8,7 @@
   "email": "developer.shivamsharma@gmail.com",
   "siteUrl": "https://portfolio.dev2ops.in",
   "learnUrl": "https://learn.dev2ops.in",
-  "cookieDomain": ".dev2ops.in",
+  "cookieDomain": "",
   "socials": [
     {
       "label": "GitHub",
@@ -29,13 +29,10 @@
       "theme": 10,
       "palette": 5,
       "terminalCommand": 3,
-      "lesson": 15,
-      "quiz": 20,
       "project": 15,
       "experience": 5,
       "contact": 5,
       "contactEmail": 10,
-      "course": 50,
       "flag": 25,
       "click": 1
     },

@@ -51,7 +51,7 @@ printf '[Service]\nMemoryMax=150M\n' > /etc/systemd/system/caddy.service.d/limit
 
 # 2. deploy user: key restricted to rsync inside /srv/portfolio
 id deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash deploy
-mkdir -p /srv/portfolio/{site,learn,admin,api} /home/deploy/.ssh /var/log/caddy
+mkdir -p /srv/portfolio/{site,admin,api} /home/deploy/.ssh /var/log/caddy /etc/caddy/sites
 echo "command=\"/usr/bin/rrsync /srv/portfolio\",restrict $PUBKEY" > /home/deploy/.ssh/authorized_keys
 chown -R deploy:deploy /home/deploy/.ssh /srv/portfolio
 chmod 700 /home/deploy/.ssh && chmod 600 /home/deploy/.ssh/authorized_keys

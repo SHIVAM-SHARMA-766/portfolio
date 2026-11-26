@@ -101,10 +101,6 @@
       "limit": 3
     },
     {
-      "type": "courses",
-      "heading": "Learn with me"
-    },
-    {
       "type": "contact",
       "heading": "Let's work together",
       "body": "Have a cloud, security or DevOps problem? I'd like to hear about it."

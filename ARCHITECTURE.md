@@ -1,7 +1,7 @@
 # Architecture
 
-Two static sites built from one content folder, a small Go API beside them, and a
-custom admin panel. Content changes are Git commits; CI builds, tests and deploys
+A static site built from one content folder, a small Go API beside it, and a custom
+admin panel. (The courses moved to their own project, [dev2ops learn](https://github.com/SHIVAM-SHARMA-766/dev2ops-learn), on 2026-11-26.) Content changes are Git commits; CI builds, tests and deploys
 everything to one always-free OCI VM.
 
 ```
@@ -20,7 +20,6 @@ everything to one always-free OCI VM.
 |---|---|
 | `content/` | **All content.** Pages, blog, courses, profile, site settings, shop, missions, achievements. The admin edits only this folder (plus `apps/site/public/uploads`). |
 | `apps/site/` | Portfolio (Astro): three themes in `src/themes/<theme>/`, schema in `src/lib/schema.ts` |
-| `apps/learn/` | Learn site (Astro Starlight), lessons read from `content/courses` |
 | `apps/admin/` | Admin panel (Preact + Vite SPA, served at `/admin/`) |
 | `apps/api/` | Go API: visitor sign-in, saved progress, coin shop, live presence, admin endpoints |
 | `packages/game/` | Game engine (XP, levels, achievements), account sync, live cursors, shared dialogs, event-id helpers |
@@ -228,11 +227,10 @@ Stages: new, contacted, engaged, opportunity, archived.
 
 ## Learn site
 
-Starlight with its loader pointed at `content/courses`, so `markdown.processedDirs`
-includes that folder (callouts) and the sidebar is built explicitly from `course.json`
-chapters and lesson `sidebar.order` (autogenerate only sees `src/content/docs`). Overrides:
-`Head` (game config), `ThemeSelect` (live count, sign-in, XP, palettes, dialogs),
-`Footer` (quiz, mark complete, course progress).
+Moved out to its own repository, [dev2ops-learn](https://github.com/SHIVAM-SHARMA-766/dev2ops-learn)
+(served at `learn.dev2ops.in` from the same VM, with its own deploy user and Caddy file in
+`/etc/caddy/sites/`). The portfolio only links to it (`site.learnUrl`). The main Caddyfile
+imports `/etc/caddy/sites/*.caddy` so other projects on the host can add their sites.
 
 ## Build, test, deploy
 

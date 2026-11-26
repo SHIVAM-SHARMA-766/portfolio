@@ -90,32 +90,6 @@
       }
     },
     {
-      "id": "student",
-      "title": "Student",
-      "description": "Complete your first lesson.",
-      "icon": "🎓",
-      "bonus": 10,
-      "hidden": false,
-      "rule": {
-        "type": "events",
-        "prefix": "lesson:",
-        "min": 1
-      }
-    },
-    {
-      "id": "quiz-master",
-      "title": "Quiz master",
-      "description": "Pass three quizzes.",
-      "icon": "🧠",
-      "bonus": 25,
-      "hidden": false,
-      "rule": {
-        "type": "events",
-        "prefix": "quiz:",
-        "min": 3
-      }
-    },
-    {
       "id": "say-hello",
       "title": "Say hello",
       "description": "Open a way to contact me.",
@@ -150,19 +124,6 @@
       "rule": {
         "type": "event",
         "id": "secret:sudo-hire"
-      }
-    },
-    {
-      "id": "graduate",
-      "title": "Graduate",
-      "description": "Complete every lesson of a course.",
-      "icon": "📜",
-      "bonus": 50,
-      "hidden": false,
-      "rule": {
-        "type": "events",
-        "prefix": "course:",
-        "min": 1
       }
     },
     {

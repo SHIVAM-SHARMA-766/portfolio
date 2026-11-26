@@ -50,7 +50,6 @@ export const blockTypes = {
   contact: { label: 'Contact', fields: [heading, text('body', 'Text')] },
   cta: { label: 'Call to action', fields: [s('heading', 'Heading', { required: true }), text('body', 'Text'), s('label', 'Button label'), s('href', 'Button link')] },
   posts: { label: 'Blog posts', fields: [heading, num('limit', 'Maximum')] },
-  courses: { label: 'Courses', fields: [heading] },
 };
 
 export const pageFields = [
@@ -73,44 +72,6 @@ export const postFields = [
   img('cover', 'Cover image', { help: '1600×840 works best. Shown on the post, on its card, and when the link is shared.' }),
   s('coverAlt', 'Cover description (for screen readers)'),
   bool('draft', 'Draft'),
-];
-
-export const lessonFields = [
-  s('title', 'Title', { required: true }),
-  s('description', 'Description'),
-  obj('sidebar', 'Sidebar', [num('order', 'Order in chapter')]),
-  sel('difficulty', 'Difficulty', ['', 'beginner', 'intermediate', 'advanced']),
-  num('minutes', 'Reading time (minutes)'),
-  s('lab', 'Browser lab URL'),
-  bool('draft', 'Draft'),
-  list('quiz', 'Quiz', [s('question', 'Question'), strs('options', 'Options'), num('answer', 'Correct option (0 = first)'), text('explanation', 'Explanation')], { summary: 'question' }),
-];
-
-export const overviewFields = [s('title', 'Title', { required: true }), s('description', 'Description')];
-
-export const courseFields = [
-  s('title', 'Title', { required: true }), text('description', 'Description'), s('level', 'Level'), s('duration', 'Duration'), s('icon', 'Icon (emoji)'),
-  sel('status', 'Status', ['draft', 'published']), num('order', 'Order'), strs('tags', 'Tags'), strs('prerequisites', 'Prerequisites'),
-  list('chapters', 'Chapters', [s('slug', 'Folder name', { pattern: '^[a-z0-9-]+$' }), s('title', 'Title')], { summary: 'title' }),
-];
-
-// ---- profile sections (LinkedIn-style) -------------------------------------------
-
-export const projectFields = [
-  s('name', 'Project name', { required: true }),
-  text('summary', 'Description', { help: 'One or two sentences, shown on the card and at the top of the project page.' }),
-  tags('tags', 'Skills', { suggest: skillsSuggest, help: 'Shown as the stack. Press Enter after each.' }),
-  img('cover', 'Media: cover image', { help: '16:9 works best: a screenshot or diagram. Without one, a cover is generated from the theme colours.' }),
-  month('start', 'Start date'), month('end', 'End date', { present: 'I am currently working on this' }),
-  s('associatedWith', 'Associated with', { suggest: () => [...pool.companies, 'Personal project', 'Open source', 'University'], placeholder: 'Personal project' }),
-  s('role', 'My role', { placeholder: 'Solo — design and build' }),
-  list('links', 'Links (source, live demo, release…)', [s('label', 'Label'), url('url', 'URL')], { summary: 'label' }),
-  bool('featured', 'Featured on the home page'),
-  strs('highlights', 'Key points', { help: 'Shown in the “At a glance” box. One per line.' }),
-  md('body', 'Full story', { help: 'The problem, what you built, how, and what you learned. Paste or drop screenshots straight into the text.' }),
-  subPages,
-  s('slug', 'URL slug', { pattern: '^[a-z0-9-]+$', help: 'The page is /projects/<slug>/. Changing it breaks old links.' }),
-  s('year', 'Year (only if there are no dates)'),
 ];
 
 export const engagementFields = [
@@ -193,7 +154,7 @@ export const siteFields = [
   sel('defaultTheme', 'Default theme', ['terminal', 'quest', 'studio']),
   obj('defaultPalettes', 'Default palettes', [s('terminal', 'Terminal'), s('quest', 'Quest'), s('studio', 'Studio')]),
   obj('game', 'Game', [
-    obj('rewards', 'XP per action', ['visit', 'read', 'theme', 'palette', 'project', 'experience', 'contact', 'contactEmail', 'terminalCommand', 'lesson', 'quiz', 'course', 'flag'].map((k) => num(k, k))),
+    obj('rewards', 'XP per action', ['visit', 'read', 'theme', 'palette', 'project', 'experience', 'contact', 'contactEmail', 'terminalCommand', 'flag'].map((k) => num(k, k))),
     list('levels', 'Levels', [num('xp', 'XP needed'), s('name', 'Name')], { summary: 'name' }),
   ]),
 ];

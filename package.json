@@ -4,7 +4,6 @@
   "type": "module",
   "workspaces": [
     "apps/site",
-    "apps/learn",
     "apps/admin",
     "packages/*"
   ],
@@ -13,12 +12,10 @@
   },
   "scripts": {
     "dev": "npm run dev -w @portfolio/site",
-    "dev:learn": "npm run dev -w @portfolio/learn",
     "dev:admin": "npm run dev -w @portfolio/admin",
     "game-data": "node scripts/build-game-data.mjs",
-    "build": "npm run game-data && npm run build -w @portfolio/site && npm run build -w @portfolio/learn && npm run build -w @portfolio/admin",
+    "build": "npm run game-data && npm run build -w @portfolio/site && npm run build -w @portfolio/admin",
     "build:site": "npm run build -w @portfolio/site",
-    "build:learn": "npm run build -w @portfolio/learn",
     "build:admin": "npm run build -w @portfolio/admin",
     "build:api": "npm run game-data && cd apps/api && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags=\"-s -w\" -o ../../dist/portfolio-api .",
     "test": "node --test \"packages/game/test/*.test.js\"",

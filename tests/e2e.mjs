@@ -86,9 +86,7 @@ function serve(dir, port) {
 }
 
 const siteSrv = await serve(join(root, 'apps/site/dist'), 4501);
-const learnSrv = await serve(join(root, 'apps/learn/dist'), 4502);
 const S = siteSrv.local;
-const L = learnSrv.local;
 
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/chromium', args: ['--no-sandbox'] });
 const SHOTS = process.env.E2E_SHOTS; // optional folder for screenshots
@@ -343,22 +341,6 @@ try {
     await other.close();
   });
 
-  await step('learn: quiz passing completes the lesson and syncs', async () => {
-    await page.goto(`${L}/docker/introduction/what-is-docker/`);
-    await page.waitForFunction(() => window.game?.account?.ready);
-    const qs = page.locator('.quiz-q');
-    for (let i = 0; i < await qs.count(); i++) {
-      const answer = await qs.nth(i).getAttribute('data-answer');
-      await qs.nth(i).locator(`input[value="${answer}"]`).check();
-    }
-    await page.click('.quiz button[type=submit]');
-    await page.waitForSelector('[data-complete][disabled]');
-    await page.waitForTimeout(1600);
-    const me = await (await page.request.get(`${S}/api/me`)).json();
-    assert.ok('quiz:docker/introduction/what-is-docker' in me.state.events, 'quiz event saved on the server');
-    assert.ok(await page.locator('#starlight__sidebar a.lesson-done').count() >= 1);
-  });
-
   await step('admin: sign in, dashboard, contacts and the CRM', async () => {
     const a = await ctx.newPage();
     a.on('pageerror', (e) => errors.push('admin: ' + e.message));
@@ -422,7 +404,6 @@ try {
 } finally {
   await browser.close();
   siteSrv.srv.close();
-  learnSrv.srv.close();
   api.kill();
 }
 

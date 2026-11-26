@@ -1,7 +1,7 @@
 // Builds the terminal's virtual filesystem from content at build time, and
 // plants each mission's flag where its `kind` says it belongs.
 import { createHash } from 'node:crypto';
-import { profile, site, getPosts, getNav, getCourses, slugify, formatMonth, photo } from '../../lib/content';
+import { profile, site, getPosts, getNav, slugify, formatMonth, photo } from '../../lib/content';
 import { bases } from '../../lib/details';
 import missionsRaw from '../../../../../content/missions.json';
 
@@ -62,8 +62,6 @@ export async function buildFs(theme: string) {
     blog[`${p.id}.md`] = file(`# ${p.data.title}\n${p.data.date.toISOString().slice(0, 10)}\n\n${p.data.description ?? ''}\n\nRead it: open blog/${p.id}.md`, { href: `/blog/${p.id}/` });
   }
 
-  const learn: Record<string, FsNode> = {};
-  for (const c of getCourses()) learn[c.slug] = { type: 'link', href: c.url };
 
   const contactLines = ['#!/bin/sh', '# ./contact.sh — ways to reach me', ''];
   if (site.email) contactLines.push(`echo "email:  ${site.email}"`);
@@ -83,7 +81,7 @@ export async function buildFs(theme: string) {
     experience: dir(experience),
     projects: dir(projects),
     blog: dir(blog),
-    learn: dir(learn),
+    ...(site.learnUrl ? { 'learn.url': { type: 'link', href: site.learnUrl } as FsNode } : {}),
     ...(photo ? { 'portrait.jpg': file('', { href: photo.cutout ?? photo.src }) } : {}),
     '.secrets': dir(secrets),
     '.bash_history': file(['ls -a', 'cat .secrets/todo.txt', 'grep -r incident experience', 'hack', 'shop', 'sudo hire shivam'].join('\n')),

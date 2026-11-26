@@ -273,68 +273,10 @@ function Blog({ params = {} }) {
   return <ListPage title="Blog" intro="Posts start as drafts; switch off “Draft” to publish." items={items} onNew={create} newLabel="+ New post" />;
 }
 
-function Courses() {
-  const [files] = useFiles();
-  const items = files?.filter((p) => /^content\/courses\/[^/]+\/course\.json$/.test(p)).map((p) => {
-    const slug = p.split('/')[2];
-    return { label: slug, sub: 'Details, chapters and lessons', href: `#/course?slug=${slug}` };
-  });
-  const create = async () => {
-    const title = prompt('Course title (e.g. Kubernetes basics)');
-    if (!title) return;
-    const slug = slugify(title);
-    try {
-      await api.save(`content/courses/${slug}/course.json`, toJSON({ title, description: '', level: 'Beginner', status: 'draft', order: 10, chapters: [{ slug: 'introduction', title: '1. Introduction' }] }));
-      await api.save(`content/courses/${slug}/index.md`, stringifyFrontmatter({ title, description: '', sidebar: { order: 0, label: 'Course overview' } }, `Welcome to ${title}.`));
-      savedAt = Date.now();
-      toast('Course created as a draft.');
-      navigate(`#/course?slug=${slug}`);
-    } catch (e) { toast(e.message, 'err'); }
-  };
-  return <ListPage title="Courses" intro="Courses live on the learn site. A course is hidden until its status is “published”." items={items} onNew={create} newLabel="+ New course" />;
-}
-
-function Course({ slug }) {
-  const [files, reload] = useFiles();
-  const [meta, setMeta] = useState(null);
-  useEffect(() => { api.file(`content/courses/${slug}/course.json`).then((f) => setMeta(JSON.parse(f.content))).catch((e) => toast(e.message, 'err')); }, [slug]);
-  const lessons = (ch) => (files ?? []).filter((p) => p.startsWith(`content/courses/${slug}/${ch}/`) && /\.mdx?$/.test(p));
-  const newLesson = (ch) => {
-    const title = prompt('Lesson title');
-    if (!title) return;
-    const order = lessons(ch).length + 1;
-    sessionStorage.setItem('admin.new', JSON.stringify({ data: { title, description: '', sidebar: { order }, difficulty: 'beginner', minutes: 10, draft: true, quiz: [] }, body: 'Write the lesson here.' }));
-    navigate(editHref(`content/courses/${slug}/${ch}/${slugify(title)}.md`, `&new=1&course=${slug}`));
-  };
-  return (
-    <>
-      <a class="back" href="#/courses" onClick={(e) => { e.preventDefault(); navigate('#/courses'); }}>← Courses</a>
-      <div class="head-row"><h1>{meta?.title ?? slug}</h1><span class={`pill ${meta?.status === 'published' ? 'pill--ok' : ''}`}>{meta?.status ?? ''}</span></div>
-      <div class="cols">
-        <a class="card card--link" href={editHref(`content/courses/${slug}/course.json`, `&course=${slug}`)} onClick={(e) => { e.preventDefault(); navigate(e.currentTarget.getAttribute('href')); }}><b>Course details & chapters</b><small>Title, level, status, chapter list</small></a>
-        <a class="card card--link" href={editHref(`content/courses/${slug}/index.md`, `&course=${slug}`)} onClick={(e) => { e.preventDefault(); navigate(e.currentTarget.getAttribute('href')); }}><b>Overview page</b><small>The course's landing page</small></a>
-      </div>
-      {(meta?.chapters ?? []).map((ch) => (
-        <section class="card">
-          <div class="head-row"><h2>{ch.title}</h2><button onClick={() => newLesson(ch.slug)}>+ Lesson</button></div>
-          <ul class="list list--compact">
-            {lessons(ch.slug).map((p) => <li><a href={editHref(p, `&course=${slug}`)} onClick={(e) => { e.preventDefault(); navigate(e.currentTarget.getAttribute('href')); }}>{p.split('/').pop().replace(/\.mdx?$/, '')}</a></li>)}
-            {!lessons(ch.slug).length && <li class="muted">No lessons yet.</li>}
-          </ul>
-        </section>
-      ))}
-      <p class="muted">Add or rename chapters under “Course details & chapters”. <button class="link" onClick={reload}>Refresh</button></p>
-    </>
-  );
-}
-
 /** Chooses the right schema for a content path. */
 function editorFor(path) {
   if (/^content\/pages\/.+\.json$/.test(path)) return { kind: 'json', fields: S.pageFields, title: 'Page', back: ['#/pages', 'Pages'], deletable: true, viewUrl: (d) => (d.draft ? null : `/${d.slug ? `${d.slug}/` : ''}`) };
   if (/^content\/blog\/.+\.md$/.test(path)) return { kind: 'md', fields: S.postFields, title: 'Blog post', back: ['#/blog', 'Blog'], deletable: true, viewUrl: (d) => (d.draft ? null : `/blog/${path.split('/').pop().replace('.md', '')}/`) };
-  if (/^content\/courses\/[^/]+\/course\.json$/.test(path)) return { kind: 'json', fields: S.courseFields, title: 'Course details' };
-  if (/^content\/courses\/[^/]+\/index\.md$/.test(path)) return { kind: 'md', fields: S.overviewFields, title: 'Course overview', bodyLabel: 'Overview' };
-  if (/^content\/courses\/[^/]+\/[^/]+\/.+\.mdx?$/.test(path)) return { kind: 'md', fields: S.lessonFields, title: 'Lesson', bodyLabel: 'Lesson', deletable: true };
   const single = {
     'content/site.json': ['Site settings', S.siteFields],
     'content/shop.json': ['Shop', S.shopFields],
@@ -353,7 +295,7 @@ function Edit({ params }) {
     try { return JSON.parse(sessionStorage.getItem('admin.new')); } catch { return null; }
   }, [path, params.new]);
   if (!ed) return <p class="error">This file can't be edited here.</p>;
-  const back = params.course ? [`#/course?slug=${params.course}`, 'Course'] : ed.back;
+  const back = ed.back;
   return (
     <FileEditor key={path} path={path} kind={ed.kind} fields={ed.fields} title={ed.title} bodyLabel={ed.bodyLabel} initial={initial} back={back} viewUrl={ed.viewUrl}
       onSaved={() => { if (params.new) { sessionStorage.removeItem('admin.new'); history.replaceState(null, '', editHref(path, params.course ? `&course=${params.course}` : '')); } }}
@@ -419,7 +361,7 @@ function Media() {
 const NAV = [
   ['', [['#/dashboard', 'Dashboard', 'dashboard'], ['#/contacts', 'Contacts', 'contacts']]],
   ['Profile', [['#/intro', 'Intro', 'user'], ['#/about-me', 'About', 'note'], ['#/experience', 'Experience', 'briefcase'], ['#/education', 'Education', 'book'], ['#/certifications', 'Licenses & certifications', 'trophy'], ['#/projects', 'Projects', 'projects'], ['#/skills', 'Skills', 'check'], ['#/languages', 'Languages', 'globe'], ['#/awards', 'Honors & awards', 'star'], ['#/volunteering', 'Volunteering', 'contacts']]],
-  ['Website', [['#/pages', 'Pages', 'pages'], ['#/blog', 'Blog', 'pen'], ['#/courses', 'Courses', 'book'], ['#/media', 'Media library', 'image']]],
+  ['Website', [['#/pages', 'Pages', 'pages'], ['#/blog', 'Blog', 'pen'], ['#/media', 'Media library', 'image']]],
   ['Game', [[editHref('content/shop.json'), 'Shop', 'store'], [editHref('content/missions.json'), 'Terminal missions', 'flag'], [editHref('content/achievements.json'), 'Achievements', 'trophy']]],
   ['Settings', [[editHref('content/site.json'), 'Site settings', 'settings']]],
 ];
@@ -429,7 +371,7 @@ function isOn(current, href) {
   if (current === href) return true;
   if (href.includes('?')) return false;
   const path = current.split('?')[0];
-  return path === href || (href === '#/contacts' && path === '#/contact') || (href === '#/courses' && path === '#/course');
+  return path === href || (href === '#/contacts' && path === '#/contact');
 }
 
 /** Everything the command palette can jump to: screens, contacts and content files. */
@@ -484,8 +426,6 @@ function App() {
     case '/job': page = <ProfileSection key="experience" kind="experience" params={{ edit: route.params.i, new: route.params.new }} />; break;
     case '/intro': page = <FileEditor key="intro" path="content/site.json" kind="json" fields={S.introFields} title="Intro" viewUrl={() => '/'} />; break;
     case '/about-me': page = <FileEditor key="about" path="content/profile.json" kind="json" fields={S.aboutFields} title="About" viewUrl={() => '/about/'} />; break;
-    case '/courses': page = <Courses />; break;
-    case '/course': page = <Course slug={route.params.slug} />; break;
     case '/edit': page = <Edit params={route.params} />; break;
     case '/media': page = <Media />; break;
     default: page = <Dashboard />;

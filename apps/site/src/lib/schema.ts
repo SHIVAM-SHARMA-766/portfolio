@@ -46,7 +46,6 @@ export const blockSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('contact'), heading: z.string().nullish(), body: z.string().nullish() }),
   z.object({ type: z.literal('cta'), heading: z.string(), body: z.string().nullish(), label: z.string(), href: z.string() }),
   z.object({ type: z.literal('posts'), heading: z.string().nullish(), limit: z.number().int().positive().nullish() }),
-  z.object({ type: z.literal('courses'), heading: z.string().nullish() }),
 ]);
 export type Block = z.infer<typeof blockSchema>;
 export type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;

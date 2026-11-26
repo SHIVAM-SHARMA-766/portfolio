@@ -1,4 +1,4 @@
-# Build, test and deploy both sites.
+# Build, test and deploy the portfolio (site, admin, API).
 #
 # Every push and pull request: JS and Go tests, build, browser end-to-end tests
 # (which run the real API binary).
@@ -83,7 +83,6 @@ jobs:
             dist/portfolio-api "deploy@${DEPLOY_HOST}:api/"
           sync_dir apps/admin/dist/ admin/
           sync_dir apps/site/dist/ site/
-          sync_dir apps/learn/dist/ learn/
           echo "Deployed $(git rev-parse --short HEAD)"
 
       - name: Smoke test the live sites
@@ -91,6 +90,6 @@ jobs:
         continue-on-error: true # DNS may not point at the host yet
         run: |
           sleep 5 # the API restarts when its binary changes
-          for url in $(node -p "const s=require('./content/site.json'); [s.siteUrl + '/terminal/', s.learnUrl + '/', s.siteUrl + '/admin/', s.apiUrl + '/health'].join(' ')"); do
+          for url in $(node -p "const s=require('./content/site.json'); [s.siteUrl + '/terminal/', s.siteUrl + '/admin/', s.apiUrl + '/health'].join(' ')"); do
             curl -fsS --max-time 20 -o /dev/null -w "%{http_code} $url\n" "$url"
           done
