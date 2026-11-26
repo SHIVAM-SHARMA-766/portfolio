@@ -6,9 +6,9 @@
   "description": "Portfolio of Shivam Sharma, a DevOps / DevSecOps engineer working with AWS, Terraform, Kubernetes and cloud security.",
   "location": "Delhi, India",
   "email": "developer.shivamsharma@gmail.com",
-  "siteUrl": "https://shivamsharma.duckdns.org",
-  "learnUrl": "https://learn.shivamsharma.duckdns.org",
-  "cookieDomain": ".shivamsharma.duckdns.org",
+  "siteUrl": "https://portfolio.dev2ops.in",
+  "learnUrl": "https://learn.dev2ops.in",
+  "cookieDomain": ".dev2ops.in",
   "socials": [
     {
       "label": "GitHub",
@@ -67,9 +67,17 @@
     ],
     "clickCap": 100
   },
-  "apiUrl": "https://shivamsharma.duckdns.org/api",
+  "apiUrl": "https://portfolio.dev2ops.in/api",
   "photo": "/images/profile.jpg",
   "photoCutout": "/images/profile-cutout.webp",
   "photoAlt": "Portrait of Shivam Sharma",
-  "photoPosition": "50% 25%"
+  "photoPosition": "50% 25%",
+  "previousHosts": {
+    "site": [
+      "shivamsharma.duckdns.org"
+    ],
+    "learn": [
+      "learn.shivamsharma.duckdns.org"
+    ]
+  }
 }

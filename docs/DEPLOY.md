@@ -6,8 +6,8 @@
 | Web server | Caddy: static files, `/api/*` proxied to the API, automatic HTTPS (Let's Encrypt), capped at 150 MB RAM |
 | API | `portfolio-api` systemd service (user `portfolio`, 120 MB cap, hardened), SQLite in `/var/lib/portfolio-api`, secrets in `/etc/portfolio-api/env` |
 | Files | `/srv/portfolio/{site,learn,admin,api}`, owned by the `deploy` user |
-| DNS | DuckDNS: `shivamsharma.duckdns.org` and `learn.shivamsharma.duckdns.org` (DuckDNS resolves every sub-name to the same IP) |
-| Live | https://shivamsharma.duckdns.org · https://learn.shivamsharma.duckdns.org · admin at `/admin/` |
+| DNS | `dev2ops.in` (Hostinger): A records `portfolio` and `learn` → the VM. The old DuckDNS names (`shivamsharma.duckdns.org`, `learn.shivamsharma.duckdns.org`) 301 to the new hosts (`previousHosts` in `content/site.json`) |
+| Live | https://portfolio.dev2ops.in · https://learn.dev2ops.in · admin at `/admin/` |
 | Network | Terraform in the `infra` repo: a separate `n8n-web-nsg` opens 80/443 on this instance only |
 | Pipeline | `.github/workflows/deploy.yml` |
 

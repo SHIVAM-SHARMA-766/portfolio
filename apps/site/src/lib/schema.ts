@@ -92,6 +92,8 @@ export const siteSchema = z.object({
   photoAlt: z.string().nullish(),
   photoPosition: z.string().nullish(),
   cookieDomain: z.string().default(''),
+  // Old hostnames that now redirect (301) to the site / learn site (deploy/Caddyfile.tmpl)
+  previousHosts: z.object({ site: z.array(z.string()).default([]), learn: z.array(z.string()).default([]) }).default({ site: [], learn: [] }),
   socials: z.array(link).default([]),
   defaultTheme: z.enum(['terminal', 'quest', 'studio']),
   defaultPalettes: z.record(z.string(), z.string()),
