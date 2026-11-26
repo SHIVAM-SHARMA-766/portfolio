@@ -6,7 +6,7 @@ import { readdir, mkdir, stat } from 'node:fs/promises';
 import { join, dirname, relative, resolve } from 'node:path';
 
 const WIDTHS = [480, 960];
-const dist = resolve(import.meta.dirname, '../apps/site/dist/uploads');
+const dist = resolve(import.meta.dirname, '../apps/site', process.argv[2] ?? 'dist', 'uploads');
 
 async function* walk(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {

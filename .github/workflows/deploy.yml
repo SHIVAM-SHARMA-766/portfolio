@@ -50,6 +50,8 @@ jobs:
       - name: API tests
         run: npm run test:api
       - run: npm run build
+      - name: Build the draft preview (drafts included, private)
+        run: npm run build:preview
       - name: Build API binary
         run: npm run build:api
 
@@ -84,6 +86,7 @@ jobs:
             dist/portfolio-api "deploy@${DEPLOY_HOST}:api/"
           sync_dir apps/admin/dist/ admin/
           sync_dir apps/site/dist/ site/
+          sync_dir apps/site/dist-preview/ preview/
           echo "Deployed $(git rev-parse --short HEAD)"
 
       - name: Smoke test the live sites

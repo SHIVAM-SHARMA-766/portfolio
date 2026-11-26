@@ -22,6 +22,7 @@ import (
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/game"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/httpx"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/live"
+	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/preview"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/store"
 )
 
@@ -89,6 +90,7 @@ func buildHandler(cfg *config.Config, st *store.Store) (http.Handler, *server) {
 	admin.New(cfg, st, hub).Routes(mux)
 	contact.New(cfg, st, cat.SiteURL).Routes(mux)
 	analytics.New(st, cat.SiteURL).Routes(mux)
+	preview.New(cfg.SessionSecret, !cfg.Dev).Routes(mux)
 	if cfg.Dev {
 		// Local testing only: sign in without an OAuth provider. Never enabled in
 		// production (DEV is unset in /etc/portfolio-api/env).

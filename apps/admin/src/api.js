@@ -31,6 +31,7 @@ export const api = {
   deleteNote: (id, note) => call('DELETE', `/visitors/${id}/notes/${note}`),
   insights: () => call('GET', '/insights'),
   messages: () => call('GET', '/messages'),
+  previewLink: (path) => call('POST', '/preview-link', { path }),
   analytics: (days) => call('GET', `/analytics?days=${days}`),
   markMessage: (id, read) => call('PATCH', `/messages/${id}`, { read }),
   deleteMessage: (id) => call('DELETE', `/messages/${id}`),

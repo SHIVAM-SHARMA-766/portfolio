@@ -6,7 +6,7 @@ import { Form, MarkdownEditor } from './fields.jsx';
 import * as S from './schemas.js';
 import { HistoryDrawer } from './history.jsx';
 import { Icon, Menu, ask } from './ui.jsx';
-import { navigate, setDirty, toast, published, editHref } from './core.js';
+import { navigate, setDirty, toast, published, editHref, previewSite_ } from './core.js';
 
 // ---- file editors ----------------------------------------------------------
 
@@ -74,7 +74,14 @@ export function FileEditor({ path, kind, fields, title, initial = null, bodyLabe
   const main = fields.filter((f) => !f.side && !f.hidden);
   const groups = [...new Set(fields.filter((f) => f.side && !f.hidden).map((f) => f.side))];
   const url = viewUrl?.(state.data);
-  const showPreview = preview && !isNew && url && !draft;
+  // Drafts have no live page; with a draft-preview site they can still be previewed privately.
+  const draftPath = draft && !isNew && previewSite_() ? viewUrl?.({ ...state.data, draft: false }) : null;
+  const canPreview = !isNew && ((url && !draft) || !!draftPath);
+  const showPreview = preview && canPreview;
+  const openDraft = async () => {
+    const w = window.open('', '_blank'); // opened now, so popup blockers allow it
+    try { const d = await api.previewLink(draftPath); if (w) w.location.href = d.url; } catch (e) { w?.close(); toast(e.message, 'err'); }
+  };
   return (
     <div class="editor">
       {history && <HistoryDrawer path={path} title={state.data?.title || title} onClose={() => setHistory(false)} onRestored={load} />}
@@ -89,9 +96,10 @@ export function FileEditor({ path, kind, fields, title, initial = null, bodyLabe
           </span>
         </div>
         <div class="actions">
-          {!isNew && url && !draft && <button type="button" class={preview ? 'is-active' : ''} onClick={togglePreview} title="Show the live page next to the editor"><Icon name="eye" />Preview</button>}
+          {canPreview && <button type="button" class={preview ? 'is-active' : ''} onClick={togglePreview} title={draftPath ? 'Show the private draft preview next to the editor' : 'Show the live page next to the editor'}><Icon name="eye" />{draftPath ? 'Preview draft' : 'Preview'}</button>}
           {!isNew && <Menu items={[
             url && !draft && { label: 'View on site', icon: 'external', href: url, external: true },
+            draftPath && { label: 'Open draft preview in a new tab', icon: 'external', onClick: openDraft },
             { label: 'Version history', icon: 'activity', onClick: () => setHistory(true) },
             publishable && !draft && { label: 'Switch to draft', icon: 'eye', onClick: () => save({ draft: true }) },
             { label: 'Copy file path', icon: 'copy', onClick: () => { navigator.clipboard?.writeText(path); toast('Path copied.'); } },
@@ -117,7 +125,7 @@ export function FileEditor({ path, kind, fields, title, initial = null, bodyLabe
             <section class="panel side-panel side-panel--inline"><h2>{g}</h2><Form fields={fields.filter((f) => f.side === g && !f.hidden)} value={state.data} onChange={(data) => edit({ data })} /></section>
           ))}
         </div>
-        {showPreview && <LivePreview url={url} changed={changed} onClose={togglePreview} />}
+        {showPreview && <LivePreview url={url} draftPath={draftPath} changed={changed} onClose={togglePreview} />}
         {!showPreview && groups.length > 0 && (
           <aside class="editor-side">
             {groups.map((g) => (
@@ -133,11 +141,18 @@ export function FileEditor({ path, kind, fields, title, initial = null, bodyLabe
   );
 }
 
-/** The live page next to the editor. It reloads by itself when a save goes live. */
-function LivePreview({ url, changed, onClose }) {
+/** The page next to the editor: the live page, or for a draft the private
+ *  draft-preview site. It reloads by itself when a save goes live. */
+function LivePreview({ url, draftPath = null, changed, onClose }) {
   const [device, setDevice] = useState('desktop');
   const [key, setKey] = useState(0);
   const [fresh, setFresh] = useState(false);
+  const [src, setSrc] = useState(draftPath ? null : url);
+  useEffect(() => {
+    if (!draftPath) { setSrc(url); return; }
+    setSrc(null);
+    api.previewLink(draftPath).then((d) => setSrc(d.url)).catch((e) => toast(e.message, 'err'));
+  }, [draftPath, url, key]);
   useEffect(() => {
     const live = () => { setKey((k) => k + 1); setFresh(true); setTimeout(() => setFresh(false), 4000); };
     addEventListener('admin-live', live);
@@ -152,12 +167,12 @@ function LivePreview({ url, changed, onClose }) {
         </span>
         <span class="spacer" />
         <button type="button" class="icon-btn" title="Reload" onClick={() => setKey((k) => k + 1)}>↻</button>
-        <a class="icon-btn" href={url} target="_blank" rel="noopener" title="Open in a new tab"><Icon name="external" /></a>
+        {src && <a class="icon-btn" href={src} target="_blank" rel="noopener" title="Open in a new tab"><Icon name="external" /></a>}
         <button type="button" class="icon-btn" title="Close preview" onClick={onClose}><Icon name="x" /></button>
       </div>
-      <p class={`preview-note ${fresh ? 'is-fresh' : ''}`}>{fresh ? '✓ Updated with your latest change.' : changed ? 'Showing the live page. Your unsaved edits appear here about a minute after you save.' : 'Showing the live page.'}</p>
+      <p class={`preview-note ${fresh ? 'is-fresh' : ''}`}>{fresh ? '✓ Updated with your latest change.' : draftPath ? 'Private draft preview: only you can see it. It updates a few minutes after you save the draft.' : changed ? 'Showing the live page. Your unsaved edits appear here about a minute after you save.' : 'Showing the live page.'}</p>
       <div class={`preview-frame preview-frame--${device}`}>
-        <iframe key={key} src={url} title="Live preview" loading="lazy" />
+        {src ? <iframe key={`${key}-${src}`} src={src} title={draftPath ? 'Draft preview' : 'Live preview'} loading="lazy" /> : <div class="sk sk--table" />}
       </div>
     </aside>
   );

@@ -1,7 +1,7 @@
 ---
 // Shared <head>: meta, palette tokens, pre-paint preferences, game config.
 import { paletteCss, palettesFor } from '@portfolio/tokens';
-import { site, gameConfig, pageUrl } from '../lib/content';
+import { site, gameConfig, pageUrl, PREVIEW } from '../lib/content';
 import '@portfolio/game/game.css';
 import Analytics from './Analytics.astro';
 import { seoFor, ldJson } from '../lib/seo';
@@ -38,6 +38,16 @@ const [firstName, ...rest] = site.name.split(' ');
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{fullTitle}</title>
   <meta name="description" content={description} />
+  {PREVIEW && <meta name="robots" content="noindex, nofollow" />}
+  {PREVIEW && <script is:inline>
+    addEventListener('DOMContentLoaded', function () {
+      var r = document.createElement('div');
+      r.textContent = 'Draft preview · not public';
+      r.setAttribute('role', 'note');
+      r.style.cssText = 'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:2147483647;background:#b45309;color:#fff;font:600 13px/1 system-ui,sans-serif;padding:8px 14px;border-radius:99px;box-shadow:0 4px 14px rgb(0 0 0/.25);pointer-events:none';
+      document.body.appendChild(r);
+    });
+  </script>}
   <link rel="canonical" href={canonical} />
   <meta property="og:site_name" content={site.name} />
   <meta property="og:title" content={fullTitle} />

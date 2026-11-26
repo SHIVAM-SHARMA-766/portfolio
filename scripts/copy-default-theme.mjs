@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const { defaultTheme } = JSON.parse(readFileSync(join(root, 'content/site.json'), 'utf8'));
-const dist = join(root, 'apps/site/dist');
+const dist = join(root, 'apps/site', process.argv[2] ?? 'dist'); // dist-preview for the preview build
 const from = join(dist, defaultTheme);
 if (!existsSync(from)) throw new Error(`no build for the default theme at ${from}`);
 cpSync(from, dist, { recursive: true });

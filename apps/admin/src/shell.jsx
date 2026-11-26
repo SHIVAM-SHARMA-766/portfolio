@@ -7,7 +7,7 @@ import { Dashboard, Contacts, Contact } from './crm.jsx';
 import { ProfileSection } from './profile.jsx';
 import { HistoryPage } from './history.jsx';
 import { Icon, Avatar, CommandPalette, DialogHost, ShortcutsHelp } from './ui.jsx';
-import { useRoute, navigate, registerToast, registerPublish, lastSave, editHref } from './core.js';
+import { useRoute, navigate, registerToast, registerPublish, lastSave, editHref, setPreviewSite } from './core.js';
 import { FileEditor, Edit } from './editor.jsx';
 import { Pages, Blog } from './content.jsx';
 import { Media } from './media.jsx';
@@ -167,7 +167,7 @@ export function App() {
   const [menu, setMenu] = useState(false);
   const [palette, setPalette] = useState(false);
   const route = useRoute();
-  const check = () => api.me().then((m) => { setMe(m); try { localStorage.setItem('pf.noTrack', '1'); } catch {} }).catch(() => setMe(null));
+  const check = () => api.me().then((m) => { setPreviewSite(m.previewUrl); setMe(m); try { localStorage.setItem('pf.noTrack', '1'); } catch {} }).catch(() => setMe(null));
   useEffect(() => { check(); }, []);
   useEffect(() => setMenu(false), [route.path, route.params.path]);
   useEffect(() => {

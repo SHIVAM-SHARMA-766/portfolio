@@ -10,7 +10,10 @@ render_caddyfile() {
     // Old hostnames keep working: everything 301s to the same path on the new host
     const redirect = (from, to) => `${from} {\n\timport common\n\tredir https://${to}{uri} permanent\n}\n`;
     const redirects = [...(old.site || []).map((h) => redirect(h, site)), ...(old.learn || []).map((h) => redirect(h, learn))].join("\n");
-    process.stdout.write(fs.readFileSync("deploy/Caddyfile.tmpl", "utf8")
+    let tmpl = fs.readFileSync("deploy/Caddyfile.tmpl", "utf8");
+    // The draft-preview site block is kept only when previewUrl is set
+    tmpl = s.previewUrl ? tmpl.replaceAll("__PREVIEW_HOST__", new URL(s.previewUrl).host) : tmpl.replace(/^#>preview[\s\S]*?^#<preview\n/m, "");
+    process.stdout.write(tmpl
       .replaceAll("__SITE_HOST__", site).replaceAll("__LEARN_HOST__", learn)
       .replaceAll("__ACME_EMAIL__", s.email || "").replace("__REDIRECTS__", redirects));
   '

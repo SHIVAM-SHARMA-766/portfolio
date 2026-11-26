@@ -54,5 +54,10 @@ addEventListener('admin-saved', (/** @type {any} */ e) => { savedAt = Date.now()
 /** Report a save (url = the page to view once live). */
 export const published = (url) => dispatchEvent(new CustomEvent('admin-saved', { detail: { url } }));
 
+// The draft-preview site, when the server has one (from /api/admin/me).
+let previewSite = '';
+export const setPreviewSite = (url) => { previewSite = url || ''; };
+export const previewSite_ = () => previewSite;
+
 export const editHref = (path, extra = '') => `#/edit?path=${encodeURIComponent(path)}${extra}`;
 export const go = (e) => { e.preventDefault(); navigate(e.currentTarget.getAttribute('href')); };

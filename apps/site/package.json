@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "build": "astro build && node ../../scripts/copy-default-theme.mjs && node ../../scripts/responsive-images.mjs",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "build:preview": "PREVIEW=1 astro build --outDir dist-preview && node ../../scripts/copy-default-theme.mjs dist-preview && node ../../scripts/responsive-images.mjs dist-preview"
   },
   "dependencies": {
     "@portfolio/game": "*",

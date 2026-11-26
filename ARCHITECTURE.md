@@ -151,6 +151,26 @@ Missions (`content/missions.json`) are CTF flags placed by `kind`: `hidden-file`
 `flag:<id>`. The shell only scrolls to follow its output after the visitor's first
 command, so the boot lines never pull the page away from the top on load.
 
+## Draft preview
+
+Drafts (pages and posts saved with **Save draft**) are committed with `draft: true`, so the
+public build leaves them out. CI also runs `npm run build:preview` (`PREVIEW=1`, output
+`apps/site/dist-preview`): drafts included, `apiUrl` forced to null (no sign-in, live
+presence, contact form or analytics), `noindex`, and a "Draft preview" ribbon. It is
+deployed to `/srv/portfolio/preview` and served by Caddy on `previewUrl`
+(`preview.dev2ops.in`, block kept by `deploy/lib.sh` only when `previewUrl` is set), with
+the same cookie-based theme routing (the `themed` snippet).
+
+Access (`internal/preview`): the admin calls `POST /api/admin/preview-link {path}` and gets
+`<previewUrl>/_preview/enter?t=<token>&to=<path>`; the token is HMAC-signed with
+`SESSION_SECRET` and lasts 10 minutes. Caddy proxies `/_preview/enter` to
+`/api/preview/enter`, which sets an 8-hour HttpOnly `pf_preview` cookie on the preview
+host and redirects to the path (same-site paths only). Every other request goes through
+`forward_auth` → `GET /api/preview/check` (204 or a 401 "link expired" page). The admin's
+editor shows **Preview draft** (side panel, also inside the iframe since the hosts are
+same-site) only when the API has `PREVIEW_URL`, which `setup-server.sh` writes from
+`previewUrl`.
+
 ## SEO and sharing
 
 - **Share cards** (`components/Head.astro`): Open Graph and Twitter `summary_large_image`

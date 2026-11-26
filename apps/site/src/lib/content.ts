@@ -19,7 +19,11 @@ function parse<T>(schema: z.ZodType<T>, data: unknown, file: string): T {
   return r.data;
 }
 
+/** The draft-preview build (PREVIEW=1): drafts included, no API calls, never indexed. */
+export const PREVIEW = process.env.PREVIEW === '1';
 export const site = parse(siteSchema, siteRaw, 'content/site.json');
+// The preview has no sign-in, live presence, contact form or analytics.
+if (PREVIEW) site.apiUrl = null;
 export const profile = parse(profileSchema, profileRaw, 'content/profile.json');
 export const achievements = parse(z.array(achievementSchema), achievementsRaw.achievements, 'content/achievements.json');
 /**
@@ -64,7 +68,7 @@ function shopPalettes() {
 
 export async function getPages(): Promise<Page[]> {
   const all = await getCollection('pages');
-  const pages = all.map((e) => e.data).filter((p) => !p.draft);
+  const pages = all.map((e) => e.data).filter((p) => PREVIEW || !p.draft);
   const slugs = new Set<string>();
   for (const p of pages) {
     if (slugs.has(p.slug)) throw new Error(`Two pages share the slug "${p.slug}"`);
@@ -80,7 +84,7 @@ export async function getNav() {
 export async function getPosts() {
   const all = await getCollection('blog');
   return all
-    .filter((e) => !e.data.draft)
+    .filter((e) => PREVIEW || !e.data.draft)
     .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 

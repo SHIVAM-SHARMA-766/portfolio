@@ -13,7 +13,8 @@
 #   5. creates /etc/portfolio-api/env with a generated SESSION_SECRET, and moves
 #      the admin password and GitHub token over from the old Caddy basic-auth setup
 #   6. adds fail2ban for admin sign-in, and a daily database backup (14 kept)
-#   7. writes the Caddyfile from deploy/Caddyfile.tmpl and reloads Caddy
+#   7. writes the Caddyfile from deploy/Caddyfile.tmpl and reloads Caddy (with the
+#      draft-preview host when content/site.json has previewUrl; add its DNS A record first)
 #
 # Secrets (admin password, GitHub token, sign-in providers): ./deploy/secrets.sh
 set -euo pipefail
@@ -26,12 +27,14 @@ cd "$(dirname "$0")/.."
 
 PUBKEY=$(cat "$PUBKEY_FILE")
 CADDYFILE=$(render_caddyfile)
+PREVIEW_URL=$(node -p "require('./content/site.json').previewUrl || ''")
 echo "Setting up $TARGET"
 
 b64() { printf '%s' "$1" | base64 -w0; }
 {
   echo "PUBKEY=\$(printf '%s' '$(b64 "$PUBKEY")' | base64 -d)"
   echo "CADDYFILE=\$(printf '%s' '$(b64 "$CADDYFILE")' | base64 -d)"
+  echo "PREVIEW_URL='$PREVIEW_URL'"
   cat <<'REMOTE'
 set -euo pipefail
 case "$PUBKEY" in ssh-ed25519\ *|ssh-rsa\ *|ecdsa-*) ;; *) echo "Not an SSH public key" >&2; exit 1 ;; esac
@@ -51,7 +54,7 @@ printf '[Service]\nMemoryMax=150M\n' > /etc/systemd/system/caddy.service.d/limit
 
 # 2. deploy user: key restricted to rsync inside /srv/portfolio
 id deploy >/dev/null 2>&1 || useradd --create-home --shell /bin/bash deploy
-mkdir -p /srv/portfolio/{site,admin,api} /home/deploy/.ssh /var/log/caddy /etc/caddy/sites
+mkdir -p /srv/portfolio/{site,admin,api,preview} /home/deploy/.ssh /var/log/caddy /etc/caddy/sites
 echo "command=\"/usr/bin/rrsync /srv/portfolio\",restrict $PUBKEY" > /home/deploy/.ssh/authorized_keys
 chown -R deploy:deploy /home/deploy/.ssh /srv/portfolio
 chmod 700 /home/deploy/.ssh && chmod 600 /home/deploy/.ssh/authorized_keys
@@ -137,6 +140,8 @@ getkey() { grep -E "^$1=" "$ENVF" | head -1 | cut -d= -f2- || true; }
 setkey LISTEN 127.0.0.1:8787
 setkey DB_PATH /var/lib/portfolio-api/portfolio.db
 setkey AUTH_LOG /var/log/portfolio-api/auth.log
+# Draft preview: the admin shows "Preview draft" only when this is set.
+if [ -n "$PREVIEW_URL" ]; then setkey PREVIEW_URL "$PREVIEW_URL"; else sed -i '/^PREVIEW_URL=/d' "$ENVF"; fi
 # Move admin credentials and the GitHub token from the old Caddy basic-auth setup.
 if [ -f /etc/caddy/admin-auth.d/portfolio.caddy ] && [ -z "$(getkey ADMIN_PASS_HASH)" ]; then
   read -r OLD_USER OLD_HASH < <(awk '/basic_auth/ {getline; print $1, $2}' /etc/caddy/admin-auth.d/portfolio.caddy)

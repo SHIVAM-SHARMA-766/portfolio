@@ -382,3 +382,60 @@ func TestAnalytics(t *testing.T) {
 		t.Fatalf("page_views: %v", st["stats"])
 	}
 }
+
+func TestDraftPreview(t *testing.T) {
+	e := setup(t)
+	rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
+	c := rec.Result().Cookies()[0]
+	admin := c.Name + "=" + c.Value
+	// Not configured: no link
+	if rec, _ := e.do("POST", "/api/admin/preview-link", `{"path":"/blog/x/"}`, admin, true); rec.Code != 404 {
+		t.Fatalf("unconfigured: %d", rec.Code)
+	}
+	st, _ := store.Open(filepath.Join(t.TempDir(), "p.db"))
+	defer st.Close()
+	hash, _ := bcrypt.GenerateFromPassword([]byte("correct horse battery"), bcrypt.MinCost)
+	cfg := &config.Config{SessionSecret: []byte(strings.Repeat("s", 32)), AdminUser: "admin", AdminHash: string(hash), OAuth: map[string]config.OAuthApp{}, PreviewURL: "https://preview.example.com"}
+	h, _ := buildHandler(cfg, st)
+	e = &env{t: t, h: h, st: st, origin: game.Catalog().SiteURL}
+	rec, _ = e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
+	c = rec.Result().Cookies()[0]
+	admin = c.Name + "=" + c.Value
+	if rec, _ := e.do("POST", "/api/admin/preview-link", `{"path":"/blog/x/"}`, "", true); rec.Code != 401 {
+		t.Fatalf("link without admin: %d", rec.Code)
+	}
+	_, out := e.do("POST", "/api/admin/preview-link", `{"path":"/blog/x/"}`, admin, true)
+	link := out["url"].(string)
+	if !strings.HasPrefix(link, "https://preview.example.com/_preview/enter?t=link.") {
+		t.Fatalf("link: %s", link)
+	}
+	q := link[strings.Index(link, "?"):]
+	// No cookie: the check refuses
+	if rec, _ := e.do("GET", "/api/preview/check", "", "", false); rec.Code != 401 {
+		t.Fatalf("check without cookie: %d", rec.Code)
+	}
+	// A tampered link is refused
+	if rec, _ := e.do("GET", "/api/preview/enter"+strings.Replace(q, "link.", "link.9", 1), "", "", false); rec.Code != 401 {
+		t.Fatalf("tampered link: %d", rec.Code)
+	}
+	// The real link sets the cookie and goes to the page
+	rec, _ = e.do("GET", "/api/preview/enter"+q, "", "", false)
+	if rec.Code != 302 || rec.Header().Get("Location") != "/blog/x/" {
+		t.Fatalf("enter: %d %s", rec.Code, rec.Header().Get("Location"))
+	}
+	pc := rec.Result().Cookies()[0]
+	if pc.Name != "pf_preview" || !pc.HttpOnly {
+		t.Fatalf("cookie: %+v", pc)
+	}
+	if rec, _ := e.do("GET", "/api/preview/check", "", pc.Name+"="+pc.Value, false); rec.Code != 204 {
+		t.Fatalf("check with cookie: %d", rec.Code)
+	}
+	// A link token is not a view token, and an open redirect is not possible
+	if rec, _ := e.do("GET", "/api/preview/check", "", "pf_preview="+strings.TrimPrefix(q[3:strings.Index(q, "&")], ""), false); rec.Code != 401 {
+		t.Fatalf("link token used as cookie: %d", rec.Code)
+	}
+	rec, _ = e.do("GET", "/api/preview/enter"+strings.Replace(q, "%2Fblog%2Fx%2F", "%2F%2Fevil.example", 1), "", "", false)
+	if rec.Header().Get("Location") != "/" {
+		t.Fatalf("open redirect: %s", rec.Header().Get("Location"))
+	}
+}

@@ -83,6 +83,7 @@ export const siteSchema = z.object({
   email: z.string().nullish(),
   siteUrl: z.string().url(),
   learnUrl: z.string().url().nullish(),
+  previewUrl: z.string().url().nullish(), // draft-preview site; see deploy/Caddyfile.tmpl
   apiUrl: z.string().url().nullish(),
   resume: z.string().nullish(),
   availability: z.string().nullish(),

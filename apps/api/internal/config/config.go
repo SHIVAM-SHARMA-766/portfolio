@@ -28,6 +28,7 @@ type Config struct {
 	SMTPPass    string
 	SMTPFrom    string // defaults to SMTPUser
 	NotifyEmail string // where notices go
+	PreviewURL  string // draft-preview site (set by setup-server.sh when content/site.json has previewUrl)
 }
 
 func env(k, def string) string {
@@ -54,6 +55,7 @@ func Load() (*Config, error) {
 		SMTPPass:     env("SMTP_PASS", ""),
 		SMTPFrom:     env("SMTP_FROM", ""),
 		NotifyEmail:  env("NOTIFY_EMAIL", ""),
+		PreviewURL:   env("PREVIEW_URL", ""),
 	}
 	secret := env("SESSION_SECRET", "")
 	if len(secret) < 32 {

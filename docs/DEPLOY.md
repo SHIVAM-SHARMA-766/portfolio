@@ -67,7 +67,11 @@ Run these once, in order. Values are filled in for the current host.
    gh secret set DEPLOY_SSH_KEY < ~/.ssh/portfolio-deploy
    ssh-keyscan -t ed25519 80.225.217.150 2>/dev/null | gh secret set DEPLOY_KNOWN_HOSTS
    ```
-6. **Deploy:** `gh workflow run deploy.yml`, or push to `main`.
+6. **Draft preview** (optional): add a DNS **A record** `preview` → the VM's IP at the DNS
+   provider, wait until it resolves, then re-run `./deploy/setup-server.sh`. It adds the
+   `preview.<domain>` site to Caddy (TLS is automatic) and sets `PREVIEW_URL` for the API,
+   which turns on **Preview draft** in the admin. CI deploys the preview build on every push.
+7. **Deploy:** `gh workflow run deploy.yml`, or push to `main`.
 
 ## Sign-in providers
 

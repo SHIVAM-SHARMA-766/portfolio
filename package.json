@@ -21,7 +21,8 @@
     "test": "node --test \"packages/game/test/*.test.js\"",
     "test:api": "npm run game-data && cd apps/api && go test ./...",
     "test:e2e": "node tests/e2e.mjs",
-    "typecheck": "npm run typecheck -w @portfolio/admin"
+    "typecheck": "npm run typecheck -w @portfolio/admin",
+    "build:preview": "npm run game-data && npm run build:preview -w @portfolio/site"
   },
   "devDependencies": {
     "playwright-core": "1.65.0"

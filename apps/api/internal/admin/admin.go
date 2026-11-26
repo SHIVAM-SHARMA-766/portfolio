@@ -26,6 +26,7 @@ import (
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/game"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/httpx"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/live"
+	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/preview"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/store"
 )
 
@@ -62,6 +63,7 @@ func (a *Admin) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/admin/insights", a.auth(a.insights))
 	mux.HandleFunc("GET /api/admin/messages", a.auth(a.messages))
 	mux.HandleFunc("GET /api/admin/analytics", a.auth(a.analytics))
+	mux.HandleFunc("POST /api/admin/preview-link", a.auth(a.previewLink))
 	mux.HandleFunc("PATCH /api/admin/messages/{id}", a.auth(a.markMessage))
 	mux.HandleFunc("DELETE /api/admin/messages/{id}", a.auth(a.deleteMessage))
 	mux.HandleFunc("GET /api/admin/files", a.auth(a.listFiles))
@@ -148,7 +150,25 @@ func (a *Admin) auth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (a *Admin) me(w http.ResponseWriter, r *http.Request) {
-	httpx.JSON(w, http.StatusOK, map[string]any{"user": a.cfg.AdminUser, "repo": a.cfg.GitHubRepo, "contentEditing": a.cfg.GitHubToken != ""})
+	httpx.JSON(w, http.StatusOK, map[string]any{"user": a.cfg.AdminUser, "repo": a.cfg.GitHubRepo, "contentEditing": a.cfg.GitHubToken != "", "previewUrl": a.cfg.PreviewURL})
+}
+
+// previewLink: POST /api/admin/preview-link {"path":"/blog/x/"} — a short-lived
+// link that opens the page on the draft-preview site.
+func (a *Admin) previewLink(w http.ResponseWriter, r *http.Request) {
+	if a.cfg.PreviewURL == "" {
+		httpx.Error(w, http.StatusNotFound, "draft preview is not set up (run deploy/setup-server.sh)")
+		return
+	}
+	var body struct {
+		Path string `json:"path"`
+	}
+	if err := httpx.Decode(r, &body, 2<<10); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "bad json")
+		return
+	}
+	g := preview.New(a.cfg.SessionSecret, a.secure)
+	httpx.JSON(w, http.StatusOK, map[string]string{"url": g.Link(a.cfg.PreviewURL, body.Path)})
 }
 
 // ---- stats & visitors ------------------------------------------------------
