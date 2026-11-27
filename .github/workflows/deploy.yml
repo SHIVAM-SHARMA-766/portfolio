@@ -52,6 +52,12 @@ jobs:
       - run: npm run build
       - name: Build the draft preview (drafts included, private)
         run: npm run build:preview
+      - name: Internal links (every href, src and srcset resolves)
+        run: npm run check:links
+      - name: Lighthouse budgets (performance, accessibility, SEO, layout shift)
+        run: npx -y @lhci/cli@0.14.0 autorun
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
       - name: Build API binary
         run: npm run build:api
 

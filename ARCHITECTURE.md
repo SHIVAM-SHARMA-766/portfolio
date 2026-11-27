@@ -321,10 +321,24 @@ imports `/etc/caddy/sites/*.caddy` so other projects on the host can add their s
 
 ## Build, test, deploy
 
-See [docs/DEPLOY.md](docs/DEPLOY.md). CI runs JS unit tests, Go tests, builds all three
-front-ends and the API (static `CGO_ENABLED=0` binary), then runs the browser suite
-against the real binary. On `main` it rsyncs the API first (a systemd path unit restarts
-it), then admin, site and learn.
+See [docs/DEPLOY.md](docs/DEPLOY.md). CI (on every push and pull request) gates, in order:
+
+1. JS unit tests (`npm test`) and the admin type check (`npm run typecheck`: `tsc` with
+   `checkJs` over the Preact admin, no emit).
+2. Go tests (`npm run test:api`).
+3. Builds: site, admin, the draft preview, and the API (static `CGO_ENABLED=0` binary).
+4. `npm run check:links`: every internal `href`, `src` and `srcset` in every theme build
+   resolves to a file (`/api`, `/admin` and `/_preview` are skipped).
+5. Lighthouse CI (`lighthouserc.json`) on six default-theme pages: performance ≥ 0.8,
+   accessibility ≥ 0.95, SEO ≥ 0.95, CLS ≤ 0.1 fail the build; best practices ≥ 0.9 warns
+   (the static server can't reach the API, which logs a console error). Reports go to
+   `.lighthouseci/` in the job.
+6. The browser suite (`npm run test:e2e`) against the real API binary.
+
+On `main` it then rsyncs the API first (a systemd path unit restarts it), then admin, site
+and preview. Dependabot (`.github/dependabot.yml`) opens weekly npm and Go update PRs
+(minor/patch grouped) and monthly GitHub Actions bumps; they run the same gates and are
+never deployed until merged.
 
 ## Gotchas
 
