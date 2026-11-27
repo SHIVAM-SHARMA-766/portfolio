@@ -35,6 +35,7 @@ export const api = {
   analytics: (days) => call('GET', `/analytics?days=${days}`),
   markMessage: (id, read) => call('PATCH', `/messages/${id}`, { read }),
   deleteMessage: (id) => call('DELETE', `/messages/${id}`),
+  reply: (id, body) => call('POST', `/visitors/${id}/reply`, { body }),
   files: () => call('GET', '/files'),
   file: (path) => call('GET', `/file?path=${encodeURIComponent(path)}`),
   save: (path, content, sha, message) => call('PUT', '/file', { path, content, sha: sha || undefined, message }),

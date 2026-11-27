@@ -300,6 +300,19 @@ charts, goals, top and landing pages, sources, campaigns, outbound links, device
 themes. Signing in to the admin sets `localStorage['pf.noTrack']` so your own visits on that
 browser are not counted; the live preview iframe never counts.
 
+**Messages and replies.** `components/MessageBubble.astro` (every page, every theme, bottom
+left; hidden in the preview build and inside iframes) lets visitors write a short note.
+Signed-in visitors get a conversation: `GET /api/messages` (thread + unseen replies; 200
+with `signedIn:false` when signed out, so browsers log nothing), `POST /api/messages`
+(30/hour per user), `POST /api/messages/seen`; the bubble shows a badge for unseen
+replies. Others send `POST /api/contact` with `topic:"quick"` and just an email (name
+optional). The admin Inbox groups messages into conversations by contact and replies with
+`POST /api/admin/visitors/{id}/reply` (`messages.from_admin=1`); a reply marks the contact's
+messages read. A contact without a sign-in identity sees replies after signing in with the
+same verified email (sign-in links accounts by verified email); the Inbox says so and
+offers "reply by email". Columns `from_admin` and `seen_at` are added by
+`migrateMessages` on start-up.
+
 **Contact form.** The `contact` block with `form: true` renders `components/ContactForm.astro`
 in every theme. `POST /api/contact` (package `internal/contact`) validates name, email, topic
 and message, and files the message in `messages` under the contact with the same email

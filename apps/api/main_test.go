@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/config"
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/game"
@@ -437,5 +439,92 @@ func TestDraftPreview(t *testing.T) {
 	rec, _ = e.do("GET", "/api/preview/enter"+strings.Replace(q, "%2Fblog%2Fx%2F", "%2F%2Fevil.example", 1), "", "", false)
 	if rec.Header().Get("Location") != "/" {
 		t.Fatalf("open redirect: %s", rec.Header().Get("Location"))
+	}
+}
+
+func TestConversation(t *testing.T) {
+	e := setup(t)
+	user := e.user() // a@example.com, signed in
+	// Signed out: no error, just signedIn=false
+	if rec, out := e.do("GET", "/api/messages", "", "", false); rec.Code != 200 || out["signedIn"] != false {
+		t.Fatalf("signed out thread: %d %v", rec.Code, out)
+	}
+	if rec, _ := e.do("POST", "/api/messages", `{"body":"hi"}`, "", true); rec.Code != 401 {
+		t.Fatalf("send signed out: %d", rec.Code)
+	}
+	if rec, _ := e.do("POST", "/api/messages", `{"body":"   "}`, user, true); rec.Code != 400 {
+		t.Fatalf("empty message: %d", rec.Code)
+	}
+	if rec, _ := e.do("POST", "/api/messages", `{"body":"Loved the Vault project!","page":"/projects/vault/"}`, user, true); rec.Code != 201 {
+		t.Fatalf("send: %d", rec.Code)
+	}
+	rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
+	c := rec.Result().Cookies()[0]
+	admin := c.Name + "=" + c.Value
+	_, out := e.do("GET", "/api/admin/messages", "", admin, false)
+	m := out["messages"].([]any)[0].(map[string]any)
+	if out["unread"].(float64) != 1 || m["topic"] != "chat" {
+		t.Fatalf("inbox: %v", out)
+	}
+	uid := strconv.Itoa(int(m["userId"].(float64)))
+	// Admin replies: their message becomes read, the visitor sees an unseen reply
+	rec, out = e.do("POST", "/api/admin/visitors/"+uid+"/reply", `{"body":"Thanks! Happy to chat."}`, admin, true)
+	if rec.Code != 201 || out["unread"].(float64) != 0 {
+		t.Fatalf("reply: %d %v", rec.Code, out)
+	}
+	if rec, _ := e.do("POST", "/api/admin/visitors/"+uid+"/reply", `{"body":"x"}`, user, true); rec.Code != 401 {
+		t.Fatalf("reply as visitor: %d", rec.Code)
+	}
+	_, out = e.do("GET", "/api/messages", "", user, false)
+	msgs := out["messages"].([]any)
+	if out["unseen"].(float64) != 1 || len(msgs) != 2 || msgs[1].(map[string]any)["fromAdmin"] != true {
+		t.Fatalf("thread: %v", out)
+	}
+	e.do("POST", "/api/messages/seen", "", user, true)
+	if _, out = e.do("GET", "/api/messages", "", user, false); out["unseen"].(float64) != 0 {
+		t.Fatalf("seen: %v", out)
+	}
+	// The message bubble without sign-in needs only an email
+	if rec, _ := e.do("POST", "/api/contact", `{"email":"quick@example.com","topic":"quick","message":"Short hello from the bubble","elapsed":5000}`, "", true); rec.Code != 200 {
+		t.Fatalf("quick message: %d", rec.Code)
+	}
+	_, out = e.do("GET", "/api/admin/messages", "", admin, false)
+	if q := out["messages"].([]any)[0].(map[string]any); q["name"] != "quick" || q["topic"] != "quick" {
+		t.Fatalf("quick: %v", q)
+	}
+}
+
+func TestMessagesMigration(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "old.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The messages table as first released, with a row in it
+	for _, q := range []string{
+		`CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL DEFAULT '', name TEXT NOT NULL DEFAULT '', avatar TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, last_seen INTEGER NOT NULL)`,
+		`CREATE TABLE messages (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, topic TEXT NOT NULL DEFAULT '', body TEXT NOT NULL, page TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, read_at INTEGER NOT NULL DEFAULT 0)`,
+		`INSERT INTO users(id,email,created_at,last_seen) VALUES(1,'old@example.com',1,1)`,
+		`INSERT INTO messages(user_id,topic,body,created_at) VALUES(1,'job','an old message',1)`,
+	} {
+		if _, err := db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	db.Close()
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatalf("open old db: %v", err)
+	}
+	defer st.Close()
+	list, err := st.Messages(context.Background(), 0, 10)
+	if err != nil || len(list) != 1 || list[0].FromAdmin || st.UnreadMessages(context.Background()) != 1 {
+		t.Fatalf("after migration: %v %+v", err, list)
+	}
+	st.Close()
+	if st2, err := store.Open(path); err != nil { // and it runs again cleanly
+		t.Fatalf("reopen: %v", err)
+	} else {
+		st2.Close()
 	}
 }

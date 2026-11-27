@@ -13,7 +13,8 @@ const go = (hash) => (e) => { e?.preventDefault?.(); location.hash = hash; };
 const pretty = (s) => s.replace(/[-_]/g, ' ');
 export function describe(a) {
   if (a.kind === 'achievement') return { icon: 'trophy', text: <>Unlocked the achievement <b>{pretty(a.id)}</b></> };
-  if (a.kind === 'message') return { icon: 'mail', text: <>Sent a message through the contact form{a.id ? <> (<b>{a.id}</b>)</> : null}</> };
+  if (a.kind === 'reply') return { icon: 'mail', text: <>You replied to their message</> };
+  if (a.kind === 'message') return { icon: 'mail', text: <>Sent a message{a.id && a.id !== 'chat' ? <> (<b>{a.id}</b>)</> : null}</> };
   if (a.kind === 'purchase') {
     const [, what] = a.id.split(':');
     return { icon: 'store', text: <>Bought <b>{pretty(what ?? a.id)}</b> for {a.points} coins</> };
@@ -377,7 +378,7 @@ export function Contact({ id }) {
           </section>
         </div>
         <div class="contact-main">
-        <ContactMessages messages={c.messageList} />
+        <ContactMessages messages={c.messageList} id={c.id} />
         <section class="panel">
           <div class="panel-head"><h2>Activity</h2><span class="muted">What they did on the site</span></div>
           {!groups.length ? <Empty icon="activity" title="No activity yet" text="Pages they visit and things they do show up here." /> : (

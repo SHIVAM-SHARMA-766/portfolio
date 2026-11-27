@@ -127,7 +127,11 @@ func (s *Store) Contact(ctx context.Context, id int64, bonus map[string]int) (*C
 		return nil, err
 	}
 	for _, m := range c.MessageList {
-		c.Activity = append(c.Activity, Activity{Kind: "message", ID: m.Topic, At: m.CreatedAt})
+		kind := "message"
+		if m.FromAdmin {
+			kind = "reply"
+		}
+		c.Activity = append(c.Activity, Activity{Kind: kind, ID: m.Topic, At: m.CreatedAt})
 	}
 	sort.SliceStable(c.Activity, func(i, j int) bool { return c.Activity[i].At > c.Activity[j].At })
 	return c, nil
@@ -234,7 +238,7 @@ func (s *Store) Insights(ctx context.Context) (*Insights, error) {
 	in.ViewsPerDay30 = collect(`SELECT day,SUM(views) FROM page_views WHERE day>=? GROUP BY day ORDER BY day`, d30.Format("2006-01-02"))
 	in.TopEvents7d = collect(`SELECT substr(event_id,1,instr(event_id,':')-1) k, COUNT(*) n FROM events WHERE created_at>=? AND instr(event_id,':')>0 GROUP BY k ORDER BY n DESC LIMIT 8`, d7)
 	in.Unread = s.UnreadMessages(ctx)
-	s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM messages WHERE created_at>=?`, d7).Scan(&in.Messages7d)
+	s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM messages WHERE created_at>=? AND from_admin=0`, d7).Scan(&in.Messages7d)
 	for _, st := range Stages {
 		in.Stages[st] = 0
 	}

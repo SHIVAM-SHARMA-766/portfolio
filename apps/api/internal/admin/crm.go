@@ -207,3 +207,31 @@ func (a *Admin) analytics(w http.ResponseWriter, r *http.Request) {
 	out.Live, _ = a.hub.Snapshot()
 	httpx.JSON(w, http.StatusOK, out)
 }
+
+// reply: POST /api/admin/visitors/{id}/reply {"body":"…"} — the visitor reads it
+// on the site once signed in.
+func (a *Admin) reply(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(r, "id")
+	if !ok {
+		httpx.Error(w, http.StatusBadRequest, "bad id")
+		return
+	}
+	var body struct {
+		Body string `json:"body"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&body); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "bad json")
+		return
+	}
+	text := strings.TrimSpace(body.Body)
+	if text == "" || utf8.RuneCountInString(text) > maxNoteLen {
+		httpx.Error(w, http.StatusBadRequest, "write a reply (up to 4000 characters)")
+		return
+	}
+	m, err := a.store.Reply(r.Context(), id, text)
+	if err != nil {
+		storeError(w, err)
+		return
+	}
+	httpx.JSON(w, http.StatusCreated, map[string]any{"message": m, "unread": a.store.UnreadMessages(r.Context())})
+}

@@ -407,18 +407,69 @@ try {
     await shot(c, 'contact-sent');
     // The admin sees it: badge, inbox, and on the contact page
     await c.goto(`${S}/admin/#/inbox`);
-    await c.waitForSelector('.msg.is-unread');
-    assert.equal(await c.locator('.nav-badge').innerText(), '1');
-    await c.click('.msg-row');
-    await c.waitForSelector('.msg-body');
-    assert.match(await c.locator('.msg-body').innerText(), /DevSecOps role/);
-    await c.waitForFunction(() => !document.querySelector('.nav-badge'));
+    await c.waitForSelector('.conv.is-unread');
+    assert.equal(await c.locator('.side .nav-badge').innerText(), '1');
+    await c.click('.conv');
+    await c.waitForSelector('.conv-view');
+    assert.match(await c.locator('.bubbles').innerText(), /DevSecOps role/);
+    assert.match(await c.locator('.conv-note').innerText(), /Not signed in/); // a form sender has no login yet
+    await c.waitForFunction(() => !document.querySelector('.side .nav-badge'));
     await shot(c, 'admin-inbox');
-    await c.click('.msg-actions >> text=Open contact');
+    await c.click('.conv-head >> text=Contact');
     await c.waitForSelector('.contact-head');
     assert.match(await c.locator('.contact-main').innerText(), /Messages\s*1[\s\S]*DevSecOps role/);
     assert.match(await c.locator('.tags-edit').innerText(), /contact-form/);
     await c.close();
+  });
+
+  await step('message bubble: visitor writes, admin replies, visitor reads the reply on the site', async () => {
+    // `page` is signed in as the test visitor
+    await page.goto(`${S}/projects/`);
+    await page.waitForFunction(() => window.game?.account?.user);
+    await page.click('.mb-fab');
+    await page.waitForSelector('.mb-panel:not([hidden])');
+    await page.waitForSelector('.mb[data-signed-in]');
+    assert.equal(await page.locator('.mb [name=email]').isVisible(), false, 'signed in: no email needed');
+    await page.fill('.mb textarea', 'Quick hello from the bubble!');
+    await page.click('.mb-send');
+    await page.waitForSelector('.mb-msg--me');
+    // The admin answers in the Inbox
+    const a = await ctx.newPage();
+    await a.setViewportSize({ width: 1440, height: 900 });
+    await a.goto(`${S}/admin/#/inbox`);
+    await a.click('.conv >> text=Quick hello from the bubble!');
+    await a.waitForSelector('.conv-view');
+    assert.equal(await a.locator('.conv-note').count(), 0, 'signed-in visitor: no "not signed in" note');
+    await a.fill('.conv-reply textarea', 'Thanks for stopping by!');
+    await a.click('.conv-reply button.primary');
+    await a.waitForSelector('.bubble--me');
+    await shot(a, 'admin-conversation');
+    await a.close();
+    // The visitor sees a badge on the next page, and the reply in the bubble
+    await page.goto(`${S}/about/`);
+    await page.waitForSelector('.mb-badge:not([hidden])');
+    assert.equal(await page.locator('.mb-badge').innerText(), '1');
+    await page.click('.mb-fab');
+    await page.waitForSelector('.mb-msg--them');
+    assert.match(await page.locator('.mb-thread').innerText(), /Thanks for stopping by!/);
+    assert.equal(await page.locator('.mb-badge').isHidden(), true);
+    await shot(page, 'bubble-reply');
+    await page.click('.mb-close');
+    // A visitor who isn't signed in sends a note with an email
+    const v = await browser.newContext();
+    await blockFonts(v);
+    const g = await v.newPage();
+    g.on('pageerror', (e) => errors.push('bubble: ' + e.message));
+    await g.goto(`${S}/`);
+    await g.click('.mb-fab');
+    await g.fill('.mb textarea', 'Hi, nice portfolio');
+    await g.click('.mb-send');
+    assert.match(await g.locator('.mb-status').innerText(), /email/i); // asks for the email first
+    await g.fill('.mb [name=email]', 'guest@example.com');
+    await g.waitForTimeout(3100 - 0); // the server refuses notes sent within 3 s of loading
+    await g.click('.mb-send');
+    await g.waitForSelector('.mb-status.is-ok');
+    await v.close();
   });
 
   await step('analytics: cookie-free page views, sources and goals reach the admin', async () => {

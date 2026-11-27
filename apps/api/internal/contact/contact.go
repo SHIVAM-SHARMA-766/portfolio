@@ -1,5 +1,7 @@
-// Package contact serves the site's contact form: POST /api/contact files the
-// message in the admin CRM and, when SMTP is configured, emails a notice.
+// Package contact serves visitor messages: POST /api/contact (the contact form
+// and the message bubble, no sign-in needed) files a message in the admin CRM;
+// signed-in visitors also get a conversation with the admin's replies
+// (GET/POST /api/messages). When SMTP is configured, new messages email a notice.
 //
 // Spam defences, in order: the CORS layer rejects other origins; a hidden
 // "website" field must stay empty (bots get a fake success); a form sent
@@ -14,6 +16,7 @@ import (
 	"net/http"
 	"net/mail"
 	"net/smtp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -33,25 +36,95 @@ const (
 )
 
 // Topics the form offers; anything else is filed as "other".
-var Topics = []string{"job", "freelance", "collaboration", "question", "other"}
+var Topics = []string{"job", "freelance", "collaboration", "question", "quick", "other"}
 
 type Handler struct {
 	store   *store.Store
+	userID  func(*http.Request) (int64, bool)
+	perUser *httpx.Limiter
 	cfg     *config.Config
 	perIP   *httpx.Limiter
 	daily   *httpx.Limiter
 	siteURL string
-	send    func(to, subject, body, replyTo string) error // swapped in tests
+	mail    func(to, subject, body, replyTo string) error // swapped in tests
 }
 
-func New(cfg *config.Config, st *store.Store, siteURL string) *Handler {
-	h := &Handler{store: st, cfg: cfg, perIP: httpx.NewLimiter(5, time.Hour), daily: httpx.NewLimiter(100, 24*time.Hour), siteURL: strings.TrimRight(siteURL, "/")}
-	h.send = h.smtpSend
+func New(cfg *config.Config, st *store.Store, siteURL string, userID func(*http.Request) (int64, bool)) *Handler {
+	h := &Handler{store: st, cfg: cfg, userID: userID, perIP: httpx.NewLimiter(5, time.Hour), perUser: httpx.NewLimiter(30, time.Hour), daily: httpx.NewLimiter(100, 24*time.Hour), siteURL: strings.TrimRight(siteURL, "/")}
+	h.mail = h.smtpSend
 	return h
 }
 
 func (h *Handler) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/contact", h.post)
+	mux.HandleFunc("GET /api/messages", h.thread)
+	mux.HandleFunc("POST /api/messages", h.send)
+	mux.HandleFunc("POST /api/messages/seen", h.seen)
+}
+
+// thread: GET /api/messages — the signed-in visitor's conversation. Signed-out
+// visitors get {"signedIn":false} (200, so browsers log no error).
+func (h *Handler) thread(w http.ResponseWriter, r *http.Request) {
+	uid, ok := h.userID(r)
+	if !ok {
+		httpx.JSON(w, http.StatusOK, map[string]any{"signedIn": false})
+		return
+	}
+	list, err := h.store.Thread(r.Context(), uid)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not load messages")
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"signedIn": true, "messages": list, "unseen": h.store.UnseenReplies(r.Context(), uid)})
+}
+
+// send: POST /api/messages {"body":"…","page":"/x/"} — a signed-in visitor writes.
+func (h *Handler) send(w http.ResponseWriter, r *http.Request) {
+	uid, ok := h.userID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "sign in to chat")
+		return
+	}
+	var b struct {
+		Body string `json:"body"`
+		Page string `json:"page"`
+	}
+	if err := httpx.Decode(r, &b, 16<<10); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "bad request")
+		return
+	}
+	body, ok := clean(b.Body, maxBody)
+	if !ok || body == "" {
+		httpx.Error(w, http.StatusBadRequest, "Write a message (up to 5000 characters).")
+		return
+	}
+	key := "u" + strconv.FormatInt(uid, 10)
+	if h.perUser.Blocked(key) || h.daily.Blocked("all") {
+		httpx.Error(w, http.StatusTooManyRequests, "That's a lot of messages. Please try again later.")
+		return
+	}
+	h.perUser.Allow(key)
+	h.daily.Allow("all")
+	page, _ := clean(b.Page, 200)
+	if !strings.HasPrefix(page, "/") {
+		page = ""
+	}
+	m, err := h.store.VisitorMessage(r.Context(), uid, body, page)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not send")
+		return
+	}
+	if u, err := h.store.User(r.Context(), uid); err == nil {
+		h.notify(u.Name, u.Email, "chat", body, page, uid)
+	}
+	httpx.JSON(w, http.StatusCreated, map[string]any{"message": m})
+}
+
+func (h *Handler) seen(w http.ResponseWriter, r *http.Request) {
+	if uid, ok := h.userID(r); ok {
+		h.store.MarkRepliesSeen(r.Context(), uid)
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type form struct {
@@ -92,11 +165,17 @@ func (h *Handler) post(w http.ResponseWriter, r *http.Request) {
 	}
 	var ok bool
 	var errs []string
-	if f.Name, ok = clean(f.Name, maxName); !ok || f.Name == "" {
-		errs = append(errs, "name")
-	}
 	if f.Email, ok = clean(f.Email, maxEmail); !ok || !validEmail(f.Email) {
 		errs = append(errs, "email")
+	}
+	if f.Name, ok = clean(f.Name, maxName); !ok {
+		errs = append(errs, "name")
+	} else if f.Name == "" {
+		if f.Topic != "quick" { // the message bubble asks only for an email
+			errs = append(errs, "name")
+		} else if i := strings.Index(f.Email, "@"); i > 0 {
+			f.Name = f.Email[:i]
+		}
 	}
 	if f.Message, ok = clean(f.Message, maxBody); !ok || utf8.RuneCountInString(f.Message) < minBody {
 		errs = append(errs, "message")
@@ -121,17 +200,23 @@ func (h *Handler) post(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "Could not send right now. Please use email instead.")
 		return
 	}
-	if h.cfg.NotifyEmail != "" && h.cfg.SMTPHost != "" {
-		go func() {
-			subject := fmt.Sprintf("Portfolio: %s from %s", f.Topic, f.Name)
-			body := fmt.Sprintf("%s <%s> wrote (%s) from %s%s:\n\n%s\n\nOpen in the admin: %s/admin/#/contacts/%d\n",
-				f.Name, f.Email, f.Topic, h.siteURL, f.Page, f.Message, h.siteURL, m.UserID)
-			if err := h.send(h.cfg.NotifyEmail, subject, body, f.Email); err != nil {
-				log.Printf("contact: notify: %v", err)
-			}
-		}()
-	}
+	h.notify(f.Name, f.Email, f.Topic, f.Message, f.Page, m.UserID)
 	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+// notify emails a notice about a new message, when SMTP is configured.
+func (h *Handler) notify(name, email, topic, message, page string, uid int64) {
+	if h.cfg.NotifyEmail == "" || h.cfg.SMTPHost == "" {
+		return
+	}
+	go func() {
+		subject := fmt.Sprintf("Portfolio: %s from %s", topic, name)
+		body := fmt.Sprintf("%s <%s> wrote (%s) from %s%s:\n\n%s\n\nOpen in the admin: %s/admin/#/inbox?c=%d\n",
+			name, email, topic, h.siteURL, page, message, h.siteURL, uid)
+		if err := h.mail(h.cfg.NotifyEmail, subject, body, email); err != nil {
+			log.Printf("contact: notify: %v", err)
+		}
+	}()
 }
 
 func validEmail(s string) bool {

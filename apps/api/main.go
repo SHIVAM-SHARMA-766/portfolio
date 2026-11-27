@@ -88,7 +88,7 @@ func buildHandler(cfg *config.Config, st *store.Store) (http.Handler, *server) {
 	mux.HandleFunc("POST /api/auth/logout", s.auth.Logout)
 	mux.Handle("GET /api/live", hub)
 	admin.New(cfg, st, hub).Routes(mux)
-	contact.New(cfg, st, cat.SiteURL).Routes(mux)
+	contact.New(cfg, st, cat.SiteURL, s.auth.UserID).Routes(mux)
 	analytics.New(st, cat.SiteURL).Routes(mux)
 	preview.New(cfg.SessionSecret, !cfg.Dev).Routes(mux)
 	if cfg.Dev {

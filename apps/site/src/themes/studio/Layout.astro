@@ -8,6 +8,7 @@ import AccountChip from '../../components/AccountChip.astro';
 import ThemeLock from '../../components/ThemeLock.astro';
 import Logo from '../../components/Logo.astro';
 import FooterColumns from '../../components/FooterColumns.astro';
+import MessageBubble from '../../components/MessageBubble.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './studio.css';
@@ -67,5 +68,6 @@ const { theme, title, description, slug, nav, pageIdent, current = slug, image }
     <AccountDialogs ownerName={site.name} />
     <ThemeLock item={`theme:${theme}`} slug={slug} />
     <GameBoot />
+    <MessageBubble />
   </body>
 </html>

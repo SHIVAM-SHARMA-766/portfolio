@@ -98,7 +98,11 @@ func Open(path string) (*Store, error) {
 	if _, err := db.Exec(schema + messagesSchema + analyticsSchema); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
-	return &Store{db: db}, nil
+	st := &Store{db: db}
+	if err := st.migrateMessages(); err != nil {
+		return nil, fmt.Errorf("migrate messages: %w", err)
+	}
+	return st, nil
 }
 
 func (s *Store) Close() error { return s.db.Close() }
@@ -217,7 +221,7 @@ func (s *Store) Users(ctx context.Context, bonus map[string]int) ([]User, error)
 			COALESCE(c.stage,'new'), COALESCE(c.tags,''), COALESCE(c.starred,0),
 			(SELECT COUNT(*) FROM notes WHERE user_id=u.id),
 			(SELECT COUNT(*) FROM messages WHERE user_id=u.id),
-			(SELECT COUNT(*) FROM messages WHERE user_id=u.id AND read_at=0),
+			(SELECT COUNT(*) FROM messages WHERE user_id=u.id AND read_at=0 AND from_admin=0),
 			(SELECT COUNT(*) FROM events WHERE user_id=u.id),
 			COALESCE((SELECT MAX(created_at) FROM events WHERE user_id=u.id),0)
 		FROM users u LEFT JOIN crm c ON c.user_id=u.id ORDER BY u.created_at DESC`)

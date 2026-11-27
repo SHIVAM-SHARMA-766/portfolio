@@ -9,6 +9,7 @@ import ThemeLock from '../../components/ThemeLock.astro';
 import Shell from './Shell.astro';
 import Logo from '../../components/Logo.astro';
 import FooterColumns from '../../components/FooterColumns.astro';
+import MessageBubble from '../../components/MessageBubble.astro';
 import { site, pageUrl } from '../../lib/content';
 import type { Page } from '../../lib/schema';
 import './terminal.css';
@@ -81,5 +82,6 @@ const cwd = slug ? `~/${slug}` : '~';
     <AccountDialogs ownerName={site.name} />
     <ThemeLock item={`theme:${theme}`} slug={slug} />
     <GameBoot />
+    <MessageBubble />
   </body>
 </html>

@@ -65,6 +65,7 @@ func (a *Admin) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/admin/analytics", a.auth(a.analytics))
 	mux.HandleFunc("POST /api/admin/preview-link", a.auth(a.previewLink))
 	mux.HandleFunc("PATCH /api/admin/messages/{id}", a.auth(a.markMessage))
+	mux.HandleFunc("POST /api/admin/visitors/{id}/reply", a.auth(a.reply))
 	mux.HandleFunc("DELETE /api/admin/messages/{id}", a.auth(a.deleteMessage))
 	mux.HandleFunc("GET /api/admin/files", a.auth(a.listFiles))
 	mux.HandleFunc("GET /api/admin/file", a.auth(a.getFile))
