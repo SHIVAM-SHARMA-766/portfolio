@@ -24,7 +24,7 @@
 (static) {
 	file_server
 	# Hashed build assets never change; everything else revalidates.
-	@immutable path /_astro/* /pagefind/* /admin/assets/*
+	@immutable path /_astro/* /pagefind/* /admin/assets/* /fonts/*
 	header @immutable Cache-Control "public, max-age=31536000, immutable"
 	@html path *.html */
 	header @html Cache-Control "public, max-age=0, must-revalidate"
@@ -56,15 +56,15 @@
 		redir @legacyBare {path}/ 301
 		# Serve the visitor's theme; Studio unless they picked another
 		@quest {
-			not path /_astro/* /pagefind/* /uploads/* /images/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
+			not path /_astro/* /pagefind/* /uploads/* /images/* /fonts/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
 			header_regexp Cookie (?:^|;\s*)pf_theme=quest(?:;|$)
 		}
 		@terminal {
-			not path /_astro/* /pagefind/* /uploads/* /images/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
+			not path /_astro/* /pagefind/* /uploads/* /images/* /fonts/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
 			header_regexp Cookie (?:^|;\s*)pf_theme=terminal(?:;|$)
 		}
 		@studio {
-			not path /_astro/* /pagefind/* /uploads/* /images/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
+			not path /_astro/* /pagefind/* /uploads/* /images/* /fonts/* /favicon.svg /rss.xml /404.html /robots.txt /sitemap*
 			not header_regexp Cookie (?:^|;\s*)pf_theme=(?:quest|terminal)(?:;|$)
 		}
 		rewrite @quest /quest{uri}

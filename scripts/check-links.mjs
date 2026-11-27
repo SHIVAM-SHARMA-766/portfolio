@@ -2,6 +2,7 @@
 // file, in every theme build. Run after `npm run build`:  npm run check:links
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { routeTheme } from './theme-routing.mjs';
 
 const dist = resolve(import.meta.dirname, '../apps/site', process.argv[2] ?? 'dist');
 const THEMES = ['studio', 'terminal', 'quest'];
@@ -17,15 +18,16 @@ async function* html(dir) {
 }
 const exists = async (p) => { try { return (await stat(p)).isFile(); } catch { return false; } };
 
-// A clean URL is served from the visitor's theme build (see scripts/theme-routing.mjs).
+// Resolve a URL exactly as the server does (scripts/theme-routing.mjs mirrors
+// deploy/Caddyfile.tmpl): pages come from the visitor's theme build, assets
+// from the site root.
 async function resolves(url, theme) {
-  let path = decodeURIComponent(url.split(/[?#]/)[0]);
+  const r = routeTheme(url, `pf_theme=${theme}`);
+  if (r.redirect) return true; // ?theme= and legacy /<theme>/ links redirect to a clean URL
+  let path = decodeURIComponent((r.rewrite ?? url).split(/[?#]/)[0]);
   if (path.endsWith('/')) path += 'index.html';
-  const candidates = [join(dist, path)];
-  if (theme) candidates.push(join(dist, theme, path));
-  if (!/\.[a-z0-9]+$/i.test(path)) candidates.push(join(dist, path, 'index.html'), ...(theme ? [join(dist, theme, path, 'index.html')] : []));
-  for (const c of candidates) if (await exists(c)) return true;
-  return false;
+  if (await exists(join(dist, path))) return true;
+  return !/\.[a-z0-9]+$/i.test(path) && exists(join(dist, path, 'index.html'));
 }
 
 const broken = new Map();

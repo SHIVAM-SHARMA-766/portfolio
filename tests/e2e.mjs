@@ -467,6 +467,11 @@ try {
     const project = await ld('/projects/vault/');
     assert.ok(['SoftwareSourceCode', 'CreativeWork'].includes(project[0]['@type']));
     assert.deepEqual(project[1].itemListElement.map((i) => i.position), [1, 2, 3]);
+    // Self-hosted fonts are served from the root whatever the theme (not rewritten into it)
+    for (const theme of ['quest', 'studio']) {
+      const r = await pg.request.get(`${S}/fonts/pixelify-sans-latin.woff2`, { headers: { Cookie: `pf_theme=${theme}` } });
+      assert.equal(r.status(), 200, `font with pf_theme=${theme}`);
+    }
     // The share image and every srcset candidate exist
     const og = new URL(await pg.getAttribute('meta[property="og:image"]', 'content'));
     assert.match(og.pathname, /\.jpg$/);
