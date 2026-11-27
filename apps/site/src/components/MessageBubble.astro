@@ -88,6 +88,7 @@ const first = site.name.split(' ')[0];
     const shown = Date.now();
     let signedIn = false;
     let poll: number | undefined;
+    let seq = 0; // only the newest load may update the thread and badge
 
     const say = (msg: string, kind: '' | 'ok' | 'err' = '') => { status.textContent = msg; status.className = `mb-status ${kind ? `is-${kind}` : ''}`; };
     const setBadge = (n: number) => { badge.hidden = !n; badge.textContent = String(n); fab.setAttribute('aria-label', `Message ${root.dataset.name}${n ? ` (${n} new repl${n > 1 ? 'ies' : 'y'})` : ''}`); };
@@ -112,13 +113,15 @@ const first = site.name.split(' ')[0];
       thread.scrollTop = thread.scrollHeight;
     };
     const load = async (markSeen: boolean) => {
+      const mine = ++seq;
       try {
         const d = await call('/messages');
+        if (mine !== seq) return; // a newer load (e.g. opening the panel) already answered
         signedIn = !!d.signedIn;
         root.toggleAttribute('data-signed-in', signedIn);
         if (!signedIn) return;
         render(d.messages ?? []);
-        setBadge(markSeen ? 0 : d.unseen ?? 0);
+        setBadge(markSeen || !panel.hidden ? 0 : d.unseen ?? 0);
         if (markSeen && d.unseen) call('/messages/seen', { method: 'POST' }).catch(() => {});
       } catch { /* offline: the form still works */ }
     };
@@ -127,6 +130,7 @@ const first = site.name.split(' ')[0];
       fab.setAttribute('aria-expanded', String(on));
       clearInterval(poll);
       if (on) {
+        setBadge(0); // opening the bubble shows the replies, so they're seen now
         load(true);
         poll = window.setInterval(() => signedIn && load(true), 20000);
         setTimeout(() => text.focus(), 50);

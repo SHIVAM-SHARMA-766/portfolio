@@ -93,7 +93,7 @@ const SHOTS = process.env.E2E_SHOTS; // optional folder for screenshots
 const shot = async (pg, name) => { if (SHOTS) await pg.screenshot({ path: join(SHOTS, `${name}.png`) }); };
 const results = [];
 const step = async (name, fn) => {
-  try { await fn(); results.push(['✓', name]); } catch (e) { results.push(['✗', name, e.message.split('\n')[0]]); }
+  try { await fn(); results.push(['✓', name]); } catch (e) { results.push(['✗', name, e.message.split('\n').filter(Boolean).slice(0, 4).join(' | ')]); }
 };
 const blockFonts = (ctx) => ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
 
