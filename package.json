@@ -26,6 +26,6 @@
     "check:links": "node scripts/check-links.mjs"
   },
   "devDependencies": {
-    "playwright-core": "1.65.0"
+    "playwright-core": "1.65.1"
   }
 }
