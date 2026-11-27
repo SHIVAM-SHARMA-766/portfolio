@@ -14,6 +14,6 @@
     "@portfolio/game": "*",
     "@portfolio/tokens": "*",
     "astro": "7.4.13",
-    "marked": "^16.0.0"
+    "marked": "^18.3.0"
   }
 }
