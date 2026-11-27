@@ -1,17 +1,12 @@
 package store
 
-// Messages between visitors and the admin. A visitor writes through the contact
-// form or the message bubble; each message is filed under a CRM contact (an
-// existing visitor with the same email, or a new contact tagged "contact-form").
-// The admin replies from the Inbox; signed-in visitors read replies on the site
-// (a contact created from the form sees them after signing in with that email,
-// since sign-in links accounts by verified email).
+// Messages between signed-in visitors and the admin: one conversation per
+// visitor (CRM contact). The admin replies from the Inbox and the visitor reads
+// the replies on the site. (Older rows may come from the retired anonymous
+// contact form; their contacts see replies after signing in with that email.)
 
 import (
 	"context"
-	"database/sql"
-	"errors"
-	"strings"
 )
 
 const messagesSchema = `
@@ -54,9 +49,6 @@ func (s *Store) migrateMessages() error {
 	return nil
 }
 
-// FormTag marks contacts who wrote through the contact form.
-const FormTag = "contact-form"
-
 type Message struct {
 	ID        int64  `json:"id"`
 	UserID    int64  `json:"userId"`
@@ -68,67 +60,8 @@ type Message struct {
 	CreatedAt int64  `json:"createdAt"`
 	Read      bool   `json:"read"`
 	FromAdmin bool   `json:"fromAdmin,omitempty"`
-	Seen      bool   `json:"seen,omitempty"` // a reply the visitor has seen
+	Seen      bool   `json:"seen,omitempty"`     // a reply the visitor has seen
 	HasLogin  bool   `json:"hasLogin,omitempty"` // the contact can sign in and read replies on the site
-}
-
-// NewMessage files a contact-form message and returns it with its contact.
-func (s *Store) NewMessage(ctx context.Context, name, email, topic, body, page string) (*Message, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	var uid int64
-	err = tx.QueryRowContext(ctx, `SELECT id FROM users WHERE email=? COLLATE NOCASE ORDER BY id LIMIT 1`, email).Scan(&uid)
-	if errors.Is(err, sql.ErrNoRows) {
-		res, err := tx.ExecContext(ctx, `INSERT INTO users(email,name,avatar,created_at,last_seen) VALUES(?,?,'',?,?)`, email, name, now(), now())
-		if err != nil {
-			return nil, err
-		}
-		uid, _ = res.LastInsertId()
-	} else if err != nil {
-		return nil, err
-	} else {
-		// A known contact: only fill a missing name, never overwrite.
-		tx.ExecContext(ctx, `UPDATE users SET name=CASE WHEN name='' THEN ? ELSE name END WHERE id=?`, name, uid)
-	}
-	// Tag the contact, keeping existing tags and stage.
-	var tags string
-	err = tx.QueryRowContext(ctx, `SELECT tags FROM crm WHERE user_id=?`, uid).Scan(&tags)
-	switch {
-	case errors.Is(err, sql.ErrNoRows):
-		if _, err := tx.ExecContext(ctx, `INSERT INTO crm(user_id,tags,updated_at) VALUES(?,?,?)`, uid, FormTag, now()); err != nil {
-			return nil, err
-		}
-	case err != nil:
-		return nil, err
-	default:
-		if !hasTag(tags, FormTag) {
-			if tags != "" {
-				tags += ","
-			}
-			if _, err := tx.ExecContext(ctx, `UPDATE crm SET tags=?,updated_at=? WHERE user_id=?`, tags+FormTag, now(), uid); err != nil {
-				return nil, err
-			}
-		}
-	}
-	m := &Message{UserID: uid, Name: name, Email: email, Topic: topic, Body: body, Page: page, CreatedAt: now()}
-	res, err := tx.ExecContext(ctx, `INSERT INTO messages(user_id,topic,body,page,created_at) VALUES(?,?,?,?,?)`, uid, topic, body, page, m.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-	m.ID, _ = res.LastInsertId()
-	return m, tx.Commit()
-}
-
-func hasTag(csv, tag string) bool {
-	for _, t := range strings.Split(csv, ",") {
-		if t == tag {
-			return true
-		}
-	}
-	return false
 }
 
 // Messages lists messages newest first: all of them, or one contact's (userID > 0).
@@ -195,10 +128,10 @@ func (s *Store) UnreadMessages(ctx context.Context) int {
 	return n
 }
 
-// VisitorMessage files a message from a signed-in visitor (the message bubble).
-func (s *Store) VisitorMessage(ctx context.Context, uid int64, body, page string) (*Message, error) {
-	m := &Message{UserID: uid, Topic: "chat", Body: body, Page: page, CreatedAt: now()}
-	res, err := s.db.ExecContext(ctx, `INSERT INTO messages(user_id,topic,body,page,created_at) SELECT id,'chat',?,?,? FROM users WHERE id=?`, body, page, m.CreatedAt, uid)
+// VisitorMessage files a message from a signed-in visitor.
+func (s *Store) VisitorMessage(ctx context.Context, uid int64, topic, body, page string) (*Message, error) {
+	m := &Message{UserID: uid, Topic: topic, Body: body, Page: page, CreatedAt: now()}
+	res, err := s.db.ExecContext(ctx, `INSERT INTO messages(user_id,topic,body,page,created_at) SELECT id,?,?,?,? FROM users WHERE id=?`, topic, body, page, m.CreatedAt, uid)
 	if err != nil {
 		return nil, err
 	}

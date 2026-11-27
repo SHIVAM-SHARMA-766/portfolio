@@ -1,6 +1,6 @@
-// Inbox: conversations with visitors. Messages come from the contact form and
-// the message bubble on every page; replies are shown to the visitor on the
-// site (once they're signed in), so no email is needed. Each sender is also a
+// Inbox: chats with signed-in visitors. Messages come from the message bubble
+// on every page and the contact page; replies show up for the visitor on the
+// site, so no email is needed. Each sender is also a
 // CRM contact, so tags, notes and the pipeline live on the contact page.
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { api } from './api.js';
@@ -9,7 +9,7 @@ import { Icon, Avatar, ago, dateTime, ask } from './ui.jsx';
 import { navigate, useRoute } from './core.js';
 import { Empty } from './crm.jsx';
 
-export const TOPICS = { job: 'Job opportunity', freelance: 'Freelance / contract', collaboration: 'Collaboration', question: 'Question', quick: 'Quick note', chat: 'Chat', other: 'Other' };
+export const TOPICS = { job: 'Job opportunity', freelance: 'Freelance / contract', collaboration: 'Collaboration', question: 'Question', chat: 'Chat', other: 'Other' };
 
 // ---- unread count, shared by the sidebar badge and the dashboard ----------------
 let unread = 0;
@@ -27,6 +27,15 @@ export function useUnread() {
   }, []);
   return n;
 }
+
+/** "Today", "Yesterday" or the date, for the dividers in a chat. */
+const dayOf = (t) => {
+  const d = new Date(t * 1000), now = new Date();
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === now.toDateString()) return 'Today';
+  if (d.toDateString() === y.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' });
+};
 
 const replyByEmail = (c) => `mailto:${c.email}?subject=${encodeURIComponent('Re: your message on my portfolio')}`;
 
@@ -50,7 +59,8 @@ export function Inbox() {
   const [q, setQ] = useState('');
   const open = Number(route.params.c) || null;
   const load = () => api.messages().then((d) => { setList(d.messages); setUnread(d.unread); }).catch((e) => setErr(e.message));
-  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t); }, []);
+  // Live enough for a chat: every 5 s while a conversation is open, else every 30 s
+  useEffect(() => { load(); const t = setInterval(load, open ? 5000 : 30000); return () => clearInterval(t); }, [open]);
   const convs = useMemo(() => conversations(list ?? []), [list]);
   const shown = convs.filter((c) => (tab === 'all' || c.unread > 0) && `${c.name} ${c.email} ${c.messages.map((m) => m.body).join(' ')}`.toLowerCase().includes(q.toLowerCase()));
   const current = convs.find((c) => c.userId === open) ?? null;
@@ -60,11 +70,11 @@ export function Inbox() {
   return (
     <>
       <header class="page-head">
-        <div><h1>Inbox {list && <span class="count">{convs.length}</span>}</h1><p class="muted">Messages from the contact form and the message bubble on every page. Your replies show up for the visitor on the site.</p></div>
+        <div><h1>Inbox {list && <span class="count">{convs.length}</span>}</h1><p class="muted">Chats with signed-in visitors, from the message bubble and the contact page. Your replies show up for them on the site.</p></div>
         <div class="actions"><button onClick={load}><Icon name="activity" />Refresh</button></div>
       </header>
       {err ? <div class="panel"><p class="error">{err}</p></div> : !list ? <div class="sk sk--table" /> : !convs.length ? (
-        <div class="panel"><Empty icon="mail" title="No messages yet" text="When someone writes through the message bubble or the contact page, the conversation appears here." /></div>
+        <div class="panel"><Empty icon="mail" title="No messages yet" text="When a signed-in visitor writes through the message bubble or the contact page, the chat appears here." /></div>
       ) : (
         <div class={`inbox-grid ${current ? 'has-open' : ''}`}>
           <aside class="panel conv-list">
@@ -132,7 +142,9 @@ function Conversation({ c, onBack, onChange, setList }) {
         <a class="button" href={`#/contact?id=${c.userId}`} onClick={(e) => { e.preventDefault(); navigate(`#/contact?id=${c.userId}`); }}><Icon name="user" />Contact</a>
       </header>
       <ol class="bubbles">
-        {c.messages.map((m) => (
+        {c.messages.map((m, i) => (
+          <>
+          {(i === 0 || dayOf(m.createdAt) !== dayOf(c.messages[i - 1].createdAt)) && <li class="day-sep" aria-hidden="true"><span>{dayOf(m.createdAt)}</span></li>}
           <li class={`bubble ${m.fromAdmin ? 'bubble--me' : 'bubble--them'}`}>
             {!m.fromAdmin && m.topic && m.topic !== 'chat' && <span class="tag">{TOPICS[m.topic] ?? m.topic}</span>}
             <p class="msg-text">{m.body}</p>
@@ -141,14 +153,15 @@ function Conversation({ c, onBack, onChange, setList }) {
               <button type="button" class="link bubble-del" onClick={() => del(m)} aria-label="Delete message"><Icon name="trash" size={12} /></button>
             </small>
           </li>
+          </>
         ))}
         <li ref={end} aria-hidden="true" />
       </ol>
       <form class="conv-reply" onSubmit={send}>
         {!c.hasLogin && <p class="conv-note"><Icon name="alert" size={14} />Not signed in on the site. They'll see your reply when they sign in with <b>{c.email}</b>{c.email && <> — or <a href={replyByEmail(c)}>reply by email</a></>}.</p>}
         <textarea rows={3} value={text} onInput={(e) => setText(e.currentTarget.value)} placeholder={`Reply to ${c.name || c.email}…`} maxLength={4000}
-          onKeyDown={(e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') send(e); }} />
-        <div class="note-actions"><small class="muted">Ctrl+Enter to send</small><button class="primary" disabled={busy || !text.trim()}>{busy ? 'Sending…' : 'Send reply'}</button></div>
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) send(e); }} />
+        <div class="note-actions"><small class="muted">Enter to send · Shift+Enter for a new line</small><button class="primary" disabled={busy || !text.trim()}>{busy ? 'Sending…' : 'Send reply'}</button></div>
       </form>
     </section>
   );

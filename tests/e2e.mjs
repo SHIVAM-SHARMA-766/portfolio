@@ -389,36 +389,46 @@ try {
     await a.close();
   });
 
-  await step('contact form: a message lands in the admin inbox', async () => {
+  await step('contact page: only signed-in visitors can message; it lands in the admin inbox', async () => {
+    // Signed out: a sign-in button, no form, and the API refuses
+    const v = await browser.newContext();
+    await blockFonts(v);
+    const g = await v.newPage();
+    g.on('pageerror', (e) => errors.push('contact (signed out): ' + e.message));
+    await g.goto(`${S}/contact/`);
+    await g.waitForFunction(() => window.game?.account?.ready);
+    assert.equal(await g.locator('.cf-gate').isVisible(), true);
+    assert.equal(await g.locator('[data-contact-form] textarea').isVisible(), false);
+    const anon = await g.request.post(`${S}/api/messages`, { headers: { Origin: S }, data: { body: 'spam' } });
+    assert.equal(anon.status(), 401);
+    assert.equal((await g.request.post(`${S}/api/contact`, { headers: { Origin: S }, data: { email: 'a@b.co', message: 'spam spam' } })).status(), 404);
+    await v.close();
+    // Signed in (`page` is the test visitor): topic + message, sent as their account
     const c = await ctx.newPage();
     c.on('pageerror', (e) => errors.push('contact: ' + e.message));
     await c.goto(`${S}/contact/`);
-    await c.waitForSelector('[data-contact-form]');
-    await c.click('[data-contact-form] button[type=submit]'); // empty: checked in the browser
-    assert.match(await c.locator('.cf-status').innerText(), /check: name, email, message/);
-    await c.fill('[name=name]', 'Asha Recruiter');
-    await c.fill('[name=email]', 'asha@example.com');
+    await c.waitForSelector('[data-contact-form][data-signed-in]');
+    assert.match(await c.locator('.cf-as').innerText(), /tester@example\.com/);
+    await c.click('[data-contact-form] button[type=submit]'); // empty
+    assert.match(await c.locator('.cf-status').innerText(), /Write a message/);
     await c.selectOption('[name=topic]', 'job');
-    await c.fill('[name=message]', 'Hi Shivam, we have a DevSecOps role that fits your profile.');
-    await c.waitForTimeout(3100); // the server refuses forms sent within 3 seconds
+    await c.fill('[data-contact-form] textarea', 'Hi Shivam, we have a DevSecOps role that fits your profile.');
     await c.click('[data-contact-form] button[type=submit]');
-    await c.waitForSelector('.cf.is-sent');
-    assert.match(await c.locator('.cf-status').innerText(), /Thanks/);
+    await c.waitForSelector('.cf-status.is-ok');
     await shot(c, 'contact-sent');
-    // The admin sees it: badge, inbox, and on the contact page
+    // The admin sees it: badge, chat, topic
     await c.goto(`${S}/admin/#/inbox`);
     await c.waitForSelector('.conv.is-unread');
     assert.equal(await c.locator('.side .nav-badge').innerText(), '1');
     await c.click('.conv');
     await c.waitForSelector('.conv-view');
-    assert.match(await c.locator('.bubbles').innerText(), /DevSecOps role/);
-    assert.match(await c.locator('.conv-note').innerText(), /Not signed in/); // a form sender has no login yet
+    assert.match(await c.locator('.bubbles').innerText(), /Job opportunity[\s\S]*DevSecOps role/);
+    assert.equal(await c.locator('.conv-note').count(), 0, 'a signed-in visitor can read replies');
     await c.waitForFunction(() => !document.querySelector('.side .nav-badge'));
     await shot(c, 'admin-inbox');
     await c.click('.conv-head >> text=Contact');
     await c.waitForSelector('.contact-head');
     assert.match(await c.locator('.contact-main').innerText(), /Messages\s*1[\s\S]*DevSecOps role/);
-    assert.match(await c.locator('.tags-edit').innerText(), /contact-form/);
     await c.close();
   });
 
@@ -431,7 +441,7 @@ try {
     await page.waitForSelector('.mb[data-signed-in]');
     assert.equal(await page.locator('.mb [name=email]').isVisible(), false, 'signed in: no email needed');
     await page.fill('.mb textarea', 'Quick hello from the bubble!');
-    await page.click('.mb-send');
+    await page.press('.mb textarea', 'Enter');
     await page.waitForSelector('.mb-msg--me');
     // The admin answers in the Inbox
     const a = await ctx.newPage();
@@ -441,7 +451,7 @@ try {
     await a.waitForSelector('.conv-view');
     assert.equal(await a.locator('.conv-note').count(), 0, 'signed-in visitor: no "not signed in" note');
     await a.fill('.conv-reply textarea', 'Thanks for stopping by!');
-    await a.click('.conv-reply button.primary');
+    await a.press('.conv-reply textarea', 'Enter'); // Enter sends, like a chat
     await a.waitForSelector('.bubble--me');
     await shot(a, 'admin-conversation');
     await a.close();
@@ -455,20 +465,17 @@ try {
     assert.equal(await page.locator('.mb-badge').isHidden(), true);
     await shot(page, 'bubble-reply');
     await page.click('.mb-close');
-    // A visitor who isn't signed in sends a note with an email
+    // A visitor who isn't signed in is asked to sign in; there is nothing to type into
     const v = await browser.newContext();
     await blockFonts(v);
     const g = await v.newPage();
     g.on('pageerror', (e) => errors.push('bubble: ' + e.message));
     await g.goto(`${S}/`);
+    await g.waitForFunction(() => window.game?.account?.ready);
     await g.click('.mb-fab');
-    await g.fill('.mb textarea', 'Hi, nice portfolio');
-    await g.click('.mb-send');
-    assert.match(await g.locator('.mb-status').innerText(), /email/i); // asks for the email first
-    await g.fill('.mb [name=email]', 'guest@example.com');
-    await g.waitForTimeout(3100 - 0); // the server refuses notes sent within 3 s of loading
-    await g.click('.mb-send');
-    await g.waitForSelector('.mb-status.is-ok');
+    assert.equal(await g.locator('.mb-gate').isVisible(), true);
+    assert.equal(await g.locator('.mb textarea').isVisible(), false);
+    await shot(g, 'bubble-signed-out');
     await v.close();
   });
 

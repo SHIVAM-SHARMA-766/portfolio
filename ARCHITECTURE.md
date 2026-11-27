@@ -210,7 +210,7 @@ Touch devices see counts but no cursors.
 | `DELETE /api/me` | delete account and progress |
 | `GET /api/auth/{provider}/start`, `/callback` | OAuth / OpenID Connect sign-in |
 | `GET /api/live` | WebSocket presence and cursors |
-| `POST /api/contact` | contact form → CRM inbox (+ optional email notice) |
+| `GET/POST /api/messages`, `POST /api/messages/seen` | signed-in visitors chat with the admin (no anonymous messages) |
 | `POST /api/collect` | cookie-free analytics beacon (page view or event); always 204 |
 | `/api/admin/*` | admin sign-in, stats and insights, inbox (messages), contacts (+CSV, stage, tags, notes, activity), content files, history and restore, deploy status |
 
@@ -300,30 +300,22 @@ charts, goals, top and landing pages, sources, campaigns, outbound links, device
 themes. Signing in to the admin sets `localStorage['pf.noTrack']` so your own visits on that
 browser are not counted; the live preview iframe never counts.
 
-**Messages and replies.** `components/MessageBubble.astro` (every page, every theme, bottom
-left; hidden in the preview build and inside iframes) lets visitors write a short note.
-Signed-in visitors get a conversation: `GET /api/messages` (thread + unseen replies; 200
-with `signedIn:false` when signed out, so browsers log nothing), `POST /api/messages`
-(30/hour per user), `POST /api/messages/seen`; the bubble shows a badge for unseen
-replies. Others send `POST /api/contact` with `topic:"quick"` and just an email (name
-optional). The admin Inbox groups messages into conversations by contact and replies with
-`POST /api/admin/visitors/{id}/reply` (`messages.from_admin=1`); a reply marks the contact's
-messages read. A contact without a sign-in identity sees replies after signing in with the
-same verified email (sign-in links accounts by verified email); the Inbox says so and
-offers "reply by email". Columns `from_admin` and `seen_at` are added by
-`migrateMessages` on start-up.
-
-**Contact form.** The `contact` block with `form: true` renders `components/ContactForm.astro`
-in every theme. `POST /api/contact` (package `internal/contact`) validates name, email, topic
-and message, and files the message in `messages` under the contact with the same email
-(case-insensitive) or a new contact tagged `contact-form` (no sign-in identity). Spam
-defences: the CORS origin check, a hidden honeypot field, a 3-second minimum fill time
-(answered with "send again"; a filled honeypot gets a fake success and nothing is stored), 5 messages per IP per hour and 100 per day
-overall. With `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` (`SMTP_FROM`) and `NOTIFY_EMAIL` set, a
-plain-text notice is mailed (STARTTLS, e.g. Gmail on port 587 with an app password;
-headers are stripped of CR/LF). The admin's Inbox (`GET /api/admin/messages`,
-`PATCH`/`DELETE /api/admin/messages/{id}`) shows them with an unread badge; the contact page
-shows each person's messages.
+**Messages (sign-in only).** Only signed-in visitors can write, which keeps spam out (the
+sign-in provider vouches for a real person); there is no anonymous endpoint.
+`components/MessageBubble.astro` (every page and theme, bottom left; hidden in the preview
+build and inside iframes) is a chat: signed-out visitors see a "Sign in to message" button,
+signed-in ones write (Enter sends) and read replies, with a badge for unseen ones. The
+contact page's form (`components/ContactForm.astro`, `contact` block with `form: true`) adds
+a topic and joins the same conversation. API (`internal/contact`): `GET /api/messages`
+(thread + unseen; 200 `signedIn:false` when signed out, so browsers log nothing),
+`POST /api/messages {body, topic, page}` (topics: chat, job, freelance, collaboration,
+question, other; 30/hour per user, 300/day overall), `POST /api/messages/seen`. The admin
+Inbox is a chat view per contact (refreshes every 5 s while open, day dividers, Enter
+sends) and replies with `POST /api/admin/visitors/{id}/reply` (`messages.from_admin=1`,
+which also marks their messages read). Columns `from_admin` and `seen_at` are added by
+`migrateMessages` on start-up. With `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`/`NOTIFY_EMAIL` set, a
+new message also emails a notice (off by default). Older rows from the retired anonymous
+form keep their contacts; the Inbox notes when such a contact can't sign in yet.
 
 ## Learn site
 

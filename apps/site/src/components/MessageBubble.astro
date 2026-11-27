@@ -1,8 +1,8 @@
 ---
-// The message bubble on every page: a short note to me. Signed-in visitors get
-// a conversation and read my replies here (with an unread badge); others send
-// a note with their email, and see replies once they sign in with that email.
-// Messages land in the admin's Inbox. Hidden when there is no API (preview).
+// The message bubble on every page: a chat with me. Only signed-in visitors can
+// write (no anonymous messages, so no spam); they read my replies here, with an
+// unread badge. Others see a sign-in button. Messages land in the admin's
+// Inbox. Hidden when there is no API (the preview build) and inside iframes.
 import { site } from '../lib/content';
 const api = site.apiUrl?.replace(/\/$/, '');
 const first = site.name.split(' ')[0];
@@ -19,13 +19,14 @@ const first = site.name.split(' ')[0];
         <button type="button" class="mb-close" aria-label="Close">×</button>
       </header>
       <ol class="mb-thread" aria-live="polite"></ol>
+      <div class="mb-gate">
+        <p>Sign in to send me a message. It keeps my inbox free of spam, and my replies show up right here.</p>
+        <button type="button" class="mb-send" data-open-login>Sign in to message</button>
+      </div>
       <form class="mb-form" novalidate>
-        <p class="mb-intro">A short note, a question, or just hi. I read every message.</p>
-        <textarea name="message" rows="3" maxlength="2000" placeholder="Write a message…" aria-label="Message" required></textarea>
-        <input name="email" type="email" autocomplete="email" placeholder="Your email, so I can reply" aria-label="Your email" maxlength="200" />
-        <label class="mb-hp" aria-hidden="true">Leave empty<input name="website" tabindex="-1" autocomplete="off" /></label>
+        <textarea name="message" rows="2" maxlength="5000" placeholder="Write a message…" aria-label="Message" required></textarea>
         <div class="mb-foot">
-          <button type="button" class="mb-signin" data-open-login>Sign in to see replies here</button>
+          <small class="mb-hint">Enter to send · Shift+Enter for a new line</small>
           <button type="submit" class="mb-send">Send</button>
         </div>
         <p class="mb-status" role="status"></p>
@@ -54,20 +55,22 @@ const first = site.name.split(' ')[0];
   .mb-thread :global(.mb-msg--me) { align-self: flex-end; background: var(--accent); color: var(--bg); }
   .mb-thread :global(.mb-msg--them) { align-self: flex-start; background: color-mix(in srgb, var(--fg) 8%, transparent); }
   .mb-form { display: grid; gap: .5rem; padding: .8rem 1rem 1rem; border-top: 1px solid var(--border); }
-  .mb-intro { margin: 0; color: var(--muted); font-size: .85rem; }
+  .mb-gate { padding: 1rem; display: grid; gap: .8rem; justify-items: start; }
+  .mb-gate p { margin: 0; color: var(--muted); line-height: 1.5; }
+  .mb-gate .mb-send { margin-left: 0; }
+  .mb-hint { color: var(--muted); font-size: .72rem; }
+  .mb:not([data-signed-in]) .mb-form, .mb:not([data-signed-in]) .mb-thread { display: none; }
+  .mb[data-signed-in] .mb-gate { display: none; }
   .mb-form textarea, .mb-form input { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: var(--g-radius, 8px); padding: .55rem .7rem; width: 100%; box-sizing: border-box; resize: vertical; }
   .mb-form :is(textarea, input):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .mb-form [aria-invalid='true'] { border-color: #e5484d; }
-  .mb-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
   .mb-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
-  .mb-signin { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: .8rem; text-decoration: underline; cursor: pointer; }
   .mb-send { font: inherit; font-weight: 600; padding: .5rem 1.1rem; border-radius: var(--g-radius, 99px); border: 0; background: var(--accent); color: var(--bg); cursor: pointer; margin-left: auto; }
   .mb-send[disabled] { opacity: .6; cursor: progress; }
   .mb-status { margin: 0; font-size: .82rem; min-height: 0; }
   .mb-status:empty { display: none; }
   .mb-status.is-ok { color: var(--accent); }
   .mb-status.is-err { color: #e5484d; }
-  .mb[data-signed-in] .mb-intro, .mb[data-signed-in] [name=email], .mb[data-signed-in] .mb-signin { display: none; }
   @media (max-width: 600px) { .mb { left: 12px; bottom: 12px; } .mb-fab { width: 46px; height: 46px; } .mb-panel { bottom: 56px; width: calc(100vw - 24px); } }
   @media (prefers-reduced-motion: reduce) { .mb-fab { transition: none; } }
 </style>
@@ -82,10 +85,8 @@ const first = site.name.split(' ')[0];
     const thread = root.querySelector<HTMLOListElement>('.mb-thread')!;
     const form = root.querySelector<HTMLFormElement>('.mb-form')!;
     const text = form.querySelector<HTMLTextAreaElement>('textarea')!;
-    const email = form.querySelector<HTMLInputElement>('[name=email]')!;
     const status = form.querySelector<HTMLElement>('.mb-status')!;
     const send = form.querySelector<HTMLButtonElement>('.mb-send')!;
-    const shown = Date.now();
     let signedIn = false;
     let poll: number | undefined;
     let seq = 0; // only the newest load may update the thread and badge
@@ -132,35 +133,27 @@ const first = site.name.split(' ')[0];
       if (on) {
         setBadge(0); // opening the bubble shows the replies, so they're seen now
         load(true);
-        poll = window.setInterval(() => signedIn && load(true), 20000);
+        if ((window as any).game?.account?.user) root.setAttribute('data-signed-in', ''); // no sign-in flash
+        poll = window.setInterval(() => signedIn && load(true), 8000);
         setTimeout(() => text.focus(), 50);
       }
     };
     fab.addEventListener('click', () => open(panel.hidden));
+    addEventListener('open-messages', () => open(true)); // e.g. from the contact page
     root.querySelector('.mb-close')!.addEventListener('click', () => { open(false); fab.focus(); });
     addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { open(false); fab.focus(); } });
-    text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) form.requestSubmit(); });
+    // Chat-style: Enter sends, Shift+Enter adds a line
+    text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const body = text.value.trim();
-      const mail = email.value.trim();
-      const bad = !body ? text : !signedIn && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail) ? email : null;
-      text.setAttribute('aria-invalid', String(bad === text));
-      email.setAttribute('aria-invalid', String(bad === email));
-      if (bad) { say(bad === text ? 'Write a message first.' : 'Add your email so I can reply.', 'err'); bad.focus(); return; }
-      send.disabled = true; say('Sending…');
+      if (!body || !signedIn) return;
+      send.disabled = true; say('');
       try {
-        if (signedIn) {
-          await call('/messages', { method: 'POST', body: JSON.stringify({ body, page: location.pathname }) });
-          text.value = ''; say('');
-          await load(true);
-        } else {
-          const hp = form.querySelector<HTMLInputElement>('[name=website]')!.value;
-          await call('/contact', { method: 'POST', body: JSON.stringify({ email: mail, topic: 'quick', message: body, page: location.pathname, website: hp, elapsed: Date.now() - shown }) });
-          text.value = '';
-          say('Sent, thank you! I’ll reply by email, or sign in with that email to see my reply here.', 'ok');
-        }
+        await call('/messages', { method: 'POST', body: JSON.stringify({ body, topic: 'chat', page: location.pathname }) });
+        text.value = '';
+        await load(true);
         dispatchEvent(new CustomEvent('contact-sent'));
       } catch (err) {
         say((err as Error).message, 'err');

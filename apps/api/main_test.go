@@ -240,54 +240,37 @@ func TestAdminHistoryValidation(t *testing.T) {
 	}
 }
 
-func TestContactForm(t *testing.T) {
+func TestMessagesNeedSignIn(t *testing.T) {
 	e := setup(t)
-	good := `{"name":"Asha","email":"asha@example.com","topic":"job","message":"We have a DevOps role you might like.","page":"/contact/","elapsed":9000}`
-	// Needs the site's origin
-	if rec, _ := e.do("POST", "/api/contact", good, "", false); rec.Code != 403 {
-		t.Fatalf("no origin: %d", rec.Code)
+	// The anonymous contact endpoint is gone; writing needs a session
+	if rec, _ := e.do("POST", "/api/contact", `{"email":"a@b.co","message":"hello there"}`, "", true); rec.Code != 404 && rec.Code != 405 {
+		t.Fatalf("anonymous contact still open: %d", rec.Code)
 	}
-	// Validation
-	rec, out := e.do("POST", "/api/contact", `{"name":"","email":"nope","message":"hi","elapsed":9000}`, "", true)
-	if rec.Code != 400 || len(out["fields"].([]any)) != 3 {
-		t.Fatalf("validation: %d %v", rec.Code, out)
+	if rec, _ := e.do("POST", "/api/messages", `{"body":"hello"}`, "", true); rec.Code != 401 {
+		t.Fatalf("anonymous message: %d", rec.Code)
 	}
-	// The honeypot looks accepted but stores nothing; too fast asks to send again
-	if rec, _ := e.do("POST", "/api/contact", strings.Replace(good, `"elapsed":9000`, `"elapsed":9000,"website":"x"`, 1), "", true); rec.Code != 200 {
-		t.Fatalf("honeypot: %d", rec.Code)
+	user := e.user()
+	if rec, _ := e.do("POST", "/api/messages", `{"body":"hi"}`, user, false); rec.Code != 403 {
+		t.Fatalf("message without the site origin: %d", rec.Code)
 	}
-	if rec, _ := e.do("POST", "/api/contact", strings.Replace(good, `"elapsed":9000`, `"elapsed":500`, 1), "", true); rec.Code != 400 {
-		t.Fatalf("too fast: %d", rec.Code)
+	// Topics: a known one is kept, anything else becomes chat
+	_, out := e.do("POST", "/api/messages", `{"body":"We have a DevSecOps role","topic":"job","page":"/contact/"}`, user, true)
+	if out["message"].(map[string]any)["topic"] != "job" {
+		t.Fatalf("topic: %v", out)
 	}
-	if n := e.st.UnreadMessages(context.Background()); n != 0 {
-		t.Fatalf("bot messages stored: %d", n)
+	_, out = e.do("POST", "/api/messages", `{"body":"another","topic":"<script>"}`, user, true)
+	if out["message"].(map[string]any)["topic"] != "chat" {
+		t.Fatalf("bad topic: %v", out)
 	}
-	// A real one creates a tagged contact with the message
-	if rec, _ := e.do("POST", "/api/contact", good, "", true); rec.Code != 200 {
-		t.Fatalf("send: %d", rec.Code)
-	}
-	rec, _ = e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
+	rec, _ := e.do("POST", "/api/admin/login", `{"username":"admin","password":"correct horse battery"}`, "", true)
 	c := rec.Result().Cookies()[0]
 	admin := c.Name + "=" + c.Value
 	_, out = e.do("GET", "/api/admin/messages", "", admin, false)
 	msgs := out["messages"].([]any)
-	m := msgs[0].(map[string]any)
-	if len(msgs) != 1 || out["unread"].(float64) != 1 || m["email"] != "asha@example.com" || m["topic"] != "job" {
+	m := msgs[1].(map[string]any) // newest first: the job message is second
+	if len(msgs) != 2 || out["unread"].(float64) != 2 || m["topic"] != "job" || m["hasLogin"] != true || m["email"] != "a@example.com" {
 		t.Fatalf("inbox: %v", out)
 	}
-	uid := strconv.Itoa(int(m["userId"].(float64)))
-	_, out = e.do("GET", "/api/admin/visitors/"+uid, "", admin, false)
-	ct := out["contact"].(map[string]any)
-	if ct["tags"].([]any)[0] != "contact-form" || len(ct["messageList"].([]any)) != 1 {
-		t.Fatalf("contact: %v", ct)
-	}
-	// A second message from the same address joins the same contact
-	e.do("POST", "/api/contact", strings.Replace(good, "asha@", "ASHA@", 1), "", true)
-	_, out = e.do("GET", "/api/admin/visitors", "", admin, false)
-	if n := len(out["visitors"].([]any)); n != 1 {
-		t.Fatalf("contacts after second message: %d", n)
-	}
-	// Mark read, delete
 	mid := strconv.Itoa(int(m["id"].(float64)))
 	if rec, out := e.do("PATCH", "/api/admin/messages/"+mid, `{"read":true}`, admin, true); rec.Code != 200 || out["unread"].(float64) != 1 {
 		t.Fatalf("mark read: %d %v", rec.Code, out)
@@ -295,16 +278,15 @@ func TestContactForm(t *testing.T) {
 	if rec, _ := e.do("DELETE", "/api/admin/messages/"+mid, "", admin, true); rec.Code != 200 {
 		t.Fatalf("delete: %d", rec.Code)
 	}
-	// Per-IP limit: 5 accepted messages an hour
-	for i := 0; i < 3; i++ {
-		e.do("POST", "/api/contact", good, "", true)
-	}
-	if rec, _ := e.do("POST", "/api/contact", good, "", true); rec.Code != 429 {
-		t.Fatalf("rate limit: %d", rec.Code)
-	}
-	// Inbox is admin-only
 	if rec, _ := e.do("GET", "/api/admin/messages", "", "", false); rec.Code != 401 {
 		t.Fatalf("inbox without admin: %d", rec.Code)
+	}
+	// Per-user limit: 30 messages an hour
+	for i := 0; i < 28; i++ {
+		e.do("POST", "/api/messages", `{"body":"x"}`, user, true)
+	}
+	if rec, _ := e.do("POST", "/api/messages", `{"body":"x"}`, user, true); rec.Code != 429 {
+		t.Fatalf("rate limit: %d", rec.Code)
 	}
 }
 
@@ -483,14 +465,6 @@ func TestConversation(t *testing.T) {
 	e.do("POST", "/api/messages/seen", "", user, true)
 	if _, out = e.do("GET", "/api/messages", "", user, false); out["unseen"].(float64) != 0 {
 		t.Fatalf("seen: %v", out)
-	}
-	// The message bubble without sign-in needs only an email
-	if rec, _ := e.do("POST", "/api/contact", `{"email":"quick@example.com","topic":"quick","message":"Short hello from the bubble","elapsed":5000}`, "", true); rec.Code != 200 {
-		t.Fatalf("quick message: %d", rec.Code)
-	}
-	_, out = e.do("GET", "/api/admin/messages", "", admin, false)
-	if q := out["messages"].([]any)[0].(map[string]any); q["name"] != "quick" || q["topic"] != "quick" {
-		t.Fatalf("quick: %v", q)
 	}
 }
 

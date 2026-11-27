@@ -1,12 +1,12 @@
-// Package contact serves visitor messages: POST /api/contact (the contact form
-// and the message bubble, no sign-in needed) files a message in the admin CRM;
-// signed-in visitors also get a conversation with the admin's replies
-// (GET/POST /api/messages). When SMTP is configured, new messages email a notice.
+// Package contact serves visitor messages. Only signed-in visitors can write
+// (the sign-in provider vouches for a real person, which keeps spam out): each
+// visitor has one conversation with the admin, who replies from the Inbox, and
+// the visitor reads the replies on the site. When SMTP is configured, new
+// messages email a notice (optional; off by default).
 //
-// Spam defences, in order: the CORS layer rejects other origins; a hidden
-// "website" field must stay empty (bots get a fake success); a form sent
-// within three seconds of loading is refused with a "send again"; each IP may send a few messages per hour; and the whole form has a
-// daily ceiling so a flood cannot fill the database or the inbox.
+//	GET  /api/messages       the visitor's conversation (200 {"signedIn":false} when signed out)
+//	POST /api/messages       {"body":"…","topic":"job","page":"/x/"} write a message
+//	POST /api/messages/seen  the visitor opened the conversation
 package contact
 
 import (
@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/mail"
 	"net/smtp"
 	"strconv"
 	"strings"
@@ -26,44 +25,50 @@ import (
 	"github.com/SHIVAM-SHARMA-766/portfolio/apps/api/internal/store"
 )
 
-const (
-	maxName    = 100
-	maxEmail   = 200
-	maxTopic   = 60
-	maxBody    = 5000
-	minBody    = 10
-	minElapsed = 3000 // ms between showing the form and sending it
-)
+const maxBody = 5000
 
-// Topics the form offers; anything else is filed as "other".
-var Topics = []string{"job", "freelance", "collaboration", "question", "quick", "other"}
+// Topics a message can carry (the contact page lets visitors pick one); the
+// message bubble sends "chat".
+var Topics = []string{"chat", "job", "freelance", "collaboration", "question", "other"}
 
 type Handler struct {
 	store   *store.Store
+	cfg     *config.Config
 	userID  func(*http.Request) (int64, bool)
 	perUser *httpx.Limiter
-	cfg     *config.Config
-	perIP   *httpx.Limiter
 	daily   *httpx.Limiter
 	siteURL string
 	mail    func(to, subject, body, replyTo string) error // swapped in tests
 }
 
 func New(cfg *config.Config, st *store.Store, siteURL string, userID func(*http.Request) (int64, bool)) *Handler {
-	h := &Handler{store: st, cfg: cfg, userID: userID, perIP: httpx.NewLimiter(5, time.Hour), perUser: httpx.NewLimiter(30, time.Hour), daily: httpx.NewLimiter(100, 24*time.Hour), siteURL: strings.TrimRight(siteURL, "/")}
+	h := &Handler{store: st, cfg: cfg, userID: userID, perUser: httpx.NewLimiter(30, time.Hour), daily: httpx.NewLimiter(300, 24*time.Hour), siteURL: strings.TrimRight(siteURL, "/")}
 	h.mail = h.smtpSend
 	return h
 }
 
 func (h *Handler) Routes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/contact", h.post)
 	mux.HandleFunc("GET /api/messages", h.thread)
 	mux.HandleFunc("POST /api/messages", h.send)
 	mux.HandleFunc("POST /api/messages/seen", h.seen)
 }
 
-// thread: GET /api/messages — the signed-in visitor's conversation. Signed-out
-// visitors get {"signedIn":false} (200, so browsers log no error).
+func clean(s string, max int) (string, bool) {
+	s = strings.TrimSpace(strings.ToValidUTF8(s, ""))
+	return s, utf8.RuneCountInString(s) <= max
+}
+
+func validTopic(t string) bool {
+	for _, x := range Topics {
+		if x == t {
+			return true
+		}
+	}
+	return false
+}
+
+// thread: the signed-in visitor's conversation, oldest first. Signed-out
+// visitors get {"signedIn":false} with 200, so browsers log no error.
 func (h *Handler) thread(w http.ResponseWriter, r *http.Request) {
 	uid, ok := h.userID(r)
 	if !ok {
@@ -78,16 +83,16 @@ func (h *Handler) thread(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]any{"signedIn": true, "messages": list, "unseen": h.store.UnseenReplies(r.Context(), uid)})
 }
 
-// send: POST /api/messages {"body":"…","page":"/x/"} — a signed-in visitor writes.
 func (h *Handler) send(w http.ResponseWriter, r *http.Request) {
 	uid, ok := h.userID(r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "sign in to chat")
+		httpx.Error(w, http.StatusUnauthorized, "Sign in to send a message.")
 		return
 	}
 	var b struct {
-		Body string `json:"body"`
-		Page string `json:"page"`
+		Body  string `json:"body"`
+		Topic string `json:"topic"`
+		Page  string `json:"page"`
 	}
 	if err := httpx.Decode(r, &b, 16<<10); err != nil {
 		httpx.Error(w, http.StatusBadRequest, "bad request")
@@ -98,6 +103,10 @@ func (h *Handler) send(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "Write a message (up to 5000 characters).")
 		return
 	}
+	topic := strings.ToLower(strings.TrimSpace(b.Topic))
+	if !validTopic(topic) {
+		topic = "chat"
+	}
 	key := "u" + strconv.FormatInt(uid, 10)
 	if h.perUser.Blocked(key) || h.daily.Blocked("all") {
 		httpx.Error(w, http.StatusTooManyRequests, "That's a lot of messages. Please try again later.")
@@ -106,16 +115,16 @@ func (h *Handler) send(w http.ResponseWriter, r *http.Request) {
 	h.perUser.Allow(key)
 	h.daily.Allow("all")
 	page, _ := clean(b.Page, 200)
-	if !strings.HasPrefix(page, "/") {
+	if !strings.HasPrefix(page, "/") || strings.HasPrefix(page, "//") {
 		page = ""
 	}
-	m, err := h.store.VisitorMessage(r.Context(), uid, body, page)
+	m, err := h.store.VisitorMessage(r.Context(), uid, topic, body, page)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "could not send")
+		httpx.Error(w, http.StatusInternalServerError, "Could not send right now.")
 		return
 	}
 	if u, err := h.store.User(r.Context(), uid); err == nil {
-		h.notify(u.Name, u.Email, "chat", body, page, uid)
+		h.notify(u.Name, u.Email, topic, body, page, uid)
 	}
 	httpx.JSON(w, http.StatusCreated, map[string]any{"message": m})
 }
@@ -125,83 +134,6 @@ func (h *Handler) seen(w http.ResponseWriter, r *http.Request) {
 		h.store.MarkRepliesSeen(r.Context(), uid)
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-type form struct {
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	Topic   string `json:"topic"`
-	Message string `json:"message"`
-	Page    string `json:"page"`
-	Website string `json:"website"` // honeypot: people never see it
-	Elapsed int64  `json:"elapsed"` // ms the form was open
-}
-
-func clean(s string, max int) (string, bool) {
-	s = strings.TrimSpace(strings.ToValidUTF8(s, ""))
-	return s, utf8.RuneCountInString(s) <= max
-}
-
-func (h *Handler) post(w http.ResponseWriter, r *http.Request) {
-	var f form
-	if err := httpx.Decode(r, &f, 32<<10); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "bad request")
-		return
-	}
-	// Bots fill the hidden field: pretend it worked so they learn nothing, keep nothing.
-	if f.Website != "" {
-		httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
-		return
-	}
-	// Too fast to be typed. A person (autofill + paste) just sends again.
-	if f.Elapsed < minElapsed {
-		httpx.Error(w, http.StatusBadRequest, "That was quick! Please check your message and send it again.")
-		return
-	}
-	ip := httpx.ClientIP(r)
-	if h.perIP.Blocked(ip) || h.daily.Blocked("all") {
-		httpx.Error(w, http.StatusTooManyRequests, "Too many messages for now. Please try again later or use email.")
-		return
-	}
-	var ok bool
-	var errs []string
-	if f.Email, ok = clean(f.Email, maxEmail); !ok || !validEmail(f.Email) {
-		errs = append(errs, "email")
-	}
-	if f.Name, ok = clean(f.Name, maxName); !ok {
-		errs = append(errs, "name")
-	} else if f.Name == "" {
-		if f.Topic != "quick" { // the message bubble asks only for an email
-			errs = append(errs, "name")
-		} else if i := strings.Index(f.Email, "@"); i > 0 {
-			f.Name = f.Email[:i]
-		}
-	}
-	if f.Message, ok = clean(f.Message, maxBody); !ok || utf8.RuneCountInString(f.Message) < minBody {
-		errs = append(errs, "message")
-	}
-	f.Topic, _ = clean(strings.ToLower(f.Topic), maxTopic)
-	if !validTopic(f.Topic) {
-		f.Topic = "other"
-	}
-	f.Page, _ = clean(f.Page, 200)
-	if !strings.HasPrefix(f.Page, "/") {
-		f.Page = ""
-	}
-	if len(errs) > 0 {
-		httpx.JSON(w, http.StatusBadRequest, map[string]any{"error": "Please check: " + strings.Join(errs, ", ") + ".", "fields": errs})
-		return
-	}
-	h.perIP.Allow(ip)
-	h.daily.Allow("all")
-	m, err := h.store.NewMessage(r.Context(), f.Name, f.Email, f.Topic, f.Message, f.Page)
-	if err != nil {
-		log.Printf("contact: save: %v", err)
-		httpx.Error(w, http.StatusInternalServerError, "Could not send right now. Please use email instead.")
-		return
-	}
-	h.notify(f.Name, f.Email, f.Topic, f.Message, f.Page, m.UserID)
-	httpx.JSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 // notify emails a notice about a new message, when SMTP is configured.
@@ -217,20 +149,6 @@ func (h *Handler) notify(name, email, topic, message, page string, uid int64) {
 			log.Printf("contact: notify: %v", err)
 		}
 	}()
-}
-
-func validEmail(s string) bool {
-	a, err := mail.ParseAddress(s)
-	return err == nil && a.Address == s && strings.Contains(s[strings.LastIndex(s, "@"):], ".")
-}
-
-func validTopic(t string) bool {
-	for _, x := range Topics {
-		if x == t {
-			return true
-		}
-	}
-	return false
 }
 
 // header strips CR/LF so user input can never add mail headers.

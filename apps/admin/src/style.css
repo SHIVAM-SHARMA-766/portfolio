@@ -646,3 +646,6 @@ button.is-active { background: var(--accent-soft); border-color: var(--accent); 
   .conv-back { display: grid; }
   .conv-list { position: static; max-height: none; }
 }
+
+.day-sep { align-self: stretch; display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .74rem; }
+.day-sep::before, .day-sep::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
